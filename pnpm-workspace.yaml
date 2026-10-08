@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Only these packages may run install scripts. Everything else is blocked.
+onlyBuiltDependencies:
+  - argon2
+  - prisma
+  - "@prisma/engines"
+  - esbuild
+  - msgpackr-extract

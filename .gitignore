@@ -1,0 +1,28 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+apps/api/src/generated/
+.DS_Store
+Thumbs.db
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Local data
+infra/data/
+
+# Brand working files (drafts, source frames, notes). Finals live in docs/brand/final
+docs/brand/working/
+
+# Local editor assistant notes
+CLAUDE.md
+.claude/
