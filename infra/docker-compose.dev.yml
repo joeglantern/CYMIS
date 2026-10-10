@@ -1,0 +1,52 @@
+# Local services for development. The API and workers run on your machine
+# with `pnpm dev`; this only starts what they talk to.
+#
+# Ports are picked to avoid clashing with other local projects:
+#   Postgres 5470, Redis 6470, S3 (SeaweedFS) 8470
+
+name: cymis-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: cymis
+      POSTGRES_PASSWORD: cymis_dev_password
+      POSTGRES_DB: cymis
+    ports:
+      - "127.0.0.1:5470:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cymis -d cymis"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6470:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # S3 compatible storage for local work. Production uses Contabo Object Storage.
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json", "-ip.bind=0.0.0.0"]
+    ports:
+      - "127.0.0.1:8470:8333"
+    volumes:
+      - s3data:/data
+      - ./seaweedfs-s3.dev.json:/etc/seaweedfs/s3.json:ro
+
+volumes:
+  pgdata:
+  redisdata:
+  s3data:
