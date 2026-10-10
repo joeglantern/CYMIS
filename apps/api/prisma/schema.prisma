@@ -1,0 +1,512 @@
+// Cymis data model. Enums must match packages/schemas/src/enums.ts; a test
+// checks that they do.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  runtime                = "nodejs"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Enums
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  AUDITOR
+}
+
+enum FacilityType {
+  PORT
+  CFS
+  ICD
+  DEPOT
+}
+
+enum SectionKind {
+  YARD_BLOCK
+  VERIFICATION_BAY
+  SGR_LOADING
+  GATE
+  QUAY
+  OTHER
+}
+
+enum AuditStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  CANCELLED
+}
+
+enum ImportStatus {
+  UPLOADED
+  PARSING
+  READY
+  COMMITTED
+  FAILED
+}
+
+enum ImportSource {
+  SPREADSHEET
+  EDI
+  API
+}
+
+enum ImportMode {
+  append
+  replace
+}
+
+enum EntryMethod {
+  OCR
+  OCR_CORRECTED
+  MANUAL
+}
+
+enum ScanResult {
+  MATCHED
+  UNEXPECTED
+  DUPLICATE
+}
+
+enum CvStatus {
+  PENDING
+  DONE
+  FAILED
+  SKIPPED
+}
+
+enum ScanFlag {
+  NUMBER_MISMATCH
+  COLOUR_MISMATCH
+  CHECK_DIGIT_FAILED
+}
+
+enum ReviewStatus {
+  NONE
+  PENDING
+  APPROVED
+  CORRECTED
+  REJECTED
+}
+
+enum PhotoStatus {
+  PENDING_UPLOAD
+  UPLOADED
+}
+
+enum ContainerEventType {
+  IMPORTED
+  AUDITED
+  DISCHARGED
+  IN_YARD
+  MOVED_TO_CFS
+  RAILED
+  VERIFIED
+  RELEASED
+  GATE_OUT
+}
+
+enum EventSource {
+  IMPORT
+  SCAN
+  REVIEW
+  EDI
+  API
+}
+
+enum ReportFormat {
+  XLSX
+  CSV
+  PDF
+}
+
+enum ReportStatus {
+  QUEUED
+  RUNNING
+  READY
+  FAILED
+}
+
+// People and access
+
+model User {
+  id                 String    @id @default(uuid(7)) @db.Uuid
+  staffId            String    @unique
+  fullName           String
+  role               Role
+  passwordHash       String
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(true)
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime? @db.Timestamptz(3)
+  lastLoginAt        DateTime? @db.Timestamptz(3)
+  passwordChangedAt  DateTime? @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
+
+  refreshTokens   RefreshToken[]
+  assignments     AuditAssignment[]
+  auditsCreated   Audit[]           @relation("AuditCreatedBy")
+  auditsClosed    Audit[]           @relation("AuditClosedBy")
+  scans           Scan[]            @relation("ScanAuditor")
+  reviews         Scan[]            @relation("ScanReviewer")
+  imports         ImportBatch[]
+  columnMappings  ColumnMapping[]
+  reports         Report[]
+  activity        ActivityLog[]
+  events          ContainerEvent[]
+  serviceAccounts ServiceAccount[]
+
+  @@index([role, isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @db.Uuid
+  /// All tokens from one sign in share a family. Reusing an old token revokes the family.
+  familyId     String    @db.Uuid
+  /// SHA-256 of the token. The token itself is never stored.
+  tokenHash    String    @unique
+  expiresAt    DateTime  @db.Timestamptz(3)
+  revokedAt    DateTime? @db.Timestamptz(3)
+  replacedById String?   @db.Uuid
+  deviceLabel  String?
+  ip           String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model ServiceAccount {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  name        String
+  scopes      String[]
+  /// First characters of the key, shown so people can tell keys apart.
+  keyPrefix   String
+  /// SHA-256 of the full key.
+  keyHash     String    @unique
+  lastUsedAt  DateTime? @db.Timestamptz(3)
+  revokedAt   DateTime? @db.Timestamptz(3)
+  createdById String    @db.Uuid
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@map("service_accounts")
+}
+
+// Places
+
+model Facility {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  code      String       @unique
+  name      String
+  type      FacilityType
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @db.Timestamptz(3)
+
+  sections Section[]
+
+  @@map("facilities")
+}
+
+model Section {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  facilityId    String      @db.Uuid
+  code          String
+  name          String
+  kind          SectionKind
+  /// Location code prefixes in the terminal system export that belong here.
+  locationCodes String[]
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(3)
+
+  facility Facility         @relation(fields: [facilityId], references: [id])
+  audits   Audit[]
+  events   ContainerEvent[]
+
+  @@unique([facilityId, code])
+  @@map("sections")
+}
+
+// Audits
+
+model Audit {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  sectionId   String      @db.Uuid
+  name        String
+  notes       String?
+  status      AuditStatus @default(DRAFT)
+  /// Goes up by one every time the expected list changes. Phones use it to fetch only changes.
+  listVersion Int         @default(0)
+  createdById String      @db.Uuid
+  closedById  String?     @db.Uuid
+  startedAt   DateTime?   @db.Timestamptz(3)
+  closedAt    DateTime?   @db.Timestamptz(3)
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(3)
+
+  section     Section             @relation(fields: [sectionId], references: [id])
+  createdBy   User                @relation("AuditCreatedBy", fields: [createdById], references: [id])
+  closedBy    User?               @relation("AuditClosedBy", fields: [closedById], references: [id])
+  assignments AuditAssignment[]
+  imports     ImportBatch[]
+  expected    ExpectedContainer[]
+  scans       Scan[]
+  reports     Report[]
+  events      ContainerEvent[]
+
+  @@index([status, createdAt])
+  @@index([sectionId])
+  @@map("audits")
+}
+
+model AuditAssignment {
+  auditId   String   @db.Uuid
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([auditId, userId])
+  @@index([userId])
+  @@map("audit_assignments")
+}
+
+model ColumnMapping {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  name            String   @unique
+  /// SHA-256 of the sorted, lower cased header row. Lets the next file with the same columns pick this mapping.
+  headerSignature String
+  mapping         Json
+  createdById     String   @db.Uuid
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  createdBy User          @relation(fields: [createdById], references: [id])
+  imports   ImportBatch[]
+
+  @@index([headerSignature])
+  @@map("column_mappings")
+}
+
+model ImportBatch {
+  id                String       @id @default(uuid(7)) @db.Uuid
+  auditId           String       @db.Uuid
+  sourceType        ImportSource @default(SPREADSHEET)
+  fileName          String
+  fileSha256        String?
+  storageKey        String?
+  sizeBytes         Int?
+  status            ImportStatus @default(UPLOADED)
+  sheetName         String?
+  headers           String[]
+  sampleRows        Json         @default("[]")
+  suggestedMapping  Json?
+  mapping           Json?
+  mappingId         String?      @db.Uuid
+  mode              ImportMode   @default(append)
+  validated         Boolean      @default(false)
+  rowCount          Int          @default(0)
+  validCount        Int          @default(0)
+  invalidCount      Int          @default(0)
+  duplicateCount    Int          @default(0)
+  outOfSectionCount Int          @default(0)
+  /// First 200 row problems, for showing on screen.
+  errors            Json         @default("[]")
+  failureReason     String?
+  createdById       String       @db.Uuid
+  createdAt         DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime     @updatedAt @db.Timestamptz(3)
+  committedAt       DateTime?    @db.Timestamptz(3)
+
+  audit         Audit               @relation(fields: [auditId], references: [id])
+  createdBy     User                @relation(fields: [createdById], references: [id])
+  columnMapping ColumnMapping?      @relation(fields: [mappingId], references: [id])
+  containers    ExpectedContainer[]
+
+  @@index([auditId, createdAt])
+  @@map("import_batches")
+}
+
+model ExpectedContainer {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  auditId         String    @db.Uuid
+  importBatchId   String?   @db.Uuid
+  containerNumber String
+  checkDigitValid Boolean
+  sizeType        String?
+  location        String?
+  vessel          String?
+  voyage          String?
+  fullEmpty       String?
+  lineOperator    String?
+  category        String?
+  /// The whole source row, so nothing from the file is lost.
+  raw             Json?
+  rowNumber       Int?
+  /// Audit listVersion when this row last changed.
+  version         Int
+  removedAt       DateTime? @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+
+  audit       Audit        @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  importBatch ImportBatch? @relation(fields: [importBatchId], references: [id])
+  scans       Scan[]
+
+  @@unique([auditId, containerNumber])
+  @@index([auditId, version])
+  @@map("expected_containers")
+}
+
+model Scan {
+  /// Created on the phone (UUIDv7), so a retried upload never makes a second row.
+  id                  String       @id @db.Uuid
+  auditId             String       @db.Uuid
+  auditorId           String       @db.Uuid
+  deviceId            String
+  containerNumber     String
+  checkDigitValid     Boolean
+  entryMethod         EntryMethod
+  ocrRaw              String?
+  ocrConfidence       Float?
+  capturedAt          DateTime     @db.Timestamptz(3)
+  receivedAt          DateTime     @default(now()) @db.Timestamptz(3)
+  lat                 Float?
+  lng                 Float?
+  accuracyM           Float?
+  colourChosen        String?
+  colourSuggested     String?
+  colourHex           String?
+  colourConfidence    Float?
+  serverOcrNumber     String?
+  serverOcrConfidence Float?
+  cvStatus            CvStatus     @default(PENDING)
+  result              ScanResult
+  expectedContainerId String?      @db.Uuid
+  duplicateOfId       String?      @db.Uuid
+  flags               ScanFlag[]
+  reviewStatus        ReviewStatus @default(NONE)
+  reviewNote          String?
+  reviewedById        String?      @db.Uuid
+  reviewedAt          DateTime?    @db.Timestamptz(3)
+  updatedAt           DateTime     @updatedAt @db.Timestamptz(3)
+
+  audit             Audit              @relation(fields: [auditId], references: [id])
+  auditor           User               @relation("ScanAuditor", fields: [auditorId], references: [id])
+  reviewedBy        User?              @relation("ScanReviewer", fields: [reviewedById], references: [id])
+  expectedContainer ExpectedContainer? @relation(fields: [expectedContainerId], references: [id])
+  duplicateOf       Scan?              @relation("ScanDuplicates", fields: [duplicateOfId], references: [id])
+  duplicates        Scan[]             @relation("ScanDuplicates")
+  photos            Photo[]
+  events            ContainerEvent[]
+
+  @@index([auditId, receivedAt])
+  @@index([auditId, containerNumber])
+  @@index([auditId, result])
+  @@index([auditId, reviewStatus])
+  @@index([auditorId])
+  @@index([expectedContainerId])
+  @@map("scans")
+}
+
+model Photo {
+  /// Created on the phone (UUIDv7).
+  id          String      @id @db.Uuid
+  scanId      String      @db.Uuid
+  storageKey  String      @unique
+  /// Small copy made by the CV worker, used in PDF reports and lists.
+  thumbKey    String?
+  contentType String
+  sizeBytes   Int
+  sha256      String?
+  width       Int?
+  height      Int?
+  status      PhotoStatus @default(PENDING_UPLOAD)
+  uploadedAt  DateTime?   @db.Timestamptz(3)
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+
+  scan Scan @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@map("photos")
+}
+
+/// Everything that happened to a container, from any source. This is the journey view.
+model ContainerEvent {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  containerNumber String
+  type            ContainerEventType
+  source          EventSource
+  sectionId       String?            @db.Uuid
+  auditId         String?            @db.Uuid
+  scanId          String?            @db.Uuid
+  actorId         String?            @db.Uuid
+  occurredAt      DateTime           @db.Timestamptz(3)
+  data            Json?
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+
+  section Section? @relation(fields: [sectionId], references: [id])
+  audit   Audit?   @relation(fields: [auditId], references: [id], onDelete: SetNull)
+  scan    Scan?    @relation(fields: [scanId], references: [id], onDelete: SetNull)
+  actor   User?    @relation(fields: [actorId], references: [id])
+
+  @@index([containerNumber, occurredAt])
+  @@index([auditId])
+  @@map("container_events")
+}
+
+model Report {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  auditId       String       @db.Uuid
+  format        ReportFormat
+  status        ReportStatus @default(QUEUED)
+  storageKey    String?
+  failureReason String?
+  createdById   String       @db.Uuid
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  readyAt       DateTime?    @db.Timestamptz(3)
+
+  audit     Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  createdBy User  @relation(fields: [createdById], references: [id])
+
+  @@index([auditId, createdAt])
+  @@map("reports")
+}
+
+/// Who did what. Written for sign ins, imports, closes, reviews and user changes.
+model ActivityLog {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  ip         String?
+  data       Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@map("activity_log")
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "@cymis/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src", "test", "prisma/seed.ts"]
+}
