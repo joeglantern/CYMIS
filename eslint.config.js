@@ -1,10 +1,11 @@
 import js from '@eslint/js';
+import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/generated/**', '**/coverage/**', 'services/**'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/generated/**', '**/coverage/**', 'services/**', '**/.expo/**', 'apps/app/expo-env.d.ts'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -24,6 +25,20 @@ export default tseslint.config(
         { name: 'confirm', message: 'Use the custom confirm dialog.' },
         { name: 'prompt', message: 'Use a custom input dialog.' },
       ],
+    },
+  },
+  {
+    // The Expo app: browser and React Native globals, hooks rules, and require()
+    // for bundled assets (images, sounds, video), which is how Metro loads them.
+    files: ['apps/app/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks },
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 );
