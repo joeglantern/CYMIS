@@ -26,3 +26,10 @@ docs/brand/working/
 # Local editor assistant notes
 CLAUDE.md
 .claude/
+
+# Staging secrets and build output
+infra/staging/.env
+infra/staging/s3.json
+infra/staging/web/
+infra/staging/.credentials
+apps/app/dist-staging/

@@ -1,0 +1,152 @@
+# Staging stack for testing on a shared server.
+#
+# Nothing here publishes a port on the host. Postgres, Redis and storage are
+# only reachable on the private "cymis" network. The outside world gets in
+# through two outbound Cloudflare tunnels: one for the app and API, one for
+# photo uploads. Secrets live in .env next to this file, created by deploy.sh
+# on the server and never committed.
+
+name: cymis-staging
+
+x-api-env: &api-env
+  NODE_ENV: production
+  HOST: 0.0.0.0
+  PORT: "4000"
+  LOG_LEVEL: info
+  TRUST_PROXY: "true"
+  WORKERS_IN_PROCESS: "true"
+  DATABASE_URL: postgresql://cymis:${POSTGRES_PASSWORD}@postgres:5432/cymis
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: ${JWT_SECRET}
+  COOKIE_SECRET: ${COOKIE_SECRET}
+  CORS_ORIGINS: ${CORS_ORIGINS}
+  S3_ENDPOINT: http://s3:8333
+  S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
+  S3_REGION: us-east-1
+  S3_BUCKET: cymis
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+  S3_FORCE_PATH_STYLE: "true"
+  SEED_ADMIN_STAFF_ID: ${SEED_ADMIN_STAFF_ID:-ADMIN}
+  SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cymis
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: cymis
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [cymis]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cymis -d cymis"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redisdata:/data
+    networks: [cymis]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    restart: unless-stopped
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json", "-ip.bind=0.0.0.0"]
+    volumes:
+      - s3data:/data
+      - ./s3.json:/etc/seaweedfs/s3.json:ro
+    networks: [cymis]
+
+  # One off: migrations, the first admin and the photo bucket. Runs, then exits.
+  # The seed refuses to run in production, so it alone runs in development mode;
+  # it only creates what is missing.
+  setup:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: build
+    image: cymis-staging-build
+    environment: *api-env
+    working_dir: /repo/apps/api
+    command:
+      - sh
+      - -c
+      - >
+        npx prisma migrate deploy &&
+        NODE_ENV=development npx prisma db seed &&
+        node -e "
+          const { S3Client, CreateBucketCommand } = require('@aws-sdk/client-s3');
+          const c = new S3Client({ endpoint: 'http://s3:8333', region: 'us-east-1', forcePathStyle: true,
+            credentials: { accessKeyId: process.env.S3_ACCESS_KEY_ID, secretAccessKey: process.env.S3_SECRET_ACCESS_KEY } });
+          const tryIt = (n) => c.send(new CreateBucketCommand({ Bucket: 'cymis' })).then(() => console.log('bucket ready'))
+            .catch((e) => {
+              if (/BucketAlready/.test(e.name)) return console.log('bucket ready');
+              if (n > 0) return new Promise((r) => setTimeout(r, 2000)).then(() => tryIt(n - 1));
+              console.error(e); process.exit(1);
+            });
+          tryIt(60);"
+    depends_on:
+      postgres: { condition: service_healthy }
+      s3: { condition: service_started }
+    networks: [cymis]
+    restart: "no"
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      target: runtime
+    image: cymis-staging-api
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      setup: { condition: service_completed_successfully }
+    networks: [cymis]
+
+  # Serves the web build and sends /api, /socket.io and /health to the API,
+  # so the dashboard and API share one address and the session cookie works.
+  web:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./web:/srv/web:ro
+    depends_on: [api]
+    networks: [cymis]
+
+  tunnel-web:
+    image: cloudflare/cloudflared:2025.10.0
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--url", "http://web:80"]
+    depends_on: [web]
+    networks: [cymis]
+
+  tunnel-s3:
+    image: cloudflare/cloudflared:2025.10.0
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--url", "http://s3:8333"]
+    depends_on: [s3]
+    networks: [cymis]
+
+networks:
+  cymis:
+    name: cymis-staging
+
+volumes:
+  pgdata:
+  redisdata:
+  s3data:

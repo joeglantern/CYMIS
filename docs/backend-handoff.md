@@ -150,3 +150,5 @@ These are deliberate. Changing one needs a conversation first.
 
 - If two photos of one scan finish uploading at the same moment, the CV job can be queued twice. The result handler is safe to run twice, so this costs CPU, not correctness. Fix it if you touch that code.
 - `GET /audits/:id/expected` returns the whole list in one response. Fine up to about 50,000 rows with compression; page it if lists get bigger.
+- Sign in is rate limited to 10 tries a minute per IP. At a shift change a whole crew signs in from tablets behind one office IP, so the 11th person gets blocked. Key the `/auth/login` limit on IP plus staff ID (the per account lockout already stops guessing), and keep a looser per IP cap as a backstop.
+- `scripts/demo-data.mjs` fills a local API with a supervisor, three crew and a live audit. Handy when testing the apps against your changes.

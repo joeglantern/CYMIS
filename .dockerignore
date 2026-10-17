@@ -1,0 +1,17 @@
+**/node_modules
+**/dist
+**/.expo
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+.git
+docs
+services
+infra
+apps/app
+!apps/app/package.json
+*.png
+*.jpg
+*.jpeg
+*.mp4
