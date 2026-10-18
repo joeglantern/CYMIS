@@ -53,7 +53,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         accessibilityLabelledBy={id}
         placeholderTextColor={c.muted}
         secureTextEntry={password && !show}
-        autoCapitalize={mono ? 'characters' : autoCapitalize}
+        autoCapitalize={mono ? 'characters' : password ? 'none' : autoCapitalize}
+        spellCheck={password ? false : rest.spellCheck}
         autoCorrect={mono || password ? false : autoCorrect}
         onFocus={(e) => {
           setFocused(true);

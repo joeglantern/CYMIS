@@ -1,6 +1,7 @@
 import { Redirect, Slot, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useView } from '@/auth/view';
 import { Sidebar, TopNav } from '@/features/dash/Sidebar';
 import { useLayout, useTheme } from '@/theme/theme';
@@ -11,12 +12,22 @@ import { Button, Icon, Txt } from '@/ui';
 export default function DashboardLayout() {
   const { c } = useTheme();
   const { width } = useLayout();
+  const insets = useSafeAreaInsets();
   const { view } = useView();
   if (view === 'AUDITOR') return <Redirect href="/audits" />;
   const wide = width >= breakpoints.sidebar;
 
   return (
-    <View style={{ flex: 1, flexDirection: wide ? 'row' : 'column', backgroundColor: c.paper }}>
+    <View
+      style={{
+        flex: 1,
+        flexDirection: wide ? 'row' : 'column',
+        backgroundColor: c.paper,
+        // Keep clear of the notch, the Dynamic Island and the home bar.
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+    >
       {wide ? <Sidebar /> : <TopNav />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <TopBar />

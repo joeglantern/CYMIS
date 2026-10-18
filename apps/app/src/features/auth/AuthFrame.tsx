@@ -1,16 +1,22 @@
+import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ThemeProvider, useLayout, useTheme } from '@/theme/theme';
-import { floatShadow, fonts, radius } from '@/theme/tokens';
+import { fonts, radius } from '@/theme/tokens';
 import { Txt } from '@/ui';
 
 const poster = require('../../../assets/images/poster.jpg');
-const POSTER_RATIO = 1280 / 720;
-/** Where the middle of the container C sits in the poster, as a share of its height. */
-const MARK_CENTRE = 0.65;
+/**
+ * The same picture on a much larger stretch of concrete (2160 by 2560), so it
+ * can be scaled and moved freely without an edge ever showing. MARK is the
+ * box around the container C inside it, measured from the pixels.
+ */
+const posterWide = require('../../../assets/images/poster-wide.jpg');
+const WIDE = { w: 2160, h: 2560 };
+const MARK = { x: 832, y: 945, w: 528, h: 690 };
 const ALT = 'The letter C made of shipping containers on pale concrete, seen from above, with one yellow container in its opening';
 
 /**
@@ -75,23 +81,31 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
     );
   }
 
-  // Keep the container C in full view: centre it in the space between the
-  // status bar and the top of the sheet, using the sheet's measured height.
-  const imgHeight = width * POSTER_RATIO;
-  const sheetTop = height - (sheetH || height * 0.6);
-  // The picture runs behind the status bar, so all of it above the sheet counts.
-  const centreY = sheetTop / 2 + insets.top * 0.25 + (tablet ? 24 : 0);
-  const imgTop = Math.min(0, Math.max(sheetTop + 24 - imgHeight, centreY - MARK_CENTRE * imgHeight));
+  // Fit the whole container C into the space between the status bar (or the
+  // wordmark on tablets) and the top of the sheet, whatever the screen. The
+  // sheet is measured, so a notch, a home bar or bigger text cannot cover it.
+  const sheetTop = height - (sheetH || height * 0.56);
+  const haze = tablet ? 140 : 96;
+  const top = insets.top + (tablet ? 96 : 20);
+  const bottom = sheetTop - haze * 0.45 - (tablet ? 24 : 10);
+  const side = tablet ? 120 : 44;
+  const scale = Math.max(0.2, Math.min((width - side * 2) / MARK.w, (bottom - top) / MARK.h, tablet ? 1.25 : 0.9));
+  const imgW = WIDE.w * scale;
+  const imgH = WIDE.h * scale;
+  const imgLeft = width / 2 - (MARK.x + MARK.w / 2) * scale;
+  const imgTop = (top + bottom) / 2 - (MARK.y + MARK.h / 2) * scale;
 
   return (
     <View style={{ flex: 1, backgroundColor: c.paper, overflow: 'hidden' }}>
       <Image
-        source={poster}
+        source={posterWide}
         accessibilityLabel={ALT}
-        contentFit="cover"
-        style={{ position: 'absolute', left: 0, top: imgTop, width, height: Math.max(imgHeight, height - imgTop) }}
+        contentFit="fill"
+        transition={sheetH ? 0 : 200}
+        style={{ position: 'absolute', left: imgLeft, top: imgTop, width: imgW, height: imgH }}
       />
       {tablet ? brand : null}
+      {sheetH ? <Haze bottom={height - sheetTop - radius.sheet} height={haze + radius.sheet} /> : null}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
         <ScrollView
           bounces={false}
@@ -109,12 +123,33 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
               paddingTop: tablet ? 30 : compact ? 20 : 24,
               paddingHorizontal: tablet ? 40 : 24,
               paddingBottom: (tablet ? 34 : compact ? 16 : 26) + insets.bottom,
-              backgroundColor: c.raised,
               borderTopLeftRadius: radius.sheet,
               borderTopRightRadius: radius.sheet,
-              ...floatShadow(false),
+              overflow: 'hidden',
             }}
           >
+            {/* Frosted glass: the concrete and the containers bleed softly through. */}
+            <BlurView
+              intensity={70}
+              tint="light"
+              blurMethod="dimezisBlurViewSdk31Plus"
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            />
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(255,255,255,0.74)',
+                borderTopLeftRadius: radius.sheet,
+                borderTopRightRadius: radius.sheet,
+                borderTopWidth: 1,
+                borderColor: 'rgba(255,255,255,0.9)',
+              }}
+            />
             {!tablet && sheetBrand ? (
               // On phones the wordmark sits in the sheet so it never lands on a container.
               <Txt
@@ -128,6 +163,29 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+/**
+ * Progressive blur above the sheet: thin bands that blur a little more each
+ * step, so the picture dissolves into the glass instead of stopping at an
+ * edge. Blur only, no colour fades, so it keeps to the no gradients rule.
+ */
+function Haze({ bottom, height }: { bottom: number; height: number }) {
+  const steps = 9;
+  const band = height / steps;
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom, height }}>
+      {Array.from({ length: steps }, (_, i) => (
+        <BlurView
+          key={i}
+          intensity={Math.round(6 + i * 7)}
+          tint="light"
+          blurMethod="dimezisBlurViewSdk31Plus"
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, transform: [{ translateY: i * band }] }}
+        />
+      ))}
     </View>
   );
 }

@@ -9,7 +9,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { queryClient } from '@/api/queries';
 import { session, socketToken, useSession } from '@/auth/session';
 import { preloadSounds } from '@/feedback';
@@ -87,6 +87,7 @@ export default function RootLayout() {
 
 function Root({ ready }: { ready: boolean }) {
   const { c, dark } = useTheme();
+  const insets = useSafeAreaInsets();
   const status = useSession((s) => s.status);
   const mustChange = useSession((s) => s.user?.mustChangePassword ?? false);
 
@@ -96,12 +97,15 @@ function Root({ ready }: { ready: boolean }) {
 
   if (!ready) return <View style={{ flex: 1, backgroundColor: c.paper }} />;
 
+
   const signedIn = status === 'signedIn';
 
   return (
     <>
       <WebStyles />
       <StatusBar style={dark ? 'light' : 'dark'} />
+      {/* In landscape the notch sits on a side; keep every screen clear of it. */}
+      <View style={{ flex: 1, paddingLeft: insets.left, paddingRight: insets.right, backgroundColor: c.paper }}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.paper }, animation: 'fade' }}>
         <Stack.Protected guard={signedIn && !mustChange}>
           <Stack.Screen name="index" />
@@ -120,6 +124,7 @@ function Root({ ready }: { ready: boolean }) {
         <Stack.Screen name="help" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="legal/[doc]" options={{ animation: 'slide_from_right' }} />
       </Stack>
+      </View>
     </>
   );
 }
