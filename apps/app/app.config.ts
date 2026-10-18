@@ -68,7 +68,11 @@ const config: ExpoConfig = {
     ['expo-audio', { microphonePermission: false }],
   ],
   experiments: { typedRoutes: true },
-  extra: { apiUrl },
+  owner: 'afosi',
+  extra: {
+    apiUrl,
+    eas: { projectId: 'd52a58c9-b248-472c-ac64-13145417e669' },
+  },
 };
 
 export default config;
