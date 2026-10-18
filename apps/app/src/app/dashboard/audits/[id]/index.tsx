@@ -6,6 +6,7 @@ import { View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { keys, queryClient, useAudit, useProgress, useResults, useScans } from '@/api/queries';
 import { feedback } from '@/feedback';
+import { useSettings } from '@/state/settings';
 import { AuditStatus } from '@/features/dash/AuditRows';
 import { DataTable } from '@/features/dash/DataTable';
 import { barProps, dayTime, minutesAgo, time } from '@/features/dash/format';
@@ -96,6 +97,17 @@ export default function LiveAudit() {
         }
         actions={
           <>
+            {live ? (
+              <Button
+                label="Scan"
+                icon="scan"
+                onPress={() => {
+                  // Scanning happens in the crew screens. Switch over and open the camera on this audit.
+                  useSettings.getState().set({ viewAs: 'AUDITOR' });
+                  router.push(`/audit/${a.id}/scan` as never);
+                }}
+              />
+            ) : null}
             <ReportButton auditId={a.id} />
             {live ? <Button label="Close audit" variant="danger-quiet" loading={close.isPending} onPress={askClose} /> : null}
           </>

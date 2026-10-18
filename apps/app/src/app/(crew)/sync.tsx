@@ -25,10 +25,16 @@ export default function SyncQueue() {
   const rejected = useQuery({ queryKey: ['queue', 'rejected', q.version], queryFn: () => scansByStatus('rejected', 300) });
 
   const sendNow = async () => {
-    await syncNow();
-    const s = useQueue.getState();
-    if (!s.online) toast({ text: 'Still no signal. Scans are safe on this phone and send by themselves.', tone: 'warning' });
-    else if (s.queued === 0 && s.rejected === 0) toast({ text: 'Everything is sent.', tone: 'success' });
+    const waiting = useQueue.getState().queued + useQueue.getState().photos;
+    const out = await syncNow();
+    const left = useQueue.getState();
+    if (out.problem === 'offline') toast({ text: 'No connection to the server. Scans are safe on this phone and send by themselves.', tone: 'warning' });
+    else if (out.problem === 'signed-out') toast({ text: 'Your session ended. Sign in again and the scans will send.', tone: 'warning' });
+    else if (out.problem === 'error') toast({ text: `Could not send: ${out.message ?? 'something went wrong'}`, tone: 'error' });
+    else if (out.rejected > 0) toast({ text: `${out.sent} sent. ${out.rejected} not accepted, see below.`, tone: 'warning' });
+    else if (out.sent > 0) toast({ text: out.sent === 1 ? 'Sent 1 scan.' : `Sent ${out.sent} scans.`, tone: 'success' });
+    else if (waiting === 0 && left.queued === 0) toast({ text: 'Nothing waiting. Everything on this phone is already sent.', tone: 'success' });
+    else toast({ text: 'Photos are still on their way. They send after their scans.', tone: 'default' });
   };
 
   const back = () => (router.canGoBack() ? router.back() : router.replace('/audits'));
@@ -56,7 +62,7 @@ export default function SyncQueue() {
           <StatTile compact label="Not accepted" value={q.rejected} bucket={q.rejected > 0 ? 'missing' : undefined} detail={q.rejected > 0 ? 'Needs a fix' : 'None'} />
         </View>
 
-        <Button label={q.syncing ? 'Sending' : 'Send now'} icon="arrows-clockwise" size="lg" block loading={q.syncing} onPress={sendNow} disabled={q.queued + q.photos === 0} />
+        <Button label={q.syncing ? 'Sending' : 'Send now'} icon="arrows-clockwise" size="lg" block loading={q.syncing} onPress={sendNow} />
 
         {(rejected.data ?? []).length > 0 ? (
           <View style={{ gap: 4 }}>

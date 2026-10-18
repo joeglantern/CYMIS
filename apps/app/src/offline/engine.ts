@@ -1,4 +1,4 @@
-import { isValidContainerNumber } from '@cymis/iso6346';
+import { computeCheckDigit, isValidContainerNumber } from '@cymis/iso6346';
 import type { AuditDto, ColourName, EntryMethod, GeoPoint, SyncScanItem } from '@cymis/schemas';
 import * as Network from 'expo-network';
 import { AppState, type AppStateStatus } from 'react-native';
@@ -182,6 +182,26 @@ export async function saveScan(input: SaveScanInput): Promise<LocalScan> {
   return scan;
 }
 
+/**
+ * Readers often miss the boxed check digit on a door. When the owner code and
+ * serial come through, work out the check digit and accept the number only if
+ * that exact container is on this audit's list. A misread almost never lands
+ * on another listed box, so this stays safe.
+ */
+export async function matchByPrefix(auditId: string, rawText: string): Promise<string | null> {
+  const text = rawText.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const seen = new Set<string>();
+  for (let i = 0; i + 10 <= text.length; i++) {
+    const head = text.slice(i, i + 10);
+    if (!/^[A-Z]{3}[UJZ]\d{6}$/.test(head) || seen.has(head)) continue;
+    seen.add(head);
+    const full = `${head}${computeCheckDigit(head)}`;
+    const row = await db.expected(auditId, full);
+    if (row && !row.removed) return full;
+  }
+  return null;
+}
+
 /** Fix the number on a scan the server refused, and send it again. */
 export async function fixRejected(scanId: string, number: string): Promise<void> {
   const scan = await db.scan(scanId);
@@ -205,7 +225,6 @@ export const cachedAudit = (auditId: string) => db.audit(auditId);
 /* Sync */
 
 let timer: ReturnType<typeof setTimeout> | null = null;
-let running: Promise<void> | null = null;
 
 export function scheduleSync(delayMs = 0) {
   if (timer) clearTimeout(timer);
@@ -215,12 +234,57 @@ export function scheduleSync(delayMs = 0) {
   }, delayMs);
 }
 
-/** Sends queued scans in batches of 100, then photos. One run at a time. */
-export function syncNow(): Promise<void> {
+export interface SyncOutcome {
+  sent: number;
+  rejected: number;
+  /** Why nothing could be sent, in words the crew can read. */
+  problem: 'offline' | 'signed-out' | 'error' | null;
+  message?: string;
+}
+
+let running: Promise<SyncOutcome> | null = null;
+
+/** Sends one batch. If the server refuses the whole batch, sends them one by one so a single bad scan never blocks the rest. */
+async function sendBatch(batch: LocalScan[]): Promise<{ sent: number; rejected: number }> {
+  let sent = 0;
+  let rejected = 0;
+  const apply = async (results: { id: string; status: string; reason?: string; scan?: LocalScan['server'] }[]) => {
+    for (const r of results) {
+      if (r.status === 'rejected') {
+        await db.markRejected(r.id, r.reason ?? 'The server did not accept this scan.');
+        rejected++;
+      } else {
+        await db.markSent(r.id, r.scan ?? null);
+        sent++;
+      }
+    }
+  };
+  try {
+    await apply((await endpoints.syncScans(batch.map((s) => s.item))).results);
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.offline || err.status === 401 || err.status >= 500 || err.status === 429) throw err;
+    for (const scan of batch) {
+      try {
+        await apply((await endpoints.syncScans([scan.item])).results);
+      } catch (one) {
+        if (!(one instanceof ApiError) || one.offline || one.status === 401 || one.status >= 500 || one.status === 429) throw one;
+        await db.markRejected(scan.id, one.message);
+        rejected++;
+      }
+    }
+  }
+  return { sent, rejected };
+}
+
+/** Sends queued scans in batches of 100, then photos. One run at a time. Always says what happened. */
+export function syncNow(): Promise<SyncOutcome> {
   if (running) return running;
-  running = (async () => {
-    if (useSession.getState().status !== 'signedIn') return;
-    if (!hasAccessToken() && !(await session.reconnect())) return;
+  running = (async (): Promise<SyncOutcome> => {
+    if (useSession.getState().status !== 'signedIn') return { sent: 0, rejected: 0, problem: 'signed-out' };
+    if (!hasAccessToken() && !(await session.reconnect())) {
+      const offline = !useQueue.getState().online;
+      return { sent: 0, rejected: 0, problem: offline ? 'offline' : 'signed-out' };
+    }
     const hadQueued = useQueue.getState().queued;
     useQueue.setState({ syncing: true });
     let sent = 0;
@@ -229,24 +293,23 @@ export function syncNow(): Promise<void> {
       for (let round = 0; round < 50; round++) {
         const batch = await db.queuedScans(100);
         if (!batch.length) break;
-        const res = await endpoints.syncScans(batch.map((s) => s.item));
-        for (const r of res.results) {
-          if (r.status === 'rejected') {
-            await db.markRejected(r.id, r.reason ?? 'The server did not accept this scan.');
-            rejected++;
-          } else {
-            await db.markSent(r.id, r.scan ?? null);
-            sent++;
-          }
-        }
+        const r = await sendBatch(batch);
+        sent += r.sent;
+        rejected += r.rejected;
         await refreshCounts();
       }
       await uploadPhotos();
       useQueue.setState({ online: true, lastSyncedAt: new Date().toISOString() });
       if (rejected > 0) feedback.error();
       else if (sent > 0 && hadQueued >= 5) feedback.synced();
+      return { sent, rejected, problem: null };
     } catch (err) {
-      if (err instanceof ApiError && err.offline) useQueue.setState({ online: false });
+      if (err instanceof ApiError && err.offline) {
+        useQueue.setState({ online: false });
+        return { sent, rejected, problem: 'offline' };
+      }
+      if (err instanceof ApiError && err.status === 401) return { sent, rejected, problem: 'signed-out' };
+      return { sent, rejected, problem: 'error', message: err instanceof Error ? err.message : 'Something went wrong.' };
     } finally {
       useQueue.setState({ syncing: false });
       await refreshCounts();

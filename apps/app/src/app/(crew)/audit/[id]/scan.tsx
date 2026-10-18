@@ -10,7 +10,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { feedback } from '@/feedback';
 import { SyncButton } from '@/features/crew/CrewHeader';
-import { cachedAudit, checkNumber, localProgress, saveScan, useQueue } from '@/offline/engine';
+import { cachedAudit, checkNumber, localProgress, matchByPrefix, saveScan, useQueue } from '@/offline/engine';
 import { usePresenceHeartbeat } from '@/realtime/socket';
 import { ConfirmPanel, type Captured } from '@/scanner/ConfirmPanel';
 import { GuideBox, type GuideState } from '@/scanner/GuideBox';
@@ -124,7 +124,13 @@ function Scanner() {
         if (!frame || !alive) return;
         const text = await readText(frame.uri);
         if (!alive) return;
-        const best = text ? extractCandidates(text)[0] : undefined;
+        let best = text ? extractCandidates(text)[0] : undefined;
+        if (text && !best?.valid && auditId) {
+          // Missed or misread check digit: fall back to the list (see matchByPrefix).
+          const listed = await matchByPrefix(auditId, text);
+          if (listed) best = { value: listed, valid: true, corrected: true };
+        }
+        if (!alive) return;
         if (!best) {
           lastRead.current = null;
           setGuide((g) => (g === 'failed' ? g : 'searching'));
@@ -171,7 +177,11 @@ function Scanner() {
     try {
       const photo = await takePhoto(0.8, false);
       const text = photo ? await readText(photo.uri) : null;
-      const best = text ? extractCandidates(text)[0] : undefined;
+      let best = text ? extractCandidates(text)[0] : undefined;
+      if (text && !best?.valid && auditId) {
+        const listed = await matchByPrefix(auditId, text);
+        if (listed) best = { value: listed, valid: true, corrected: true };
+      }
       if (best?.valid) {
         await lockOn(best.value, best.corrected ? 'OCR_CORRECTED' : 'OCR', text ?? undefined, photo);
       } else {
