@@ -5,6 +5,7 @@ import { ApiError } from '@/api/http';
 import { session, useSession } from '@/auth/session';
 import { feedback } from '@/feedback';
 import { AuthFrame } from '@/features/auth/AuthFrame';
+import { useBoot } from '@/state/boot';
 import { useQueue, wipeLocalData } from '@/offline/engine';
 import { useTheme } from '@/theme/theme';
 import { Avatar, Button, Icon, TextField, Txt, useConfirm } from '@/ui';
@@ -33,6 +34,7 @@ function UnlockSheet() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const prompted = useRef(false);
+  const filmDone = useBoot((s) => s.filmDone);
   const pwRef = useRef<TextInput>(null);
 
   const firstName = user?.fullName.split(' ')[0] ?? 'there';
@@ -81,11 +83,16 @@ function UnlockSheet() {
 
   // Ask once on arrival, the way a phone does. After that it waits for a tap.
   useEffect(() => {
-    if (bio?.available && !prompted.current) {
+    if (filmDone && bio?.available && !prompted.current) {
       prompted.current = true;
       void unlockWithBio();
     }
-  }, [bio, unlockWithBio]);
+  }, [bio, unlockWithBio, filmDone]);
+
+  // No Face ID or fingerprint: put the cursor in the password field, once the film is gone.
+  useEffect(() => {
+    if (filmDone && bio && !bio.available) pwRef.current?.focus();
+  }, [filmDone, bio]);
 
   const unlockWithPassword = async () => {
     if (!user || !password) return setError('Enter your password.');
@@ -170,7 +177,6 @@ function UnlockSheet() {
             autoComplete="current-password"
             returnKeyType="go"
             onSubmitEditing={unlockWithPassword}
-            autoFocus={!bio?.available}
           />
           <Button label="Unlock" size="xl" block loading={busy} onPress={unlockWithPassword} silent />
           {bio?.available ? (

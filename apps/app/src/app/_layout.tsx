@@ -6,7 +6,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { AppState, Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import { preloadSounds } from '@/feedback';
 import { startSyncEngine } from '@/offline/engine';
 import { configureSocket, startRealtime } from '@/realtime/socket';
 import { SplashFilm } from '@/features/shell/SplashFilm';
+import { useBoot } from '@/state/boot';
 import { WebStyles } from '@/features/shell/WebStyles';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 import { ConfirmProvider, ToastProvider } from '@/ui';
@@ -45,7 +46,7 @@ export default function RootLayout() {
     GeistMono_400Regular,
     GeistMono_500Medium,
   });
-  const [filmDone, setFilmDone] = useState(Platform.OS === 'web');
+  const filmDone = useBoot((s) => s.filmDone);
   const status = useSession((s) => s.status);
   const ready = (fontsLoaded || !!fontError) && status !== 'loading';
 
@@ -65,7 +66,7 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  const endFilm = useCallback(() => setFilmDone(true), []);
+  const endFilm = useCallback(() => useBoot.setState({ filmDone: true }), []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
