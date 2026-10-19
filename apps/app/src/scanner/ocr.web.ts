@@ -67,3 +67,5 @@ export async function readText(uri: string): Promise<string | null> {
     return null;
   }
 }
+
+export const nativeOcr = false;

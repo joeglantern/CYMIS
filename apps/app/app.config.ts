@@ -18,6 +18,7 @@ const config: ExpoConfig = {
     bundleIdentifier: 'app.cymis.audit',
     infoPlist: {
       NSFaceIDUsageDescription: 'Cymis uses Face ID so you can unlock the app without typing your password.',
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {

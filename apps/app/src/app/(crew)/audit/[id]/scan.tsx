@@ -15,7 +15,8 @@ import { usePresenceHeartbeat } from '@/realtime/socket';
 import { ConfirmPanel, type Captured } from '@/scanner/ConfirmPanel';
 import { GuideBox, type GuideState } from '@/scanner/GuideBox';
 import { useLiveLocation } from '@/scanner/location';
-import { ocrAvailable, readText } from '@/scanner/ocr';
+import { nativeOcr, ocrAvailable, readText } from '@/scanner/ocr';
+import { WebReader, useWebReaderReady } from '@/scanner/WebReader';
 import { PlateKeypad } from '@/scanner/PlateKeypad';
 import { useSettings } from '@/state/settings';
 import { ThemeProvider, useLayout } from '@/theme/theme';
@@ -58,6 +59,8 @@ function Scanner() {
   const [permission, requestPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
   const location = useLiveLocation(true);
+  const webReady = useWebReaderReady();
+  const readerReady = nativeOcr || webReady;
 
   const [ready, setReady] = useState(false);
   const [torch, setTorch] = useState(false);
@@ -114,7 +117,7 @@ function Scanner() {
   // The read loop: a quick low quality frame, text recognition, ISO 6346 clean up.
   // A number has to come back the same twice in a row before it locks.
   useEffect(() => {
-    if (!ready || paused || closed || !ocrAvailable) return;
+    if (!ready || paused || closed || !ocrAvailable || !readerReady) return;
     let alive = true;
     const tick = async () => {
       if (!alive || busy.current) return;
@@ -160,7 +163,7 @@ function Scanner() {
       alive = false;
       clearInterval(t);
     };
-  }, [ready, paused, closed, takePhoto, lockOn, auditId]);
+  }, [ready, paused, closed, takePhoto, lockOn, auditId, readerReady]);
 
   const reset = () => {
     setCaptured(null);
@@ -277,6 +280,7 @@ function Scanner() {
   return (
     <View style={{ flex: 1, backgroundColor: brand.camera }}>
       {keepAwake ? <KeepAwake /> : null}
+      {!nativeOcr ? <WebReader /> : null}
       <CameraView
         ref={camera}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: captured ? 0.45 : 1 }}
@@ -371,9 +375,9 @@ function Scanner() {
           <Txt variant="bodySm" color={brand.cameraMuted} align="center">
             {closed
               ? 'This audit is closed. Scans are no longer taken.'
-              : ocrAvailable
-                ? 'Point at the number on the door. It scans by itself.'
-                : 'Take the photo, then type the number from the door.'}
+              : !readerReady
+                ? 'Getting the reader ready. You can take the photo and type the number meanwhile.'
+                : 'Point at the number on the door. It scans by itself.'}
           </Txt>
           <View style={rail ? { alignItems: 'center', gap: 28 } : { flexDirection: 'row', alignItems: 'center', justifyContent: tablet ? 'center' : 'space-between', gap: tablet ? 80 : 0 }}>
             <RoundAction icon="keyboard" label="Type it" onPress={() => setKeypad({ initial: '', from: 'type' })} disabled={closed} />
