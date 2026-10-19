@@ -160,7 +160,7 @@ function Scanner() {
       alive = false;
       clearInterval(t);
     };
-  }, [ready, paused, closed, takePhoto, lockOn]);
+  }, [ready, paused, closed, takePhoto, lockOn, auditId]);
 
   const reset = () => {
     setCaptured(null);

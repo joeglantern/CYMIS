@@ -4,11 +4,13 @@ import { ChangePasswordSheet } from '@/features/crew/ChangePasswordSheet';
 import { ViewSwitcher } from '@/features/shell/ViewSwitcher';
 import { useView } from '@/auth/view';
 import { router } from 'expo-router';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { IS_WEB } from '@/api/http';
 import { session, useSession } from '@/auth/session';
 import { feedback } from '@/feedback';
-import { CrewHeader } from '@/features/crew/CrewHeader';
+import { SyncButton } from '@/features/crew/CrewHeader';
+import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
 import { useQueue, wipeLocalData } from '@/offline/engine';
 import { useSettings, type ThemePreference } from '@/state/settings';
 import { useLayout, useTheme } from '@/theme/theme';
@@ -24,6 +26,8 @@ export default function Settings() {
   const queued = useQueue((s) => s.queued + s.rejected);
   const confirm = useConfirm();
   const [pwOpen, setPwOpen] = useState(false);
+  const { y, onScroll } = useHeaderScroll();
+  const tabSpace = useTabSpace();
   const { canSwitch } = useView();
 
   const signOut = async () => {
@@ -46,14 +50,10 @@ export default function Settings() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>
-      <CrewHeader
-        title={
-          <Txt accessibilityRole="header" style={{ fontSize: 28, lineHeight: 34, fontFamily: 'Geist_600SemiBold', letterSpacing: -0.42 }}>
-            Settings
-          </Txt>
-        }
-      />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: 20, paddingBottom: 40, gap: 28, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
+      <GlassBar y={y} title="Settings" right={<SyncButton compact />} />
+      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: tabSpace }}>
+      <LargeTitle title="Settings" />
+      <View style={{ paddingHorizontal: gutter, paddingTop: 8, gap: 28, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
         {user ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <Avatar name={user.fullName} size={52} />
@@ -140,7 +140,8 @@ export default function Settings() {
         <Txt variant="caption" tone="muted" align="center">
           {`Cymis ${Constants.expoConfig?.version ?? ''} on ${Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : 'the web'}`}
         </Txt>
-      </ScrollView>
+      </View>
+      </Animated.ScrollView>
       <ChangePasswordSheet open={pwOpen} onClose={() => setPwOpen(false)} />
     </View>
   );

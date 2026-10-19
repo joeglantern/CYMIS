@@ -144,12 +144,15 @@ export function SyncChip({
   queued = 0,
   lastSynced,
   onCamera,
+  compact,
 }: {
   state: SyncState;
   queued?: number;
   lastSynced?: string;
   /** Use on the black scanner screen. */
   onCamera?: boolean;
+  /** Smaller, for the glass header bar. */
+  compact?: boolean;
 }) {
   const { c } = useTheme();
   const text =
@@ -191,18 +194,18 @@ export function SyncChip({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        height: 30,
-        paddingLeft: 10,
-        paddingRight: 12,
+        gap: compact ? 5 : 6,
+        height: compact ? 28 : 30,
+        paddingLeft: compact ? 9 : 10,
+        paddingRight: compact ? 11 : 12,
         borderRadius: radius.full,
         borderWidth: 1,
         borderColor: look.border,
         backgroundColor: look.bg,
       }}
     >
-      <Icon name={icon} size={16} color={look.ic} weight={state === 'synced' ? 'fill' : 'regular'} />
-      <Txt color={look.fg} numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: 13, lineHeight: 16 }}>
+      <Icon name={icon} size={compact ? 14 : 16} color={look.ic} weight={state === 'synced' ? 'fill' : 'regular'} />
+      <Txt color={look.fg} numberOfLines={1} style={{ fontFamily: fonts.medium, fontSize: compact ? 12 : 13, lineHeight: 16 }}>
         {text}
       </Txt>
     </View>

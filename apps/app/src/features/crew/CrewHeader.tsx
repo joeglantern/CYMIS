@@ -25,11 +25,11 @@ export function ago(iso: string): string {
 }
 
 /** The sync chip. Tapping it opens the queue, so "is my work safe" is one tap away. */
-export function SyncButton({ onCamera }: { onCamera?: boolean }) {
+export function SyncButton({ onCamera, compact }: { onCamera?: boolean; compact?: boolean }) {
   const s = useSyncState();
   return (
     <Pressable accessibilityRole="button" accessibilityHint="Opens the list of scans waiting to send" onPress={() => router.push('/(crew)/sync')} hitSlop={6}>
-      <SyncChip state={s.state} queued={s.queued} lastSynced={s.last} onCamera={onCamera} />
+      <SyncChip state={s.state} queued={s.queued} lastSynced={s.last} onCamera={onCamera} compact={compact} />
     </Pressable>
   );
 }

@@ -85,9 +85,10 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
   // wordmark on tablets) and the top of the sheet, whatever the screen. The
   // sheet is measured, so a notch, a home bar or bigger text cannot cover it.
   const sheetTop = height - (sheetH || height * 0.56);
-  const haze = tablet ? 140 : 96;
   const top = insets.top + (tablet ? 96 : 20);
-  const bottom = sheetTop - haze * 0.45 - (tablet ? 24 : 10);
+  // The foot of the C slides a little under the frosted sheet, so the picture
+  // melts into the glass instead of stopping at a hard edge.
+  const bottom = sheetTop + (tablet ? 26 : 18);
   const side = tablet ? 120 : 44;
   const scale = Math.max(0.2, Math.min((width - side * 2) / MARK.w, (bottom - top) / MARK.h, tablet ? 1.25 : 0.9));
   const imgW = WIDE.w * scale;
@@ -105,7 +106,6 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
         style={{ position: 'absolute', left: imgLeft, top: imgTop, width: imgW, height: imgH }}
       />
       {tablet ? brand : null}
-      {sheetH ? <Haze bottom={height - sheetTop - radius.sheet} height={haze + radius.sheet} /> : null}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
         <ScrollView
           bounces={false}
@@ -126,11 +126,12 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
               borderTopLeftRadius: radius.sheet,
               borderTopRightRadius: radius.sheet,
               overflow: 'hidden',
+              boxShadow: '0px -14px 44px rgba(14,14,14,0.10)',
             }}
           >
             {/* Frosted glass: the concrete and the containers bleed softly through. */}
             <BlurView
-              intensity={70}
+              intensity={45}
               tint="light"
               blurMethod="dimezisBlurViewSdk31Plus"
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
@@ -143,7 +144,7 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(255,255,255,0.74)',
+                backgroundColor: 'rgba(255,255,255,0.6)',
                 borderTopLeftRadius: radius.sheet,
                 borderTopRightRadius: radius.sheet,
                 borderTopWidth: 1,
@@ -163,29 +164,6 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
-  );
-}
-
-/**
- * Progressive blur above the sheet: thin bands that blur a little more each
- * step, so the picture dissolves into the glass instead of stopping at an
- * edge. Blur only, no colour fades, so it keeps to the no gradients rule.
- */
-function Haze({ bottom, height }: { bottom: number; height: number }) {
-  const steps = 9;
-  const band = height / steps;
-  return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom, height }}>
-      {Array.from({ length: steps }, (_, i) => (
-        <BlurView
-          key={i}
-          intensity={Math.round(6 + i * 7)}
-          tint="light"
-          blurMethod="dimezisBlurViewSdk31Plus"
-          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, transform: [{ translateY: i * band }] }}
-        />
-      ))}
     </View>
   );
 }

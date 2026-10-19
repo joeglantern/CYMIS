@@ -1,9 +1,11 @@
 import type { AuditDto } from '@cymis/schemas';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSession } from '@/auth/session';
-import { CrewHeader } from '@/features/crew/CrewHeader';
+import { SyncButton } from '@/features/crew/CrewHeader';
+import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
 import { loadMyAudits } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
 import { Avatar, Banner, BucketBar, Card, EmptyState, Eyebrow, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
@@ -21,26 +23,33 @@ export default function MyAudits() {
   const { c } = useTheme();
   const user = useSession((s) => s.user);
   const q = useQuery({ queryKey: ['my-audits'], queryFn: loadMyAudits, refetchInterval: 60_000 });
+  const { y, onScroll } = useHeaderScroll();
+  const tabSpace = useTabSpace();
 
   const audits = q.data?.audits ?? [];
-  const now = audits.filter((a) => a.status === 'ACTIVE' || a.status === 'DRAFT' || (a.status === 'CLOSED' && isToday(a.closedAt)));
+  // Running audits first, then ones about to start, then today's closed ones.
+  const rank = { ACTIVE: 0, DRAFT: 1, CLOSED: 2, CANCELLED: 3 } as const;
+  const now = audits
+    .filter((a) => a.status === 'ACTIVE' || a.status === 'DRAFT' || (a.status === 'CLOSED' && isToday(a.closedAt)))
+    .sort((a, b) => rank[a.status] - rank[b.status]);
   const earlier = audits.filter((a) => !now.includes(a) && a.status !== 'CANCELLED').slice(0, 10);
 
   return (
     <View style={{ flex: 1, backgroundColor: c.paper2 }}>
-      <CrewHeader
-        eyebrow={greeting(user?.fullName.split(' ')[0] ?? 'there')}
-        title={
-          <Txt accessibilityRole="header" style={{ fontSize: 28, lineHeight: 34, fontFamily: 'Geist_600SemiBold', letterSpacing: -0.42 }}>
-            Your audits
-          </Txt>
-        }
-      />
-      {q.data?.fromCache ? <Banner tone="offline">No signal. Showing the audits saved on this phone.</Banner> : null}
-      <ScrollView
-        contentContainerStyle={{ padding: tablet ? 40 : 16, paddingHorizontal: tablet ? gutter : 16, gap: tablet ? 14 : 12, paddingBottom: 32 }}
-        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={c.muted} />}
+      <GlassBar y={y} title="Your audits" right={<SyncButton compact />} />
+      <Animated.ScrollView
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: tabSpace }}
+        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={c.muted} progressViewOffset={80} />}
       >
+        <LargeTitle eyebrow={greeting(user?.fullName.split(' ')[0] ?? 'there')} title="Your audits" />
+        {q.data?.fromCache ? (
+          <View style={{ marginHorizontal: tablet ? gutter : 16, marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}>
+            <Banner tone="offline">No signal. Showing the audits saved on this phone.</Banner>
+          </View>
+        ) : null}
+        <View style={{ paddingHorizontal: tablet ? gutter : 16, gap: tablet ? 14 : 12 }}>
         {q.isPending ? (
           <View style={{ gap: 12 }}>
             <Skeleton height={180} radius={14} />
@@ -74,7 +83,8 @@ export default function MyAudits() {
             </Grid>
           </>
         )}
-      </ScrollView>
+        </View>
+      </Animated.ScrollView>
     </View>
   );
 }
@@ -88,6 +98,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
   const user = useSession((s) => s.user);
   const k = audit.counts;
   const left = Math.max(0, k.expected - k.found);
+  const assigned = audit.assignees.some((p) => p.id === user?.id);
   const others = audit.assignees.filter((p) => p.id !== user?.id);
   const width = tablet ? { flexBasis: 340, flexGrow: 1, maxWidth: 560 } : undefined;
   const sub = `${audit.section.name}, ${audit.section.facility.name}`;
@@ -112,7 +123,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
           </Txt>
           <Txt variant="monoSm" tone="ink2">{`${fmt(left)} left`}</Txt>
         </View>
-        <Crew names={[...(user ? [user.fullName] : []), ...others.map((o) => o.fullName)]} others={others.length} />
+        <Crew names={[...(assigned && user ? [user.fullName] : []), ...others.map((o) => o.fullName)]} others={others.length} assigned={assigned} />
       </Card>
     );
   }
@@ -166,7 +177,7 @@ function closedWhen(iso: string) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-function Crew({ names, others }: { names: string[]; others: number }) {
+function Crew({ names, others, assigned }: { names: string[]; others: number; assigned: boolean }) {
   const { c } = useTheme();
   if (!names.length) return null;
   return (
@@ -179,7 +190,11 @@ function Crew({ names, others }: { names: string[]; others: number }) {
         ))}
       </View>
       <Txt variant="caption" tone="muted">
-        {others === 0 ? 'Just you on this one' : `You and ${others} ${others === 1 ? 'other' : 'others'} on this audit`}
+        {!assigned
+          ? `${others} ${others === 1 ? 'person' : 'people'} on this audit`
+          : others === 0
+            ? 'Just you on this one'
+            : `You and ${others} ${others === 1 ? 'other' : 'others'} on this audit`}
       </Txt>
     </View>
   );

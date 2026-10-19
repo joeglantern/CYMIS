@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { FlatList, View } from 'react-native';
-import { CrewHeader } from '@/features/crew/CrewHeader';
+import { View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { SyncButton } from '@/features/crew/CrewHeader';
+import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
 import { ScanRow, scanBucket } from '@/features/crew/ScanRow';
 import { recentScans, useQueue, type LocalScan } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
@@ -27,6 +29,8 @@ export default function History() {
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
   const q = useQuery({ queryKey: ['history', version], queryFn: () => recentScans(null, 500) });
+  const { y, onScroll } = useHeaderScroll();
+  const tabSpace = useTabSpace();
 
   const rows = useMemo(() => {
     const term = search.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -54,20 +58,17 @@ export default function History() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>
-      <CrewHeader
-        eyebrow="On this phone"
-        title={
-          <Txt accessibilityRole="header" style={{ fontSize: 28, lineHeight: 34, fontFamily: 'Geist_600SemiBold', letterSpacing: -0.42 }}>
-            History
-          </Txt>
-        }
-      />
-      <FlatList
+      <GlassBar y={y} title="History" right={<SyncButton compact />} />
+      <Animated.FlatList
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         data={rows}
         keyExtractor={(r, i) => (r.kind === 'day' ? `d-${r.label}` : r.scan.id) + i}
-        contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: 32, maxWidth: 860, width: '100%', alignSelf: 'center' }}
+        contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: tabSpace, maxWidth: 860, width: '100%', alignSelf: 'center' }}
         ListHeaderComponent={
-          <View style={{ gap: 14, paddingTop: 16, paddingBottom: 6 }}>
+          <View style={{ gap: 14, paddingBottom: 6, marginHorizontal: -gutter }}>
+            <LargeTitle eyebrow="On this phone" title="History" />
+            <View style={{ gap: 14, paddingHorizontal: gutter }}>
             <TextField label="Find a number" mono placeholder="CSQU" value={search} onChangeText={setSearch} returnKeyType="search" maxLength={11} />
             <FilterPills<Filter>
               label="Show"
@@ -81,6 +82,7 @@ export default function History() {
                 { id: 'waiting', label: 'Not sent', count: count('waiting') },
               ]}
             />
+            </View>
           </View>
         }
         ListEmptyComponent={
