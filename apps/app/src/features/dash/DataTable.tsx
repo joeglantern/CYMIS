@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useTheme } from '@/theme/theme';
-import { fonts, radius } from '@/theme/tokens';
+import { fonts, radius, softShadow } from '@/theme/tokens';
 import { Button, EmptyState, Skeleton, Txt, type IconName } from '@/ui';
 
 export interface Column<T> {
@@ -49,7 +49,7 @@ export function DataTable<T>({
   loadingMore?: boolean;
   label: string;
 }) {
-  const { c } = useTheme();
+  const { c, dark } = useTheme();
 
   const cell = (col: Column<T>) => ({
     width: col.width,
@@ -109,7 +109,7 @@ export function DataTable<T>({
   }
 
   return (
-    <View style={{ borderWidth: 1, borderColor: c.rule, borderRadius: radius.md, backgroundColor: c.raised, overflow: 'hidden' }} accessibilityLabel={label}>
+    <View style={{ borderRadius: radius.md, backgroundColor: c.raised, overflow: 'hidden', ...softShadow(dark) }} accessibilityLabel={label}>
       <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }} showsHorizontalScrollIndicator>
         <View style={{ flexGrow: 1, minWidth }}>
           <View

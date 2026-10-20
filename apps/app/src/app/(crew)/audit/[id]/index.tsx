@@ -100,7 +100,7 @@ export default function AuditHome() {
               </Animated.View>
             ) : null}
             <View style={tablet ? { flexDirection: 'row', gap: 48, alignItems: 'flex-start' } : { gap: 20 }}>
-              <View style={{ flex: tablet ? 1 : undefined, gap: 14, paddingBottom: 18, borderBottomWidth: 2, borderBottomColor: c.ink }} accessibilityLabel="Progress">
+              <View style={{ flex: tablet ? 1 : undefined, gap: 14, padding: 18, borderRadius: 18, backgroundColor: c.paper2 }} accessibilityLabel="Progress">
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                   <AnimatedNumber value={found} style={type.stat} />
                   <Txt variant="body" tone="muted" style={{ fontSize: 15 }}>

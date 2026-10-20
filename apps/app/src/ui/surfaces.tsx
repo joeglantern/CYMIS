@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { feedback } from '@/feedback';
 import { useTheme } from '@/theme/theme';
-import { floatShadow, fonts, radius } from '@/theme/tokens';
+import { floatShadow, fonts, radius, softShadow } from '@/theme/tokens';
 import { Icon, type IconName } from './Icon';
 import { Txt } from './Text';
 
@@ -24,12 +24,10 @@ export function Card({
   const { c, dark } = useTheme();
   const base: ViewStyle = {
     gap: 12,
-    padding: 16,
+    padding: 18,
     backgroundColor: c.raised,
-    borderWidth: 1,
-    borderColor: c.rule,
     borderRadius: radius.md,
-    ...(float ? floatShadow(dark) : null),
+    ...(float ? floatShadow(dark) : softShadow(dark)),
   };
   if (!onPress) return <View style={[base, style]}>{children}</View>;
   return (
@@ -42,7 +40,7 @@ export function Card({
       }}
       style={(state) => [
         base,
-        (state as { hovered?: boolean }).hovered && { borderColor: c.ruleStrong },
+        (state as { hovered?: boolean }).hovered && floatShadow(dark),
         { transform: [{ scale: state.pressed ? 0.99 : 1 }] },
         style,
       ]}
@@ -52,9 +50,8 @@ export function Card({
   );
 }
 
-/** Title with the 2px ink rule under it. Used for every section on the dashboard. */
+/** A section heading with an optional note on the right. Used across the dashboard and settings. */
 export function SectionTitle({ title, aside, small }: { title: string; aside?: ReactNode; small?: boolean }) {
-  const { c } = useTheme();
   return (
     <View
       style={{
@@ -62,9 +59,7 @@ export function SectionTitle({ title, aside, small }: { title: string; aside?: R
         alignItems: 'flex-end',
         justifyContent: 'space-between',
         gap: 12,
-        paddingBottom: 10,
-        borderBottomWidth: 2,
-        borderBottomColor: c.ink,
+        paddingBottom: small ? 6 : 12,
       }}
     >
       <Txt variant={small ? 'label' : 'heading'} tone={small ? 'muted' : 'ink'} caps={small} accessibilityRole="header">
@@ -169,8 +164,6 @@ export function EmptyState({
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: c.paper2,
-          borderWidth: 1,
-          borderColor: c.rule,
         }}
       >
         <Icon name={icon} size={28} />
@@ -237,9 +230,7 @@ export function FilterPills<T extends string>({
               height: 34,
               paddingHorizontal: 12,
               borderRadius: radius.full,
-              borderWidth: 1,
-              borderColor: on ? c.ink : c.rule,
-              backgroundColor: on ? c.ink : (state as { hovered?: boolean }).hovered ? c.hover : c.raised,
+              backgroundColor: on ? c.ink : (state as { hovered?: boolean }).hovered ? c.hover : c.paper2,
             })}
           >
             <Txt color={on ? c.onInk : c.ink} style={{ fontFamily: fonts.medium, fontSize: 13, lineHeight: 16 }}>

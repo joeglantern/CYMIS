@@ -1,4 +1,6 @@
+import { useEventListener } from 'expo';
 import { BlurView } from 'expo-blur';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
@@ -16,6 +18,8 @@ const poster = require('../../../assets/images/poster.jpg');
  * box around the container C inside it, measured from the pixels.
  */
 const posterWide = require('../../../assets/images/poster-wide.jpg');
+/** Ten seconds of slow moving sunlight over the same photo, played forwards then back so it never jumps. */
+const lightLoop = require('../../../assets/video/signin-loop.mp4');
 const WIDE = { w: 2160, h: 2560 };
 const MARK = { x: 832, y: 945, w: 528, h: 690 };
 const ALT = 'The letter C made of shipping containers on pale concrete, seen from above, with one yellow container in its opening';
@@ -66,7 +70,8 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
       <View style={{ flex: 1, flexDirection: 'row', backgroundColor: c.paper }}>
         <View style={{ width: '58%', height: '100%', overflow: 'hidden' }}>
           <Drift style={{ flex: 1 }}>
-            <Image source={poster} accessibilityLabel={ALT} contentFit="cover" contentPosition={{ top: '46%', left: '50%' }} style={{ flex: 1 }} />
+            <Image source={poster} accessibilityLabel={ALT} contentFit="cover" contentPosition={{ top: '50%', left: '50%' }} style={{ flex: 1 }} />
+            <LivingLight cover style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
           </Drift>
           {brand}
         </View>
@@ -103,6 +108,8 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
     <View style={{ flex: 1, backgroundColor: c.paper, overflow: 'hidden' }}>
       <Drift originX={width / 2 - imgLeft} originY={(top + bottom) / 2 - imgTop} style={{ position: 'absolute', left: imgLeft, top: imgTop, width: imgW, height: imgH }}>
         <Image source={posterWide} accessibilityLabel={ALT} contentFit="fill" transition={sheetH ? 0 : 200} style={{ width: '100%', height: '100%' }} />
+        {/* The moving light sits exactly over the original photo inside the wider still. */}
+        <LivingLight style={{ position: 'absolute', left: '33.333%', top: '25%', width: '33.333%', height: '50%' }} />
       </Drift>
       {tablet ? brand : null}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
@@ -184,4 +191,29 @@ function Drift({ children, style, originX, originY }: { children: ReactNode; sty
   }));
   const origin = originX !== undefined && originY !== undefined ? { transformOrigin: `${originX}px ${originY}px` } : null;
   return <Animated.View style={[style, origin, anim]}>{children}</Animated.View>;
+}
+
+/**
+ * The sun moving slowly over the yard: shadows swing across the concrete and
+ * back. Fades in only once it is really playing, so the still photo shows
+ * first and there is never a black frame. Left out for reduced motion.
+ */
+function LivingLight({ style, cover }: { style: object; cover?: boolean }) {
+  const reduce = useReducedMotion();
+  const shown = useSharedValue(0);
+  const player = useVideoPlayer(reduce ? null : lightLoop, (p) => {
+    p.muted = true;
+    p.loop = true;
+    p.play();
+  });
+  useEventListener(player, 'playingChange', ({ isPlaying }) => {
+    if (isPlaying) shown.value = withTiming(1, { duration: 900 });
+  });
+  const fade = useAnimatedStyle(() => ({ opacity: shown.value }));
+  if (reduce) return null;
+  return (
+    <Animated.View pointerEvents="none" style={[style, fade]}>
+      <VideoView player={player} style={{ width: '100%', height: '100%' }} contentFit={cover ? 'cover' : 'fill'} nativeControls={false} allowsPictureInPicture={false} />
+    </Animated.View>
+  );
 }

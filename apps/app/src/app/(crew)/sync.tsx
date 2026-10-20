@@ -66,7 +66,7 @@ export default function SyncQueue() {
 
         {(rejected.data ?? []).length > 0 ? (
           <View style={{ gap: 4 }}>
-            <View style={{ paddingBottom: 10, borderBottomWidth: 2, borderBottomColor: c.ink }}>
+            <View style={{ paddingBottom: 6 }}>
               <Txt variant="heading">Not accepted</Txt>
               <Txt variant="caption" tone="muted">
                 The server said no to these. Tap one to fix the number and send it again.
@@ -79,7 +79,7 @@ export default function SyncQueue() {
         ) : null}
 
         <View style={{ gap: 4 }}>
-          <View style={{ paddingBottom: 10, borderBottomWidth: 2, borderBottomColor: c.ink }}>
+          <View style={{ paddingBottom: 6 }}>
             <Txt variant="heading">Waiting to send</Txt>
           </View>
           {(queued.data ?? []).length === 0 ? (

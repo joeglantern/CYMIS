@@ -33,7 +33,7 @@ export const Button = forwardRef<ViewType, ButtonProps>(function Button(
 
   const look = {
     primary: { bg: c.ink, fg: c.onInk, border: 'transparent', hover: c.ink2 },
-    secondary: { bg: c.raised, fg: c.ink, border: c.rule, hover: c.hover },
+    secondary: { bg: c.paper2, fg: c.ink, border: 'transparent', hover: c.hover },
     quiet: { bg: 'transparent', fg: c.ink, border: 'transparent', hover: c.hover },
     danger: { bg: c.missing, fg: c.onStatus, border: 'transparent', hover: c.missing },
     'danger-quiet': { bg: 'transparent', fg: dark ? c.ink : c.missing, border: c.missing, hover: c.hover },

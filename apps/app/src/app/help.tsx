@@ -49,7 +49,7 @@ export default function Help() {
 
   return (
     <DocShell title="Help">
-      <View style={{ gap: 6, paddingBottom: 12, borderBottomWidth: 2, borderBottomColor: c.ink }}>
+      <View style={{ gap: 6, paddingBottom: 12 }}>
         <Txt variant="titleLg" accessibilityRole="header">
           How to use Cymis
         </Txt>

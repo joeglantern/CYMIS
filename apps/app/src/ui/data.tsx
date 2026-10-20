@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { AnimatedNumber } from './motion';
 import { useTheme } from '@/theme/theme';
-import { fonts, radius, type } from '@/theme/tokens';
+import { fonts, radius, softShadow, type } from '@/theme/tokens';
 import { bucketColours, type BucketKey } from './status';
 import { Txt } from './Text';
 
@@ -118,7 +118,7 @@ export function StatTile({
   bucket?: Exclude<BucketKey, 'duplicate'>;
   compact?: boolean;
 }) {
-  const { c } = useTheme();
+  const { c, dark } = useTheme();
   return (
     <View
       style={{
@@ -129,9 +129,8 @@ export function StatTile({
         paddingVertical: compact ? 16 : 20,
         paddingHorizontal: compact ? 16 : 24,
         backgroundColor: c.raised,
-        borderWidth: 1,
-        borderColor: c.rule,
         borderRadius: radius.md,
+        ...softShadow(dark),
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

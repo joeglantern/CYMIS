@@ -45,8 +45,8 @@ export const light: Palette = {
   paper2: '#f7f7f5',
   raised: '#ffffff',
   hover: '#f1f0ec',
-  rule: '#e6e5e1',
-  ruleStrong: '#c9c7c0',
+  rule: '#eeede9',
+  ruleStrong: '#dcdad4',
   ink: '#0e0e0e',
   ink2: '#3d3d3a',
   muted: '#6e6d68',
@@ -68,8 +68,8 @@ export const graphite: Palette = {
   paper2: '#191918',
   raised: '#222221',
   hover: '#2a2a28',
-  rule: '#3b3a37',
-  ruleStrong: '#494844',
+  rule: '#2e2d2b',
+  ruleStrong: '#3f3e3b',
   ink: '#eeeeec',
   ink2: '#cfcdc7',
   muted: '#b5b3ad',
@@ -88,7 +88,7 @@ export const graphite: Palette = {
 
 export const space = { 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 12: 48 } as const;
 
-export const radius = { sm: 8, md: 14, lg: 20, sheet: 24, full: 999 } as const;
+export const radius = { sm: 10, md: 18, lg: 20, sheet: 28, full: 999 } as const;
 
 export const fonts = {
   regular: 'Geist_400Regular',
@@ -120,6 +120,15 @@ export type TypeVariant = keyof typeof type;
 
 /** Screen width breakpoints, the same ones the canvas designs use. */
 export const breakpoints = { tablet: 700, wide: 1000, sidebar: 960 } as const;
+
+/** Resting surfaces (cards, tiles): a whisper of depth instead of an outline. */
+export function softShadow(dark: boolean) {
+  return {
+    boxShadow: dark
+      ? '0px 0px 0px 1px rgba(255,255,255,0.06), 0px 8px 24px rgba(0,0,0,0.30)'
+      : '0px 1px 2px rgba(14,14,14,0.04), 0px 6px 20px rgba(14,14,14,0.05)',
+  } as const;
+}
 
 /** Two soft layers, only on things that float. */
 export function floatShadow(dark: boolean) {

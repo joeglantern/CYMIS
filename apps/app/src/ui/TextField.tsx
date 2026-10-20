@@ -24,7 +24,8 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
   const id = useId();
   const [focused, setFocused] = useState(false);
   const [show, setShow] = useState(false);
-  const borderColor = error ? c.missing : focused ? c.accent : c.rule;
+  // Filled at rest, an edge only when it matters: focused or wrong.
+  const borderColor = error ? c.missing : focused ? c.accent : 'transparent';
 
   return (
     <View style={{ gap: 6, minWidth: 0 }}>
@@ -66,12 +67,12 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         }}
         style={
           {
-            height: size === 'lg' ? 52 : 44,
-            paddingHorizontal: 12,
-            borderRadius: radius.sm,
-            borderWidth: error ? 2 : 1,
+            height: size === 'lg' ? 54 : 48,
+            paddingHorizontal: 14,
+            borderRadius: radius.sm + 2,
+            borderWidth: error ? 2 : 1.5,
             borderColor,
-            backgroundColor: c.raised,
+            backgroundColor: focused ? c.raised : c.paper2,
             color: c.ink,
             fontFamily: mono ? fonts.mono : fonts.regular,
             letterSpacing: mono ? 0.64 : 0,

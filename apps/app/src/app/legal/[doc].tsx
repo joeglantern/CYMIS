@@ -34,9 +34,8 @@ export default function LegalPage() {
 }
 
 function Title({ title, meta }: { title: string; meta?: string }) {
-  const { c } = useTheme();
   return (
-    <View style={{ gap: 6, paddingBottom: 12, borderBottomWidth: 2, borderBottomColor: c.ink }}>
+    <View style={{ gap: 6, paddingBottom: 12 }}>
       <Txt variant="titleLg" accessibilityRole="header">
         {title}
       </Txt>
