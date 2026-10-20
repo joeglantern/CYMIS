@@ -39,13 +39,13 @@ export function BucketBar({
   legend?: boolean;
   height?: number;
 }) {
-  const { c } = useTheme();
+  const { c, dark } = useTheme();
   const total = order.reduce((s, o) => s + counts[o.key], 0) + left;
   const shown = order.filter((o) => o.key !== 'missing' || counts.missing > 0 || left === 0);
   const summary = [...shown.map((o) => `${counts[o.key]} ${o.label.toLowerCase()}`), ...(left ? [`${left} not scanned yet`] : [])].join(', ');
   return (
     <View style={{ gap: 12, minWidth: 0 }} accessibilityRole="progressbar" accessibilityLabel={summary}>
-      <View style={{ flexDirection: 'row', gap: 2, height, borderRadius: radius.full, overflow: 'hidden', backgroundColor: c.paper2 }}>
+      <View style={{ flexDirection: 'row', gap: 2, height, borderRadius: radius.full, overflow: 'hidden', backgroundColor: dark ? c.hover : '#e8e6e1' }}>
         {total > 0
           ? order
               .filter((o) => counts[o.key] > 0)
@@ -53,7 +53,7 @@ export function BucketBar({
                 <Segment key={o.key} value={counts[o.key]} color={bucketColours(c, o.key as BucketKey).bg} />
               ))
           : null}
-        {left > 0 ? <Segment value={left} color={c.paper2} /> : null}
+        {left > 0 ? <Segment value={left} color={dark ? c.hover : '#e8e6e1'} /> : null}
       </View>
       {legend ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 20, rowGap: 8 }}>
