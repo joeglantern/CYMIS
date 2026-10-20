@@ -9,7 +9,7 @@ beforeAll(async () => {
   await resetData(t.ctx);
 });
 afterAll(async () => t.close());
-// Sign in is rate limited per address, and every test here comes from 127.0.0.1.
+// Sign in is rate limited per person and address, and every test here comes from 127.0.0.1.
 beforeEach(async () => {
   await t.ctx.redis.flushall();
 });
@@ -63,6 +63,16 @@ describe('sign in', () => {
       codes.push((await post('/auth/login', { staffId: 'ratelimit', password: 'x' })).statusCode);
     }
     expect(codes).toContain(429);
+  });
+
+  it('does not block a whole shift signing in from one address', async () => {
+    // Twelve different people on the same yard Wi-Fi, one wrong try each.
+    const codes: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      codes.push((await post('/auth/login', { staffId: `shift${i}`, password: 'wrong password' })).statusCode);
+    }
+    expect(codes).not.toContain(429);
+    expect(new Set(codes)).toEqual(new Set([401]));
   });
 });
 

@@ -11,6 +11,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { AppContext } from '../../context.js';
+import { sha256Hex } from '../../lib/crypto.js';
 import { UnauthorizedError } from '../../lib/errors.js';
 import { requireUser } from '../../plugins/auth.js';
 import {
@@ -54,11 +55,28 @@ export const authRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app
 
   const meta = (request: FastifyRequest) => ({ ip: request.ip ?? null });
 
+  // A whole shift often signs in from one yard Wi-Fi address at the same
+  // minute, so the sign in limit counts tries per person on that address, not
+  // per address. Guessing one account is still stopped by the lockout after 5
+  // wrong tries, and the global limit still caps a single address overall.
+  // These run after the body is parsed so the staff ID and token are known.
+  const loginKey = (request: FastifyRequest) => {
+    const staffId = String((request.body as { staffId?: unknown } | undefined)?.staffId ?? '')
+      .trim()
+      .toUpperCase()
+      .slice(0, 32);
+    return `login:${request.ip}:${staffId}`;
+  };
+  const refreshKey = (request: FastifyRequest) => {
+    const token = (request.body as { refreshToken?: unknown } | undefined)?.refreshToken ?? request.cookies[REFRESH_COOKIE] ?? '';
+    return `refresh:${request.ip}:${sha256Hex(String(token)).slice(0, 24)}`;
+  };
+
   app.post(
     '/login',
     {
       schema: { tags: ['auth'], body: LoginBody, response: { 200: AuthResponse } },
-      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+      config: { rateLimit: { max: 10, timeWindow: '1 minute', hook: 'preHandler', keyGenerator: loginKey } },
     },
     async (request, reply) => {
       const issued = await login(ctx, sign, request.body, meta(request));
@@ -70,7 +88,7 @@ export const authRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app
     '/refresh',
     {
       schema: { tags: ['auth'], body: RefreshBody.nullish(), response: { 200: AuthResponse } },
-      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+      config: { rateLimit: { max: 30, timeWindow: '1 minute', hook: 'preHandler', keyGenerator: refreshKey } },
     },
     async (request, reply) => {
       const { token, client } = tokenFrom(request, request.body?.refreshToken);
