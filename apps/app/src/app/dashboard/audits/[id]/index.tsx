@@ -117,7 +117,7 @@ export default function LiveAudit() {
       <StatGrid>
         <StatTile compact label="Expected" value={k.expected} detail={`List version ${a.listVersion}`} />
         <StatTile compact label="Found" value={k.found} bucket="found" />
-        <StatTile compact label={live ? 'Not found yet' : 'Missing'} value={k.missing} bucket="missing" detail={live ? 'Still to scan' : undefined} />
+        <StatTile compact label={live ? 'Not found yet' : 'Missing'} value={k.missing} bucket={live ? undefined : 'missing'} detail={live ? 'Still to scan' : undefined} />
         <StatTile compact label="Unexpected" value={k.unexpected} bucket="unexpected" />
         <StatTile compact label="Needs review" value={k.mismatched} bucket="review" detail={k.pendingReview ? `${k.pendingReview} waiting` : undefined} />
       </StatGrid>

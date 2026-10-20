@@ -140,7 +140,7 @@ export function Sidebar() {
       </ScrollView>
       <View style={{ gap: 4 }}>
         <View style={{ paddingHorizontal: 4, paddingBottom: 10 }}>
-          <ViewSwitcher />
+          <ViewSwitcher iconless />
         </View>
         <Pressable accessibilityRole="link" onPress={() => router.push('/help')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 36, paddingHorizontal: 10 }}>
           <Icon name="question" size={18} color={c.muted} />

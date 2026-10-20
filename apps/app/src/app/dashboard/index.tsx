@@ -55,7 +55,7 @@ export default function Overview() {
         <StatGrid>
           <StatTile label="Active audits" value={audits.length} detail={scanning ? `${scanning} with crew scanning` : 'None scanning yet'} />
           <StatTile label="Scanned" value={sum((k) => k.scans)} detail={sections ? `Across ${sections} ${sections === 1 ? 'section' : 'sections'}` : 'In live audits'} />
-          <StatTile label="Not found yet" value={sum((k) => k.missing)} bucket="missing" detail="Still to scan in live audits" />
+          <StatTile label="Not found yet" value={sum((k) => k.missing)} detail="Still to scan in live audits" />
           <StatTile
             label="Needs review"
             value={sum((k) => k.pendingReview)}

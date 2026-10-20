@@ -9,7 +9,7 @@ import { Icon, Txt, type IconName } from '@/ui';
 const icons: Record<Role, IconName> = { ADMIN: 'shield-check', SUPERVISOR: 'squares-four', AUDITOR: 'scan' };
 
 /** Segmented switch between the role views this person is allowed to see. */
-export function ViewSwitcher({ label = true }: { label?: boolean }) {
+export function ViewSwitcher({ label = true, iconless }: { label?: boolean; iconless?: boolean }) {
   const { c } = useTheme();
   const { options, view, setView, canSwitch } = useView();
   if (!canSwitch) return null;
@@ -51,8 +51,8 @@ export function ViewSwitcher({ label = true }: { label?: boolean }) {
                 boxShadow: on ? `0px 1px 2px rgba(14,14,14,0.12)` : undefined,
               })}
             >
-              <Icon name={icons[r]} size={15} color={on ? c.ink : c.muted} weight={on ? 'fill' : 'regular'} />
-              <Txt numberOfLines={1} color={on ? c.ink : c.muted} style={{ fontFamily: on ? fonts.semibold : fonts.medium, fontSize: 13, lineHeight: 16 }}>
+              {iconless ? null : <Icon name={icons[r]} size={15} color={on ? c.ink : c.muted} weight={on ? 'fill' : 'regular'} />}
+              <Txt numberOfLines={1} color={on ? c.ink : c.muted} style={{ fontFamily: on ? fonts.semibold : fonts.medium, fontSize: iconless ? 12 : 13, lineHeight: 16 }}>
                 {viewWords[r]}
               </Txt>
             </Pressable>
