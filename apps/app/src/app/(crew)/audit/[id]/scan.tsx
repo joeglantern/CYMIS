@@ -80,7 +80,11 @@ function Scanner() {
   const audit = useQuery({ queryKey: ['cached-audit', auditId], queryFn: () => cachedAudit(auditId!), enabled: !!auditId });
   const progress = useQuery({ queryKey: ['local-progress', auditId, queueVersion], queryFn: () => localProgress(auditId!), enabled: !!auditId });
   const closed = audit.data?.audit.status === 'CLOSED' || audit.data?.audit.status === 'CANCELLED';
-  const leftCount = useCountUp(progress.data?.left ?? 0, 500);
+  // Everyone's finds count, not just this phone's: take whichever is higher.
+  const serverFound = audit.data?.audit.counts.found ?? 0;
+  const expectedTotal = progress.data?.expected || audit.data?.audit.counts.expected || 0;
+  const leftNow = Math.max(0, expectedTotal - Math.max(serverFound, progress.data?.matched ?? 0));
+  const leftCount = useCountUp(leftNow, 500);
 
   usePresenceHeartbeat(auditId, !paused);
 
@@ -227,8 +231,7 @@ function Scanner() {
         ...(captured.photo ? { photo: captured.photo } : {}),
       });
       cooldown.current = { number: captured.check.number, until: Date.now() + COOLDOWN_MS };
-      const p = progress.data;
-      const left = p?.expected ? Math.max(0, p.left - (captured.check.result === 'matched' ? 1 : 0)) : null;
+      const left = expectedTotal ? Math.max(0, leftNow - (captured.check.result === 'matched' ? 1 : 0)) : null;
       setSavedFlash(left !== null ? `Saved. ${left.toLocaleString('en-GB')} left` : 'Saved');
       setTimeout(() => setSavedFlash(null), 1600);
       reset();
@@ -275,7 +278,7 @@ function Scanner() {
 
   const rail = wide && landscape;
   const sectionName = audit.data?.audit.section.name ?? 'Scanner';
-  const leftText = progress.data?.expected ? `${leftCount.toLocaleString('en-GB')} left` : ' ';
+  const leftText = expectedTotal ? `${leftCount.toLocaleString('en-GB')} left` : ' ';
   const topBar = insets.top + 76;
 
   return (

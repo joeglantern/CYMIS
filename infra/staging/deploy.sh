@@ -40,7 +40,9 @@ OUT="$(ssh "$TARGET" bash -s <<'REMOTE'
 set -euo pipefail
 cd ~/cymis-staging
 tar -xzf src.tgz && rm src.tgz
-rm -rf infra/staging/web && mkdir -p infra/staging/web && tar -xzf web.tgz -C infra/staging/web && rm web.tgz
+# Refresh the web files in place: the web container mounts this folder, and
+# replacing the folder itself would leave it serving the old, deleted one.
+mkdir -p infra/staging/web && find infra/staging/web -mindepth 1 -delete && tar -xzf web.tgz -C infra/staging/web && rm web.tgz
 cd infra/staging
 umask 077
 
