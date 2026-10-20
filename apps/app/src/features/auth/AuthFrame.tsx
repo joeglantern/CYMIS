@@ -3,7 +3,8 @@ import { Image } from 'expo-image';
 import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeInDown, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { useEffect } from 'react';
 import { ThemeProvider, useLayout, useTheme } from '@/theme/theme';
 import { fonts, radius } from '@/theme/tokens';
 import { Txt } from '@/ui';
@@ -64,7 +65,9 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
     return (
       <View style={{ flex: 1, flexDirection: 'row', backgroundColor: c.paper }}>
         <View style={{ width: '58%', height: '100%', overflow: 'hidden' }}>
-          <Image source={poster} accessibilityLabel={ALT} contentFit="cover" contentPosition={{ top: '46%', left: '50%' }} style={{ flex: 1 }} />
+          <Drift style={{ flex: 1 }}>
+            <Image source={poster} accessibilityLabel={ALT} contentFit="cover" contentPosition={{ top: '46%', left: '50%' }} style={{ flex: 1 }} />
+          </Drift>
           {brand}
         </View>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
@@ -98,13 +101,9 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
 
   return (
     <View style={{ flex: 1, backgroundColor: c.paper, overflow: 'hidden' }}>
-      <Image
-        source={posterWide}
-        accessibilityLabel={ALT}
-        contentFit="fill"
-        transition={sheetH ? 0 : 200}
-        style={{ position: 'absolute', left: imgLeft, top: imgTop, width: imgW, height: imgH }}
-      />
+      <Drift originX={width / 2 - imgLeft} originY={(top + bottom) / 2 - imgTop} style={{ position: 'absolute', left: imgLeft, top: imgTop, width: imgW, height: imgH }}>
+        <Image source={posterWide} accessibilityLabel={ALT} contentFit="fill" transition={sheetH ? 0 : 200} style={{ width: '100%', height: '100%' }} />
+      </Drift>
       {tablet ? brand : null}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
         <ScrollView
@@ -166,4 +165,23 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
       </KeyboardAvoidingView>
     </View>
   );
+}
+
+/**
+ * The photo breathes: a slow push in of a few percent and back, centred on
+ * the container C, about twenty seconds each way. Still when the phone asks
+ * for reduced motion.
+ */
+function Drift({ children, style, originX, originY }: { children: ReactNode; style: object; originX?: number; originY?: number }) {
+  const reduce = useReducedMotion();
+  const t = useSharedValue(0);
+  useEffect(() => {
+    if (reduce) return;
+    t.value = withRepeat(withTiming(1, { duration: 20000, easing: Easing.inOut(Easing.sin) }), -1, true);
+  }, [reduce, t]);
+  const anim = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + t.value * 0.035 }, { translateY: -t.value * 6 }],
+  }));
+  const origin = originX !== undefined && originY !== undefined ? { transformOrigin: `${originX}px ${originY}px` } : null;
+  return <Animated.View style={[style, origin, anim]}>{children}</Animated.View>;
 }
