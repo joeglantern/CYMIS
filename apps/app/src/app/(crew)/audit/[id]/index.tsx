@@ -10,7 +10,9 @@ import { localProgress, prepareAudit, recentScans, useQueue } from '@/offline/en
 import { useAuditRoom } from '@/realtime/socket';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts, type } from '@/theme/tokens';
-import { AnimatedNumber, Banner, BucketBar, Button, EmptyState, IconButton, Skeleton, Txt, fmt } from '@/ui';
+import { AnimatedNumber, Banner, BucketBar, Button, EmptyState, IconButton, Skeleton, Txt, emptyImages, fmt } from '@/ui';
+import { Image } from 'expo-image';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function AuditHome() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -69,7 +71,7 @@ export default function AuditHome() {
             <Skeleton height={110} radius={12} />
           </View>
         ) : !a ? (
-          <EmptyState icon="wifi-slash" title="This audit is not on your phone yet" body="Open it once with signal so the list downloads. After that it works offline." />
+          <EmptyState icon="wifi-slash" image={emptyImages.noSignal} title="This audit is not on your phone yet" body="Open it once with signal so the list downloads. After that it works offline." />
         ) : (
           <>
             <View style={{ gap: 4 }}>
@@ -83,6 +85,20 @@ export default function AuditHome() {
               </Txt>
             </View>
 
+            {expected > 0 && left === 0 && !closed ? (
+              <Animated.View
+                entering={FadeInDown.duration(420)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16, backgroundColor: c.paper2, borderWidth: 1, borderColor: c.rule }}
+              >
+                <Image source={emptyImages.auditComplete} contentFit="contain" style={{ width: 72, height: 72 }} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Txt variant="bodyStrong">Everything on the list is found</Txt>
+                  <Txt variant="bodySm" tone="muted">
+                    Your supervisor can close the audit. Keep scanning if you spot boxes that are not on the list.
+                  </Txt>
+                </View>
+              </Animated.View>
+            ) : null}
             <View style={tablet ? { flexDirection: 'row', gap: 48, alignItems: 'flex-start' } : { gap: 20 }}>
               <View style={{ flex: tablet ? 1 : undefined, gap: 14, paddingBottom: 18, borderBottomWidth: 2, borderBottomColor: c.ink }} accessibilityLabel="Progress">
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>

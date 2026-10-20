@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { Pressable, View, type ViewStyle, type StyleProp } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { Image } from 'expo-image';
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { feedback } from '@/feedback';
 import { useTheme } from '@/theme/theme';
 import { floatShadow, fonts, radius } from '@/theme/tokens';
@@ -143,15 +144,23 @@ export function EmptyState({
   title,
   body,
   action,
+  image,
 }: {
   icon: IconName;
   title: string;
   body: string;
   action?: ReactNode;
+  /** A picture from assets/images/empty. Shown instead of the icon. */
+  image?: number;
 }) {
   const { c } = useTheme();
   return (
     <View style={{ alignItems: 'center', gap: 12, maxWidth: 360, alignSelf: 'center', paddingVertical: 32, paddingHorizontal: 16 }}>
+      {image ? (
+        <Animated.View entering={FadeIn.duration(420)}>
+          <Image source={image} contentFit="contain" style={{ width: 168, height: 168, marginBottom: 4 }} accessibilityIgnoresInvertColors />
+        </Animated.View>
+      ) : (
       <View
         style={{
           width: 64,
@@ -166,6 +175,7 @@ export function EmptyState({
       >
         <Icon name={icon} size={28} />
       </View>
+      )}
       <Txt variant="heading" align="center">
         {title}
       </Txt>

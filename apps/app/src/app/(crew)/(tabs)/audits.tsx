@@ -8,7 +8,7 @@ import { SyncButton } from '@/features/crew/CrewHeader';
 import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
 import { loadMyAudits } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
-import { AnimatedNumber, Avatar, Banner, BucketBar, Card, EmptyState, Eyebrow, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
+import { AnimatedNumber, Avatar, Banner, emptyImages, BucketBar, Card, EmptyState, Eyebrow, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
 
 function greeting(name: string) {
   const h = new Date().getHours();
@@ -60,6 +60,7 @@ export default function MyAudits() {
         ) : audits.length === 0 ? (
           <EmptyState
             icon="list-checks"
+            image={emptyImages.noAudits}
             title="No audits yet"
             body="When your supervisor gives you an audit it shows up here. Pull down to check again."
           />

@@ -16,6 +16,7 @@ export {
 } from './status';
 export { BucketBar, StatTile, fmt, type BucketCounts } from './data';
 export { AnimatedNumber, useCountUp } from './motion';
+export { emptyImages } from './empty-images';
 export {
   Card,
   SectionTitle,

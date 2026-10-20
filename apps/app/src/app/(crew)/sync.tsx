@@ -9,7 +9,7 @@ import { fixRejected, scansByStatus, syncNow, useQueue, type LocalScan } from '@
 import { PlateKeypad } from '@/scanner/PlateKeypad';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts } from '@/theme/tokens';
-import { Button, EmptyState, IconButton, Sheet, StatTile, SyncChip, Txt, useToast } from '@/ui';
+import { Button, EmptyState, emptyImages, IconButton, Sheet, StatTile, SyncChip, Txt, useToast } from '@/ui';
 
 /** "Is my work safe?" answered in full: what is waiting, what was refused, and why. */
 export default function SyncQueue() {
@@ -83,7 +83,7 @@ export default function SyncQueue() {
             <Txt variant="heading">Waiting to send</Txt>
           </View>
           {(queued.data ?? []).length === 0 ? (
-            <EmptyState icon="cloud-check" title="Nothing waiting" body="Every scan on this phone has reached the server." />
+            <EmptyState icon="cloud-check" image={emptyImages.allSent} title="Nothing waiting" body="Every scan on this phone has reached the server." />
           ) : (
             queued.data!.map((s) => <ScanRow key={s.id} scan={s} showStatus={false} />)
           )}
