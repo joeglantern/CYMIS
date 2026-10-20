@@ -17,7 +17,7 @@ const items: { name: string; label: string; icon: IconName }[] = [
 
 export default function CrewTabs() {
   return (
-    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <FloatingTabs {...props} />}>
+    <Tabs screenOptions={{ headerShown: false, animation: 'shift' }} tabBar={(props) => <FloatingTabs {...props} />}>
       {items.map((i) => (
         <Tabs.Screen key={i.name} name={i.name} options={{ title: i.label }} />
       ))}

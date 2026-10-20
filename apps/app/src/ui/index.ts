@@ -15,6 +15,7 @@ export {
   type SyncState,
 } from './status';
 export { BucketBar, StatTile, fmt, type BucketCounts } from './data';
+export { AnimatedNumber, useCountUp } from './motion';
 export {
   Card,
   SectionTitle,

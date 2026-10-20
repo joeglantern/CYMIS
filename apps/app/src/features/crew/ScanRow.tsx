@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import type { LocalScan } from '@/offline/engine';
 import { useTheme } from '@/theme/theme';
 import { ContainerNumber, Icon, StatusChip, Txt, type BucketKey } from '@/ui';
@@ -16,11 +18,24 @@ export function scanBucket(s: LocalScan): BucketKey {
   return s.localResult === 'matched' ? 'found' : s.localResult === 'duplicate' ? 'duplicate' : 'unexpected';
 }
 
-export function ScanRow({ scan, onPress, showStatus = true }: { scan: LocalScan; onPress?: () => void; showStatus?: boolean }) {
-  const { c } = useTheme();
+export function ScanRow({ scan, onPress, showStatus = true, fresh }: { scan: LocalScan; onPress?: () => void; showStatus?: boolean; fresh?: boolean }) {
+  const { c, dark } = useTheme();
+  // A just saved scan arrives with a short yellow glow that fades out.
+  const glow = useSharedValue(fresh ? 1 : 0);
+  useEffect(() => {
+    if (fresh) glow.value = withDelay(500, withTiming(0, { duration: 1400 }));
+  }, [fresh, glow]);
+  const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value }));
   const time = new Date(scan.item.capturedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const content = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.rule }}>
+    <Animated.View
+      entering={fresh ? FadeInDown.duration(320) : undefined}
+      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 52, borderBottomWidth: 1, borderBottomColor: c.rule }}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={[{ position: 'absolute', top: 2, bottom: 2, left: -8, right: -8, borderRadius: 8, backgroundColor: dark ? 'rgba(246,230,30,0.16)' : 'rgba(246,230,30,0.32)' }, glowStyle]}
+      />
       <View style={{ flexShrink: 1, gap: 2 }}>
         <ContainerNumber value={scan.number} state={scan.checkOk ? 'valid' : 'invalid'} />
         {scan.status === 'rejected' && scan.reason ? (
@@ -36,7 +51,7 @@ export function ScanRow({ scan, onPress, showStatus = true }: { scan: LocalScan;
           {time}
         </Txt>
       </View>
-    </View>
+    </Animated.View>
   );
   if (!onPress) return content;
   return (

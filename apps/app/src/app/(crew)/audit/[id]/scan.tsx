@@ -21,7 +21,7 @@ import { PlateKeypad } from '@/scanner/PlateKeypad';
 import { useSettings } from '@/state/settings';
 import { ThemeProvider, useLayout } from '@/theme/theme';
 import { brand, fonts, radius } from '@/theme/tokens';
-import { Button, Icon, IconButton, Sheet, Txt, useToast } from '@/ui';
+import { Button, Icon, IconButton, Sheet, Txt, useCountUp, useToast } from '@/ui';
 
 const FRAME_EVERY_MS = 650;
 /** Ignore the number just saved for a moment, so the same door is not read twice. */
@@ -80,6 +80,7 @@ function Scanner() {
   const audit = useQuery({ queryKey: ['cached-audit', auditId], queryFn: () => cachedAudit(auditId!), enabled: !!auditId });
   const progress = useQuery({ queryKey: ['local-progress', auditId, queueVersion], queryFn: () => localProgress(auditId!), enabled: !!auditId });
   const closed = audit.data?.audit.status === 'CLOSED' || audit.data?.audit.status === 'CANCELLED';
+  const leftCount = useCountUp(progress.data?.left ?? 0, 500);
 
   usePresenceHeartbeat(auditId, !paused);
 
@@ -274,7 +275,7 @@ function Scanner() {
 
   const rail = wide && landscape;
   const sectionName = audit.data?.audit.section.name ?? 'Scanner';
-  const leftText = progress.data?.expected ? `${progress.data.left.toLocaleString('en-GB')} left` : ' ';
+  const leftText = progress.data?.expected ? `${leftCount.toLocaleString('en-GB')} left` : ' ';
   const topBar = insets.top + 76;
 
   return (

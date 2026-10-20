@@ -2,6 +2,7 @@ import type { Bucket, ResultRow } from '@cymis/schemas';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { endpoints } from '@/api/endpoints';
 import { useTheme } from '@/theme/theme';
 import { fonts } from '@/theme/tokens';
@@ -129,11 +130,11 @@ export function YardMap({
     <View style={{ gap: 12 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator>
         <View style={{ gap: 8, minWidth: Math.max(520, maxBays * 34 + 110) }}>
-          {grid.list.map((r) => {
+          {grid.list.map((r, ri) => {
             const done = r.bays.filter((b) => b.state !== 'open').length;
             const rowOn = selected === r.row;
             return (
-              <View key={r.row} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Animated.View key={r.row} entering={FadeInDown.delay(Math.min(ri, 14) * 45).duration(320)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <Pressable accessibilityRole="button" accessibilityLabel={`Show row ${r.row}`} onPress={() => onSelect(rowOn ? null : r.row)} style={{ width: 44 }}>
                   <Txt style={{ fontFamily: fonts.monoMedium, fontSize: 13, textDecorationLine: rowOn ? 'underline' : 'none' }}>{r.row}</Txt>
                 </Pressable>
@@ -163,7 +164,7 @@ export function YardMap({
                 <Txt style={{ width: 60, textAlign: 'right', fontFamily: fonts.mono, fontSize: 12 }} tone="muted">
                   {`${done} / ${r.bays.length}`}
                 </Txt>
-              </View>
+              </Animated.View>
             );
           })}
         </View>

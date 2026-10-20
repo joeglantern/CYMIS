@@ -2,13 +2,13 @@ import type { AuditDto } from '@cymis/schemas';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RefreshControl, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSession } from '@/auth/session';
 import { SyncButton } from '@/features/crew/CrewHeader';
 import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
 import { loadMyAudits } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
-import { Avatar, Banner, BucketBar, Card, EmptyState, Eyebrow, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
+import { AnimatedNumber, Avatar, Banner, BucketBar, Card, EmptyState, Eyebrow, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
 
 function greeting(name: string) {
   const h = new Date().getHours();
@@ -67,8 +67,10 @@ export default function MyAudits() {
           <>
             {now.length ? <Eyebrow>Today</Eyebrow> : null}
             <Grid tablet={tablet}>
-              {now.map((a) => (
-                <AuditCard key={a.id} audit={a} />
+              {now.map((a, i) => (
+                <Animated.View key={a.id} entering={FadeInDown.delay(i * 60).duration(360)} style={tablet ? { flexBasis: 340, flexGrow: 1, maxWidth: 560 } : undefined}>
+                  <AuditCard audit={a} />
+                </Animated.View>
               ))}
             </Grid>
             {earlier.length ? (
@@ -77,8 +79,10 @@ export default function MyAudits() {
               </View>
             ) : null}
             <Grid tablet={tablet}>
-              {earlier.map((a) => (
-                <AuditCard key={a.id} audit={a} />
+              {earlier.map((a, i) => (
+                <Animated.View key={a.id} entering={FadeInDown.delay((now.length + i) * 60).duration(360)} style={tablet ? { flexBasis: 340, flexGrow: 1, maxWidth: 560 } : undefined}>
+                  <AuditCard audit={a} />
+                </Animated.View>
               ))}
             </Grid>
           </>
@@ -94,18 +98,16 @@ function Grid({ tablet, children }: { tablet: boolean; children: React.ReactNode
 }
 
 function AuditCard({ audit }: { audit: AuditDto }) {
-  const { tablet } = useLayout();
   const user = useSession((s) => s.user);
   const k = audit.counts;
   const left = Math.max(0, k.expected - k.found);
   const assigned = audit.assignees.some((p) => p.id === user?.id);
   const others = audit.assignees.filter((p) => p.id !== user?.id);
-  const width = tablet ? { flexBasis: 340, flexGrow: 1, maxWidth: 560 } : undefined;
   const sub = `${audit.section.name}, ${audit.section.facility.name}`;
 
   if (audit.status === 'ACTIVE') {
     return (
-      <Card float onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`Open ${audit.name}`} style={width}>
+      <Card float onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`Open ${audit.name}`} >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flex: 1, gap: 3 }}>
             <Txt style={{ fontSize: 17, lineHeight: 22, fontFamily: 'Geist_600SemiBold' }}>{audit.name}</Txt>
@@ -118,7 +120,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
         <BucketBar counts={{ found: k.found, review: k.mismatched, unexpected: k.unexpected, missing: 0 }} left={left} legend={false} />
         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
           <Txt variant="bodySm" tone="muted">
-            <Txt style={{ fontFamily: 'GeistMono_500Medium', fontSize: 16 }}>{fmt(k.found)}</Txt>
+            <AnimatedNumber value={k.found} style={{ fontFamily: 'GeistMono_500Medium', fontSize: 16 }} />
             {` of ${fmt(k.expected)} found`}
           </Txt>
           <Txt variant="monoSm" tone="ink2">{`${fmt(left)} left`}</Txt>
@@ -130,7 +132,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
 
   if (audit.status === 'DRAFT') {
     return (
-      <Card style={width}>
+      <Card >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flex: 1, gap: 3 }}>
             <Txt style={{ fontSize: 17, lineHeight: 22, fontFamily: 'Geist_600SemiBold' }}>{audit.name}</Txt>
@@ -148,7 +150,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
   }
 
   return (
-    <Card style={width} onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`See ${audit.name}`}>
+    <Card  onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`See ${audit.name}`}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flex: 1, gap: 3 }}>
           <Txt style={{ fontSize: 17, lineHeight: 22, fontFamily: 'Geist_600SemiBold' }}>{audit.name}</Txt>

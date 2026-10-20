@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
 import { View } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { AnimatedNumber } from './motion';
 import { useTheme } from '@/theme/theme';
 import { fonts, radius, type } from '@/theme/tokens';
 import { bucketColours, type BucketKey } from './status';
@@ -47,13 +50,10 @@ export function BucketBar({
           ? order
               .filter((o) => counts[o.key] > 0)
               .map((o) => (
-                <View
-                  key={o.key}
-                  style={{ flexGrow: counts[o.key], flexBasis: 0, minWidth: 4, backgroundColor: bucketColours(c, o.key as BucketKey).bg }}
-                />
+                <Segment key={o.key} value={counts[o.key]} color={bucketColours(c, o.key as BucketKey).bg} />
               ))
           : null}
-        {left > 0 ? <View style={{ flexGrow: left, flexBasis: 0, minWidth: 4, backgroundColor: c.paper2 }} /> : null}
+        {left > 0 ? <Segment value={left} color={c.paper2} /> : null}
       </View>
       {legend ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 20, rowGap: 8 }}>
@@ -92,6 +92,16 @@ export function BucketBar({
       ) : null}
     </View>
   );
+}
+
+/** A bar segment that grows into place and eases to new sizes as scans come in. */
+function Segment({ value, color }: { value: number; color: string }) {
+  const grow = useSharedValue(0);
+  useEffect(() => {
+    grow.value = withTiming(value, { duration: 700, easing: Easing.out(Easing.cubic) });
+  }, [value, grow]);
+  const style = useAnimatedStyle(() => ({ flexGrow: grow.value }));
+  return <Animated.View style={[{ flexBasis: 0, minWidth: 4, backgroundColor: color }, style]} />;
 }
 
 /** One big number with a label. */
@@ -141,9 +151,13 @@ export function StatTile({
           {label}
         </Txt>
       </View>
-      <Txt style={[type.stat, compact && { fontSize: 36, lineHeight: 40 }]} numberOfLines={1} adjustsFontSizeToFit>
-        {typeof value === 'number' ? fmt(value) : value}
-      </Txt>
+      {typeof value === 'number' ? (
+        <AnimatedNumber value={value} style={[type.stat, compact && { fontSize: 36, lineHeight: 40 }]} numberOfLines={1} adjustsFontSizeToFit />
+      ) : (
+        <Txt style={[type.stat, compact && { fontSize: 36, lineHeight: 40 }]} numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Txt>
+      )}
       {detail ? (
         <Txt variant="caption" tone="muted" numberOfLines={2}>
           {detail}

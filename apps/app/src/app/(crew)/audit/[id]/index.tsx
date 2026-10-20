@@ -10,7 +10,7 @@ import { localProgress, prepareAudit, recentScans, useQueue } from '@/offline/en
 import { useAuditRoom } from '@/realtime/socket';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts, type } from '@/theme/tokens';
-import { Banner, BucketBar, Button, EmptyState, IconButton, Skeleton, Txt, fmt } from '@/ui';
+import { AnimatedNumber, Banner, BucketBar, Button, EmptyState, IconButton, Skeleton, Txt, fmt } from '@/ui';
 
 export default function AuditHome() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -86,7 +86,7 @@ export default function AuditHome() {
             <View style={tablet ? { flexDirection: 'row', gap: 48, alignItems: 'flex-start' } : { gap: 20 }}>
               <View style={{ flex: tablet ? 1 : undefined, gap: 14, paddingBottom: 18, borderBottomWidth: 2, borderBottomColor: c.ink }} accessibilityLabel="Progress">
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-                  <Txt style={type.stat}>{fmt(found)}</Txt>
+                  <AnimatedNumber value={found} style={type.stat} />
                   <Txt variant="body" tone="muted" style={{ fontSize: 15 }}>
                     {`of ${fmt(expected)} found`}
                   </Txt>
@@ -121,7 +121,7 @@ export default function AuditHome() {
                     </Txt>
                   </View>
                 ) : (
-                  recent.data!.map((s) => <ScanRow key={s.id} scan={s} />)
+                  recent.data!.map((s, i) => <ScanRow key={s.id} scan={s} fresh={i === 0 && Date.now() - new Date(s.createdAt).getTime() < 8000} />)
                 )}
                 {(recent.data ?? []).length > 0 ? (
                   <Button label="See all on this phone" variant="quiet" onPress={() => router.push('/history')} style={{ marginTop: 6, marginLeft: -12 }} />

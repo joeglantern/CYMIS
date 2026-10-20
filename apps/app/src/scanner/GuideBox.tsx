@@ -61,6 +61,7 @@ export function GuideBox({ state, hint, number }: { state: GuideState; hint: str
         accessibilityLabel={state === 'locked' && number ? `Locked on ${number}` : hint}
         style={[{ width: w, maxWidth: '88%', height: h, alignItems: 'center', justifyContent: 'center' }, frame]}
       >
+        {state === 'locked' ? <LockPulse /> : null}
         {(['tl', 'tr', 'bl', 'br'] as const).map((pos) => (
           <Corner key={pos} pos={pos} inset={inset} size={corner} color={color} pull={tablet ? 40 : 26} />
         ))}
@@ -108,6 +109,24 @@ function Corner({ pos, inset, size, color, pull }: { pos: 'tl' | 'tr' | 'bl' | '
         },
         style,
       ]}
+    />
+  );
+}
+
+/** One soft ring that pushes out from the frame when a number locks. */
+function LockPulse() {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    t.value = withTiming(1, { duration: 650 });
+  }, [t]);
+  const style = useAnimatedStyle(() => ({
+    opacity: 0.85 * (1 - t.value),
+    transform: [{ scaleX: 1 + t.value * 0.08 }, { scaleY: 1 + t.value * 0.22 }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 14, borderWidth: 3, borderColor: brand.yellow }, style]}
     />
   );
 }
