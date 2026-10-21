@@ -4,6 +4,17 @@ This is the plan for the second half of the backend. The first half (the API cor
 
 The original system plan is in `docs/reference/system-plan.pdf`. Pages 18 to 34 of it were never written, so where this page and the PDF disagree, this page wins.
 
+## What changed since this was first written (21 October)
+
+Read this first, it changes a few items below.
+
+- **The history on `main` was rewritten on 21 October.** If you cloned before then, clone again or run `git fetch && git reset --hard origin/main` on a clean tree.
+- **The apps are built.** `apps/app` is one Expo app (SDK 57): the crew app on phones and tablets, and the supervisor dashboard on the web. It uses `packages/schemas` as the contract, so the rule about adding fields rather than renaming them matters more now.
+- **A staging server exists.** `infra/staging` runs the whole stack with Docker Compose on a shared VPS (`docker-compose.yml`, `Caddyfile`, `deploy.sh`), and `apps/api/Dockerfile` builds the API image. Treat it as a starting point for item 3, not the production setup: it runs workers inside the API, uses temporary Cloudflare tunnels instead of a private network, and has one Postgres role. Item 3 still stands.
+- **Sign in limits are per person now** (see Small known gaps). The test tip in item 2 about flushing Redis still helps, but twelve different staff IDs from one address no longer hit the limit.
+- **`offline-sync.md` is less urgent.** The app already follows the sync contract (`apps/app/src/offline/engine.ts`). Still write it, from what the server does, so the two can be checked against each other.
+- **Test helpers:** `scripts/demo-data.mjs` (a supervisor, three crew and a live audit) and `scripts/mock-audit.mjs` (a running audit from a small JSON list).
+
 ## What is already done
 
 All of this is in `apps/api` and covered by tests that run against real Postgres, Redis and S3 containers.
@@ -68,7 +79,7 @@ This is the biggest piece. The Node side is finished and waiting for it.
 9. **Unit tests for `imports/parser.ts` and `imports/rows.ts`.** Header detection with title rows, merged header cells, mapping suggestions for odd header names.
 
 Things that will bite you in tests:
-- Sign in is rate limited to 10 a minute per address, and every injected request comes from 127.0.0.1. Flush Redis in `beforeEach` in files that sign in a lot.
+- Sign in is rate limited to 10 a minute per person on an address, and every injected request comes from 127.0.0.1. Flush Redis in `beforeEach` in files that sign in as the same person a lot.
 - Integration files share one database and run one at a time. Call `resetData` in `beforeAll`.
 - Prisma can refuse `migrate reset` in a non interactive shell. For a local reset, drop the dev Docker volume instead.
 
