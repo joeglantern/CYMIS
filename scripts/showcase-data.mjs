@@ -30,7 +30,7 @@ async function call(path, { token, method, body, form } = {}) {
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
         body: form ?? (body ? JSON.stringify(body) : undefined),
       });
-    } catch (err) {
+    } catch {
       // The tunnel drops a connection now and then. Scan sync is safe to repeat.
       console.log(`network hiccup on ${path}, retrying`);
       await wait(4000);
