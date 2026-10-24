@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
@@ -7,7 +6,7 @@ import { feedback } from '@/feedback';
 import { useQueue } from '@/offline/engine';
 import { useTheme } from '@/theme/theme';
 import { brand, fonts } from '@/theme/tokens';
-import { Icon, Txt, type IconName } from '@/ui';
+import { Frost, Icon, Txt, type IconName } from '@/ui';
 
 const items: { name: string; label: string; icon: IconName }[] = [
   { name: 'audits', label: 'Audits', icon: 'list-checks' },
@@ -17,7 +16,7 @@ const items: { name: string; label: string; icon: IconName }[] = [
 
 export default function CrewTabs() {
   return (
-    <Tabs screenOptions={{ headerShown: false, animation: 'shift' }} tabBar={(props) => <FloatingTabs {...props} />}>
+    <Tabs activityEnabled screenOptions={{ headerShown: false, animation: 'shift' }} tabBar={(props) => <FloatingTabs {...props} />}>
       {items.map((i) => (
         <Tabs.Screen key={i.name} name={i.name} options={{ title: i.label }} />
       ))}
@@ -61,11 +60,7 @@ function FloatingTabs({
           boxShadow: dark ? '0px 10px 30px rgba(0,0,0,0.45)' : '0px 10px 30px rgba(14,14,14,0.12), 0px 1px 2px rgba(14,14,14,0.06)',
         }}
       >
-        <BlurView intensity={70} tint={dark ? 'dark' : 'light'} blurMethod="dimezisBlurViewSdk31Plus" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: dark ? 'rgba(34,34,33,0.72)' : 'rgba(255,255,255,0.78)' }}
-        />
+        <Frost veil={dark ? 0.72 : 0.78} intensity={70} />
         {state.routes.map((route, index) => {
           const item = items.find((i) => i.name === route.name);
           if (!item) return null;

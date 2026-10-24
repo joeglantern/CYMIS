@@ -1,11 +1,10 @@
-import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts } from '@/theme/tokens';
-import { Txt } from '@/ui';
+import { Frost, Txt } from '@/ui';
 
 /** Height of the glass bar, below the status bar. */
 export const BAR = 50;
@@ -44,7 +43,7 @@ export function GlassBar({ y, title, left, right }: { y: SharedValue<number>; ti
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, height: insets.top + BAR }}>
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, glass]}>
-        <BlurView intensity={60} tint={dark ? 'dark' : 'light'} blurMethod="dimezisBlurViewSdk31Plus" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+        <Frost veil={0.72} intensity={60} />
         <View
           style={{
             position: 'absolute',
@@ -52,7 +51,6 @@ export function GlassBar({ y, title, left, right }: { y: SharedValue<number>; ti
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: dark ? 'rgba(17,17,16,0.72)' : 'rgba(255,255,255,0.72)',
             borderBottomWidth: 1,
             borderBottomColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(14,14,14,0.07)',
           }}

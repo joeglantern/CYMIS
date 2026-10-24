@@ -6,7 +6,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSession } from '@/auth/session';
 import { SyncButton } from '@/features/crew/CrewHeader';
 import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
-import { loadMyAudits } from '@/offline/engine';
+import { queryClient } from '@/api/queries';
+import { loadMyAudits, prepareAudit } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
 import { AnimatedNumber, Avatar, Banner, emptyImages, BucketBar, Card, EmptyState, Eyebrow, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
 
@@ -108,7 +109,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
 
   if (audit.status === 'ACTIVE') {
     return (
-      <Card float onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`Open ${audit.name}`} >
+      <Card float onPressIn={() => openSoon(audit.id)} onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`Open ${audit.name}`} >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flex: 1, gap: 3 }}>
             <Txt style={{ fontSize: 17, lineHeight: 22, fontFamily: 'Geist_600SemiBold' }}>{audit.name}</Txt>
@@ -151,7 +152,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
   }
 
   return (
-    <Card  onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`See ${audit.name}`}>
+    <Card onPressIn={() => openSoon(audit.id)} onPress={() => router.push({ pathname: '/(crew)/audit/[id]', params: { id: audit.id } })} label={`See ${audit.name}`}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flex: 1, gap: 3 }}>
           <Txt style={{ fontSize: 17, lineHeight: 22, fontFamily: 'Geist_600SemiBold' }}>{audit.name}</Txt>
@@ -201,4 +202,11 @@ function Crew({ names, others, assigned }: { names: string[]; others: number; as
       </Txt>
     </View>
   );
+}
+
+/** Load the audit and its screen while the finger is still on the card. */
+function openSoon(id: string) {
+  // Same key as the audit screen, so it opens with data instead of a skeleton.
+  void queryClient.prefetchQuery({ queryKey: ['crew-audit', id], queryFn: () => prepareAudit(id), staleTime: 15_000 });
+  router.prefetch({ pathname: '/(crew)/audit/[id]', params: { id } });
 }

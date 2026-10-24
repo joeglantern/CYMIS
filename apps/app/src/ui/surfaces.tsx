@@ -11,12 +11,15 @@ import { Txt } from './Text';
 export function Card({
   children,
   onPress,
+  onPressIn,
   float,
   style,
   label,
 }: {
   children: ReactNode;
   onPress?: () => void;
+  /** Runs as soon as a finger lands, before the tap ends. Good for preloading. */
+  onPressIn?: () => void;
   float?: boolean;
   style?: StyleProp<ViewStyle>;
   label?: string;
@@ -34,6 +37,7 @@ export function Card({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      onPressIn={onPressIn}
       onPress={() => {
         feedback.tap();
         onPress();

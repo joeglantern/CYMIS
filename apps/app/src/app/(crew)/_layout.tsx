@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/theme';
 export default function CrewLayout() {
   const { c } = useTheme();
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.paper } }}>
+    <Stack activityEnabled={2} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.paper } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="audit/[id]/index" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen

@@ -15,6 +15,7 @@ import { session, socketToken, useSession } from '@/auth/session';
 import { preloadSounds } from '@/feedback';
 import { startSyncEngine } from '@/offline/engine';
 import { configureSocket, startRealtime } from '@/realtime/socket';
+import { ScreenError } from '@/features/shell/ScreenError';
 import { SplashFilm } from '@/features/shell/SplashFilm';
 import { useBoot } from '@/state/boot';
 import { WebStyles } from '@/features/shell/WebStyles';
@@ -110,7 +111,11 @@ function Root({ ready }: { ready: boolean }) {
       <StatusBar style={dark ? 'light' : 'dark'} />
       {/* In landscape the notch sits on a side; keep every screen clear of it. */}
       <View style={{ flex: 1, paddingLeft: insets.left, paddingRight: insets.right, backgroundColor: c.paper }}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.paper }, animation: 'fade' }}>
+      <Stack
+        // A crash stays inside its screen, and every screen below this one.
+        unstable_screenErrorBoundary={ScreenError}
+        screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.paper }, animation: 'fade' }}
+      >
         <Stack.Protected guard={signedIn && !mustChange} redirectTo={home}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(crew)" />
