@@ -1,16 +1,15 @@
 import { useEventListener } from 'expo';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Pressable } from 'react-native';
+import { AccessibilityInfo } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
-import { Txt } from '@/ui';
 
 const film = require('../../../assets/video/splash.mp4');
 
 /**
  * The opening film: the camera drops into the yard and the containers settle
- * into the C. Plays once per cold start on phones and tablets, can be skipped
- * with a tap, and is left out when reduce motion is on.
+ * into the C. Plays once per cold start on phones and tablets, and is left out
+ * when reduce motion is on.
  */
 export function SplashFilm({ onDone }: { onDone: () => void }) {
   const [skip, setSkip] = useState<boolean | null>(null);
@@ -44,16 +43,7 @@ export function SplashFilm({ onDone }: { onDone: () => void }) {
 
   return (
     <Animated.View exiting={FadeOut.duration(260)} style={{ position: 'absolute', inset: 0, backgroundColor: '#f2f1ed', zIndex: 50 }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Skip the opening" onPress={onDone} style={{ flex: 1 }}>
-        <VideoView player={player} style={{ flex: 1 }} contentFit="cover" nativeControls={false} allowsPictureInPicture={false} />
-        <Txt
-          variant="caption"
-          color="rgba(14,14,14,0.55)"
-          style={{ position: 'absolute', bottom: 40, alignSelf: 'center' }}
-        >
-          Tap to skip
-        </Txt>
-      </Pressable>
+      <VideoView player={player} style={{ flex: 1 }} contentFit="cover" nativeControls={false} allowsPictureInPicture={false} />
     </Animated.View>
   );
 }

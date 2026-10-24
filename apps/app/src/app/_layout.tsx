@@ -100,6 +100,9 @@ function Root({ ready }: { ready: boolean }) {
 
 
   const signedIn = status === 'signedIn';
+  // Where a blocked screen sends you. Without this, Expo Router falls back to
+  // the first open screen in the stack, which is Help.
+  const home = status === 'locked' ? '/unlock' : status === 'signedOut' ? '/sign-in' : mustChange ? '/change-password' : '/';
 
   return (
     <>
@@ -108,18 +111,18 @@ function Root({ ready }: { ready: boolean }) {
       {/* In landscape the notch sits on a side; keep every screen clear of it. */}
       <View style={{ flex: 1, paddingLeft: insets.left, paddingRight: insets.right, backgroundColor: c.paper }}>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.paper }, animation: 'fade' }}>
-        <Stack.Protected guard={signedIn && !mustChange}>
+        <Stack.Protected guard={signedIn && !mustChange} redirectTo={home}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(crew)" />
           <Stack.Screen name="dashboard" />
         </Stack.Protected>
-        <Stack.Protected guard={signedIn && mustChange}>
+        <Stack.Protected guard={signedIn && mustChange} redirectTo={home}>
           <Stack.Screen name="change-password" />
         </Stack.Protected>
-        <Stack.Protected guard={status === 'locked'}>
+        <Stack.Protected guard={status === 'locked'} redirectTo={home}>
           <Stack.Screen name="unlock" />
         </Stack.Protected>
-        <Stack.Protected guard={status === 'signedOut'}>
+        <Stack.Protected guard={status === 'signedOut'} redirectTo={home}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
         <Stack.Screen name="help" options={{ animation: 'slide_from_right' }} />
