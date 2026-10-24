@@ -9,7 +9,7 @@ The original system plan is in `docs/reference/system-plan.pdf`. Pages 18 to 34 
 Read this first, it changes a few items below.
 
 - **The history on `main` was rewritten on 21 October.** If you cloned before then, clone again or run `git fetch && git reset --hard origin/main` on a clean tree.
-- **The apps are built.** `apps/app` is one Expo app (SDK 57): the crew app on phones and tablets, and the supervisor dashboard on the web. It uses `packages/schemas` as the contract, so the rule about adding fields rather than renaming them matters more now.
+- **The apps are built.** `apps/app` is one Expo app (SDK 58): the crew app on phones and tablets, and the supervisor dashboard on the web. It uses `packages/schemas` as the contract, so the rule about adding fields rather than renaming them matters more now.
 - **A staging server exists.** `infra/staging` runs the whole stack with Docker Compose on a shared VPS (`docker-compose.yml`, `Caddyfile`, `deploy.sh`), and `apps/api/Dockerfile` builds the API image. Treat it as a starting point for item 3, not the production setup: it runs workers inside the API, uses temporary Cloudflare tunnels instead of a private network, and has one Postgres role. Item 3 still stands.
 - **Sign in limits are per person now** (see Small known gaps). The test tip in item 2 about flushing Redis still helps, but twelve different staff IDs from one address no longer hit the limit.
 - **`offline-sync.md` is less urgent.** The app already follows the sync contract (`apps/app/src/offline/engine.ts`). Still write it, from what the server does, so the two can be checked against each other.
