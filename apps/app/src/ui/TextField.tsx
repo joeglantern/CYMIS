@@ -1,5 +1,5 @@
 import { forwardRef, useId, useState } from 'react';
-import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
+import { Pressable, TextInput, View, type TextInputInstance, type TextInputProps } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { fonts, radius } from '@/theme/tokens';
 import { Icon } from './Icon';
@@ -16,7 +16,7 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   size?: 'md' | 'lg';
 }
 
-export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
+export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function TextField(
   { label, hint, error, mono, password, size = 'md', onFocus, onBlur, autoCapitalize, autoCorrect, ...rest },
   ref,
 ) {

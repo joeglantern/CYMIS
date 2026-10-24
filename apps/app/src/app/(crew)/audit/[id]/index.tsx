@@ -62,7 +62,7 @@ export default function AuditHome() {
 
       <ScrollView
         contentContainerStyle={{ paddingTop: tablet ? 32 : 18, paddingHorizontal: gutter, paddingBottom: 24, gap: tablet ? 28 : 20 }}
-        refreshControl={<RefreshControl refreshing={audit.isRefetching} onRefresh={() => audit.refetch()} tintColor={c.muted} />}
+        refreshControl={<RefreshControl refreshing={audit.isRefetching} onRefresh={() => void audit.refetch()} tintColor={c.muted} />}
       >
         {audit.isPending ? (
           <View style={{ gap: 14 }}>

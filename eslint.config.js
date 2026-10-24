@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/generated/**', '**/coverage/**', 'services/**', '**/.expo/**', 'apps/app/expo-env.d.ts'],
+    ignores: ['**/dist/**', '**/dist-staging/**', '**/node_modules/**', '**/generated/**', '**/coverage/**', 'services/**', '**/.expo/**', 'apps/app/expo-env.d.ts'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

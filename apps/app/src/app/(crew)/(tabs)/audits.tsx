@@ -41,7 +41,7 @@ export default function MyAudits() {
         onScroll={onScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: tabSpace }}
-        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => q.refetch()} tintColor={c.muted} progressViewOffset={80} />}
+        refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} tintColor={c.muted} progressViewOffset={80} />}
       >
         <LargeTitle eyebrow={greeting(user?.fullName.split(' ')[0] ?? 'there')} title="Your audits" />
         {q.data?.fromCache ? (

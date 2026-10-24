@@ -1,6 +1,6 @@
 import { Redirect, Slot, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, TextInput, View } from 'react-native';
+import { Platform, TextInput, View, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useView } from '@/auth/view';
 import { Sidebar, TopNav } from '@/features/dash/Sidebar';
@@ -46,7 +46,7 @@ function TopBar() {
   const { width } = useLayout();
   const [q, setQ] = useState('');
   const [focused, setFocused] = useState(false);
-  const input = useRef<TextInput>(null);
+  const input = useRef<TextInputInstance>(null);
   const narrow = width < 700;
 
   // Ctrl K or Cmd K jumps to the container search from anywhere.

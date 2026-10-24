@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { ActivityIndicator, Pressable, View, type PressableProps, type View as ViewType } from 'react-native';
+import { ActivityIndicator, Pressable, View, type PressableProps, type ViewInstance } from 'react-native';
 import { feedback } from '@/feedback';
 import { useTheme } from '@/theme/theme';
 import { fonts, radius } from '@/theme/tokens';
@@ -24,7 +24,7 @@ export interface ButtonProps extends Omit<PressableProps, 'children' | 'style'> 
 
 const heights = { md: 40, lg: 52, xl: 60 } as const;
 
-export const Button = forwardRef<ViewType, ButtonProps>(function Button(
+export const Button = forwardRef<ViewInstance, ButtonProps>(function Button(
   { label, variant = 'primary', size = 'md', icon, iconRight, block, loading, disabled, silent, onPress, style, ...rest },
   ref,
 ) {

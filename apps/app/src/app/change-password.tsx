@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { View, type TextInput } from 'react-native';
+import { View, type TextInputInstance } from 'react-native';
 import { ApiError } from '@/api/http';
 import { session, useSession } from '@/auth/session';
 import { feedback } from '@/feedback';
@@ -34,8 +34,8 @@ function Form() {
   const [again, setAgain] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const nextRef = useRef<TextInput>(null);
-  const againRef = useRef<TextInput>(null);
+  const nextRef = useRef<TextInputInstance>(null);
+  const againRef = useRef<TextInputInstance>(null);
   const checks = rules(next, current);
   const allOk = checks.every((r) => r.ok) && next === again;
 

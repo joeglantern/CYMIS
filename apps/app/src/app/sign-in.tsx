@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Platform, Pressable, View, type TextInput } from 'react-native';
+import { Platform, Pressable, View, type TextInputInstance } from 'react-native';
 import { router } from 'expo-router';
 import { ApiError, IS_WEB } from '@/api/http';
 import { cachedProfile, session } from '@/auth/session';
@@ -24,7 +24,7 @@ function SignInForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ field: 'staffId' | 'password' | 'form'; text: string } | null>(null);
   const [capsOn, setCapsOn] = useState(false);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
 
   const submit = async () => {
     if (busy) return;

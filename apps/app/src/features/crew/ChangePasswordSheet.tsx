@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { View, type TextInput } from 'react-native';
+import { View, type TextInputInstance } from 'react-native';
 import { ApiError } from '@/api/http';
 import { session } from '@/auth/session';
 import { feedback } from '@/feedback';
@@ -14,7 +14,7 @@ export function ChangePasswordSheet({ open, onClose }: { open: boolean; onClose:
   const [next, setNext] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const nextRef = useRef<TextInput>(null);
+  const nextRef = useRef<TextInputInstance>(null);
 
   const ok = next.length >= 10 && new Set(next).size > 3 && next !== current;
 

@@ -33,10 +33,10 @@ const spring = LinearTransition.springify().damping(20).stiffness(260);
  */
 function FloatingTabs({
   state,
-  navigation,
+  navigateToTab,
 }: {
   state: { index: number; routes: { key: string; name: string }[] };
-  navigation: { navigate: (name: string) => void };
+  navigateToTab: (routeKey: string) => void;
 }) {
   const { c, dark } = useTheme();
   const insets = useSafeAreaInsets();
@@ -78,7 +78,7 @@ function FloatingTabs({
               accessibilityLabel={item.label}
               onPress={() => {
                 if (!on) feedback.select();
-                navigation.navigate(route.name);
+                navigateToTab(route.key);
               }}
               hitSlop={4}
             >

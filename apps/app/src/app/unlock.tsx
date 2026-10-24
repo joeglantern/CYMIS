@@ -1,6 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, type TextInput } from 'react-native';
+import { View, type TextInputInstance } from 'react-native';
 import { ApiError } from '@/api/http';
 import { session, useSession } from '@/auth/session';
 import { feedback } from '@/feedback';
@@ -35,7 +35,7 @@ function UnlockSheet() {
   const [error, setError] = useState<string | null>(null);
   const prompted = useRef(false);
   const filmDone = useBoot((s) => s.filmDone);
-  const pwRef = useRef<TextInput>(null);
+  const pwRef = useRef<TextInputInstance>(null);
 
   const firstName = user?.fullName.split(' ')[0] ?? 'there';
 

@@ -364,7 +364,7 @@ export function startSyncEngine() {
     if (online && !was) scheduleSync(800);
   });
 
-  let last: AppStateStatus = AppState.currentState;
+  let last: AppStateStatus = (AppState.currentState as AppStateStatus | null) ?? 'active';
   AppState.addEventListener('change', (next) => {
     if (last.match(/inactive|background/) && next === 'active') scheduleSync(500);
     last = next;

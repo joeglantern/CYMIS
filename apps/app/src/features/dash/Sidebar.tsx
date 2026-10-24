@@ -1,6 +1,6 @@
 import { router, usePathname } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native';
 import { useAudits } from '@/api/queries';
 import { session, useSession } from '@/auth/session';
 import { useView } from '@/auth/view';
@@ -180,7 +180,7 @@ export function TopNav() {
   const { main, admin } = useNav();
   const signOut = useSignOut();
   const [open, setOpen] = useState(false);
-  const bar = useRef<ScrollView>(null);
+  const bar = useRef<ScrollViewInstance>(null);
   return (
     <View
       role="navigation"

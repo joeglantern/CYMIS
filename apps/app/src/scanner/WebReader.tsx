@@ -41,7 +41,9 @@ const html = `<!doctype html><html><head><meta name="viewport" content="width=de
 
 type Pending = { resolve: (text: string | null) => void; timer: ReturnType<typeof setTimeout> };
 
-let view: WebView | null = null;
+/** What we call on the hidden browser view. */
+type ReaderView = { injectJavaScript: (js: string) => void };
+let view: ReaderView | null = null;
 let ready = false;
 let nextId = 1;
 const pending = new Map<number, Pending>();
@@ -85,7 +87,7 @@ export const webReader = {
 
 /** Mount this (invisibly) on the scanner screen when the phone has no reader of its own. */
 export function WebReader() {
-  const ref = useRef<WebView>(null);
+  const ref = useRef<ReaderView>(null);
 
   useEffect(
     () => () => {
@@ -123,7 +125,8 @@ export function WebReader() {
   return (
     <View pointerEvents="none" style={{ position: 'absolute', width: 1, height: 1, opacity: 0, left: -10, top: -10 }}>
       <WebView
-        ref={ref}
+        // The library types drop ref in v14, but the component still forwards it.
+        {...({ ref } as object)}
         source={{ html, baseUrl: 'https://localhost' }}
         originWhitelist={['*']}
         javaScriptEnabled
