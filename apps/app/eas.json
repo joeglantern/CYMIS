@@ -4,11 +4,11 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://civilian-royalty-sellers-roll.trycloudflare.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://salvation-certificates-brussels-paul.trycloudflare.com" }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://civilian-royalty-sellers-roll.trycloudflare.com" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://salvation-certificates-brussels-paul.trycloudflare.com" }
     },
     "production": {
       "autoIncrement": true

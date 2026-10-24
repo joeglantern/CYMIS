@@ -19,13 +19,17 @@ These apply to everything: code, comments, docs, commit messages, UI copy.
 
 ```
 apps/api              Fastify API, Socket.IO, BullMQ workers, Prisma
+apps/app              Expo app: crew app on phones and tablets, supervisor dashboard on the web
 services/cv-worker    Python colour detection and second pass OCR
 packages/iso6346      Container number check digit and OCR clean up
 packages/schemas      Zod schemas shared by the API and the apps
 packages/tsconfig     Shared TypeScript settings
-infra                 Docker compose files, Caddy, backup scripts
-docs                  Architecture, manuals, legal, decisions
+infra                 Local Docker compose, and infra/staging for the test server
+scripts               Text check, demo data, test audits, showcase data
+docs                  Handoff, open questions, manuals, legal, brand
 ```
+
+In `apps/app/src`: `app/` holds the screens (Expo Router), `ui/` the shared components, `offline/` the scan queue and sync, `scanner/` the camera reading, `api/` and `auth/` the server calls and session, `features/` screen specific pieces.
 
 ## Commands
 
