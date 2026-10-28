@@ -1,29 +1,38 @@
-import { useEventListener } from 'expo';
-import { BlurView } from 'expo-blur';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { Image } from 'expo-image';
-import { useState, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { Easing, FadeInDown, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { useEffect } from 'react';
-import { useBoot } from '@/state/boot';
-import { ThemeProvider, useLayout, useTheme } from '@/theme/theme';
-import { fonts, radius } from '@/theme/tokens';
-import { Txt } from '@/ui';
+import { useEventListener } from "expo";
+import { BlurView } from "expo-blur";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { Image } from "expo-image";
+import { useState, type ReactNode } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  Easing,
+  FadeInDown,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import { useEffect } from "react";
+import { useBoot } from "@/state/boot";
+import { ThemeProvider, useLayout, useTheme } from "@/theme/theme";
+import { fonts, radius } from "@/theme/tokens";
+import { Txt } from "@/ui";
 
-const poster = require('../../../assets/images/poster.jpg');
+const poster = require("../../../assets/images/poster.jpg");
 /**
  * The same picture on a much larger stretch of concrete (2160 by 2560), so it
  * can be scaled and moved freely without an edge ever showing. MARK is the
  * box around the container C inside it, measured from the pixels.
  */
-const posterWide = require('../../../assets/images/poster-wide.jpg');
+const posterWide = require("../../../assets/images/poster-wide.jpg");
 /** Ten seconds of slow moving sunlight over the same photo, played forwards then back so it never jumps. */
-const lightLoop = require('../../../assets/video/signin-loop.mp4');
+const lightLoop = require("../../../assets/video/signin-loop.mp4");
 const WIDE = { w: 2160, h: 2560 };
 const MARK = { x: 832, y: 945, w: 528, h: 690 };
-const ALT = 'The letter C made of shipping containers on pale concrete, seen from above, with one yellow container in its opening';
+const ALT =
+  "The letter C made of shipping containers on pale concrete, seen from above, with one yellow container in its opening";
 
 /**
  * The sign in family of screens. The last frame of the opening film fills the
@@ -31,7 +40,13 @@ const ALT = 'The letter C made of shipping containers on pale concrete, seen fro
  * Phone: sheet at the bottom. Tablet portrait: a 560 wide sheet. Landscape:
  * the picture on the left, a card on the right. Always light, like paper.
  */
-export function AuthFrame({ children, sheetBrand = true }: { children: ReactNode; sheetBrand?: boolean }) {
+export function AuthFrame({
+  children,
+  sheetBrand = true,
+}: {
+  children: ReactNode;
+  sheetBrand?: boolean;
+}) {
   return (
     <ThemeProvider force="light">
       <Frame sheetBrand={sheetBrand}>{children}</Frame>
@@ -39,11 +54,20 @@ export function AuthFrame({ children, sheetBrand = true }: { children: ReactNode
   );
 }
 
-function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: boolean }) {
+function Frame({
+  children,
+  sheetBrand,
+}: {
+  children: ReactNode;
+  sheetBrand: boolean;
+}) {
   const { c } = useTheme();
   const { width, height, tablet, wide } = useLayout();
   const insets = useSafeAreaInsets();
   const landscapeSplit = wide && width > height * 1.05;
+  // The wide opening film ends on this layout's picture column; the card
+  // then slides in, so the film becomes the sign in.
+  const filmDone = useBoot((s) => s.filmDone);
   const [sheetH, setSheetH] = useState(0);
   // Phones: a tighter sheet leaves room for the whole C above it.
   const compact = !tablet;
@@ -51,13 +75,24 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
   const brand = (
     <View
       style={{
-        position: 'absolute',
+        position: "absolute",
         top: insets.top + (tablet ? 32 : 18),
-        ...(tablet || landscapeSplit ? { left: 36, alignItems: 'flex-start' } : { right: 20, alignItems: 'flex-end' }),
+        ...(tablet || landscapeSplit
+          ? { left: 36, alignItems: "flex-start" }
+          : { right: 20, alignItems: "flex-end" }),
         gap: 2,
       }}
     >
-      <Txt style={{ fontFamily: fonts.semibold, fontSize: 22, lineHeight: 26, letterSpacing: -0.44 }}>cymis</Txt>
+      <Txt
+        style={{
+          fontFamily: fonts.semibold,
+          fontSize: 22,
+          lineHeight: 26,
+          letterSpacing: -0.44,
+        }}
+      >
+        cymis
+      </Txt>
       {tablet ? (
         <Txt variant="caption" tone="ink2">
           Container audits
@@ -68,22 +103,59 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
 
   if (landscapeSplit) {
     return (
-      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: c.paper }}>
-        <View style={{ width: '58%', height: '100%', overflow: 'hidden' }}>
+      <View style={{ flex: 1, flexDirection: "row", backgroundColor: c.paper }}>
+        <View style={{ width: "58%", height: "100%", overflow: "hidden" }}>
           <Drift style={{ flex: 1 }}>
-            <Image source={poster} accessibilityLabel={ALT} contentFit="cover" contentPosition={{ top: '50%', left: '50%' }} style={{ flex: 1 }} />
-            <LivingLight cover style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+            <Image
+              source={poster}
+              accessibilityLabel={ALT}
+              contentFit="cover"
+              contentPosition={{ top: "50%", left: "50%" }}
+              style={{ flex: 1 }}
+            />
+            <LivingLight
+              cover
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+            />
           </Drift>
           {brand}
         </View>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }} keyboardShouldPersistTaps="handled">
-            <Animated.View
-              entering={FadeInDown.duration(320)}
-              style={{ width: '100%', maxWidth: 440, padding: 36, gap: 20, borderRadius: radius.sheet, borderWidth: 1, borderColor: c.rule, backgroundColor: c.raised }}
-            >
-              {children}
-            </Animated.View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1 }}
+        >
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 32,
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {filmDone ? (
+              <Animated.View
+                entering={FadeInDown.duration(420).springify().damping(22)}
+                style={{
+                  width: "100%",
+                  maxWidth: 440,
+                  padding: 36,
+                  gap: 20,
+                  borderRadius: radius.sheet,
+                  borderWidth: 1,
+                  borderColor: c.rule,
+                  backgroundColor: c.raised,
+                }}
+              >
+                {children}
+              </Animated.View>
+            ) : null}
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
@@ -99,41 +171,79 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
   // melts into the glass instead of stopping at a hard edge.
   const bottom = sheetTop + (tablet ? 26 : 18);
   const side = tablet ? 120 : 44;
-  const scale = Math.max(0.2, Math.min((width - side * 2) / MARK.w, (bottom - top) / MARK.h, tablet ? 1.25 : 0.9));
+  const scale = Math.max(
+    0.2,
+    Math.min(
+      (width - side * 2) / MARK.w,
+      (bottom - top) / MARK.h,
+      tablet ? 1.25 : 0.9,
+    ),
+  );
   const imgW = WIDE.w * scale;
   const imgH = WIDE.h * scale;
   const imgLeft = width / 2 - (MARK.x + MARK.w / 2) * scale;
   const imgTop = (top + bottom) / 2 - (MARK.y + MARK.h / 2) * scale;
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.paper, overflow: 'hidden' }}>
-      <Drift originX={width / 2 - imgLeft} originY={(top + bottom) / 2 - imgTop} style={{ position: 'absolute', left: imgLeft, top: imgTop, width: imgW, height: imgH }}>
-        <Image source={posterWide} accessibilityLabel={ALT} contentFit="fill" transition={sheetH ? 0 : 200} style={{ width: '100%', height: '100%' }} />
+    <View style={{ flex: 1, backgroundColor: c.paper, overflow: "hidden" }}>
+      <Drift
+        originX={width / 2 - imgLeft}
+        originY={(top + bottom) / 2 - imgTop}
+        style={{
+          position: "absolute",
+          left: imgLeft,
+          top: imgTop,
+          width: imgW,
+          height: imgH,
+        }}
+      >
+        <Image
+          source={posterWide}
+          accessibilityLabel={ALT}
+          contentFit="fill"
+          transition={sheetH ? 0 : 200}
+          style={{ width: "100%", height: "100%" }}
+        />
         {/* The moving light sits exactly over the original photo inside the wider still. */}
-        <LivingLight style={{ position: 'absolute', left: '33.333%', top: '25%', width: '33.333%', height: '50%' }} />
+        <LivingLight
+          style={{
+            position: "absolute",
+            left: "33.333%",
+            top: "25%",
+            width: "33.333%",
+            height: "50%",
+          }}
+        />
       </Drift>
       {tablet ? brand : null}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1, justifyContent: "flex-end" }}
+      >
         <ScrollView
           bounces={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end', alignItems: 'center' }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "flex-end",
+            alignItems: "center",
+          }}
           style={{ flexGrow: 0 }}
         >
           <Animated.View
             entering={FadeInDown.duration(360).springify().damping(20)}
             onLayout={(e) => setSheetH(Math.round(e.nativeEvent.layout.height))}
             style={{
-              width: tablet ? 560 : '100%',
-              maxWidth: '100%',
+              width: tablet ? 560 : "100%",
+              maxWidth: "100%",
               gap: tablet ? 20 : compact ? 14 : 18,
               paddingTop: tablet ? 30 : compact ? 20 : 24,
               paddingHorizontal: tablet ? 40 : 24,
               paddingBottom: (tablet ? 34 : compact ? 16 : 26) + insets.bottom,
               borderTopLeftRadius: radius.sheet,
               borderTopRightRadius: radius.sheet,
-              overflow: 'hidden',
-              boxShadow: '0px -14px 44px rgba(14,14,14,0.10)',
+              overflow: "hidden",
+              boxShadow: "0px -14px 44px rgba(14,14,14,0.10)",
             }}
           >
             {/* Frosted glass: the concrete and the containers bleed softly through. */}
@@ -141,27 +251,41 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
               intensity={45}
               tint="light"
               blurMethod="dimezisBlurViewSdk31Plus"
-              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-            />
-            <View
-              pointerEvents="none"
               style={{
-                position: 'absolute',
+                position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(255,255,255,0.6)',
+              }}
+            />
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255,255,255,0.6)",
                 borderTopLeftRadius: radius.sheet,
                 borderTopRightRadius: radius.sheet,
                 borderTopWidth: 1,
-                borderColor: 'rgba(255,255,255,0.9)',
+                borderColor: "rgba(255,255,255,0.9)",
               }}
             />
             {!tablet && sheetBrand ? (
               // On phones the wordmark sits in the sheet so it never lands on a container.
               <Txt
-                style={{ position: 'absolute', top: 26, right: 24, fontFamily: fonts.semibold, fontSize: 18, lineHeight: 22, letterSpacing: -0.36 }}
+                style={{
+                  position: "absolute",
+                  top: 26,
+                  right: 24,
+                  fontFamily: fonts.semibold,
+                  fontSize: 18,
+                  lineHeight: 22,
+                  letterSpacing: -0.36,
+                }}
                 accessibilityRole="header"
               >
                 cymis
@@ -180,18 +304,37 @@ function Frame({ children, sheetBrand }: { children: ReactNode; sheetBrand: bool
  * the container C, about twenty seconds each way. Still when the phone asks
  * for reduced motion.
  */
-function Drift({ children, style, originX, originY }: { children: ReactNode; style: object; originX?: number; originY?: number }) {
+function Drift({
+  children,
+  style,
+  originX,
+  originY,
+}: {
+  children: ReactNode;
+  style: object;
+  originX?: number;
+  originY?: number;
+}) {
   const reduce = useReducedMotion();
   const t = useSharedValue(0);
   useEffect(() => {
     if (reduce) return;
-    t.value = withRepeat(withTiming(1, { duration: 20000, easing: Easing.inOut(Easing.sin) }), -1, true);
+    t.value = withRepeat(
+      withTiming(1, { duration: 20000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true,
+    );
   }, [reduce, t]);
   const anim = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + t.value * 0.035 }, { translateY: -t.value * 6 }],
   }));
-  const origin = originX !== undefined && originY !== undefined ? { transformOrigin: `${originX}px ${originY}px` } : null;
-  return <Animated.View style={[style, origin, anim]}>{children}</Animated.View>;
+  const origin =
+    originX !== undefined && originY !== undefined
+      ? { transformOrigin: `${originX}px ${originY}px` }
+      : null;
+  return (
+    <Animated.View style={[style, origin, anim]}>{children}</Animated.View>
+  );
 }
 
 /**
@@ -211,14 +354,20 @@ function LivingLight({ style, cover }: { style: object; cover?: boolean }) {
   useEffect(() => {
     if (filmDone && !reduce) player.play();
   }, [filmDone, reduce, player]);
-  useEventListener(player, 'playingChange', ({ isPlaying }) => {
+  useEventListener(player, "playingChange", ({ isPlaying }) => {
     if (isPlaying) shown.value = withTiming(1, { duration: 900 });
   });
   const fade = useAnimatedStyle(() => ({ opacity: shown.value }));
   if (reduce) return null;
   return (
     <Animated.View pointerEvents="none" style={[style, fade]}>
-      <VideoView player={player} style={{ width: '100%', height: '100%' }} contentFit={cover ? 'cover' : 'fill'} nativeControls={false} allowsPictureInPicture={false} />
+      <VideoView
+        player={player}
+        style={{ width: "100%", height: "100%" }}
+        contentFit={cover ? "cover" : "fill"}
+        nativeControls={false}
+        allowsPictureInPicture={false}
+      />
     </Animated.View>
   );
 }

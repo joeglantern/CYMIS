@@ -5,8 +5,8 @@ import { AccessibilityInfo, Platform, useWindowDimensions } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 
 const film = require('../../../assets/video/splash.mp4');
-// Same film for landscape screens: the portrait shot in the middle over a
-// soft, blurred copy of itself, so a laptop is filled without cropping it.
+// The film rebuilt for landscape screens (made in Remotion): its three beats
+// side by side, then the C grows into the sign in's picture column.
 const filmWide = require('../../../assets/video/splash-wide.mp4');
 
 const IS_WEB = Platform.OS === 'web';
@@ -41,7 +41,8 @@ function clearBootFrame(fade: boolean) {
 export function SplashFilm({ onDone }: { onDone: () => void }) {
   const { width, height } = useWindowDimensions();
   // Picked once, so turning a tablet mid film does not restart it.
-  const [wide] = useState(() => IS_WEB && width >= height);
+  // Same rule the sign in uses for its side by side layout, so the film lands on it.
+  const [wide] = useState(() => IS_WEB && width > height * 1.05);
   const [skip, setSkip] = useState<boolean | null>(IS_WEB ? !webFilmWanted() : null);
   const player = useVideoPlayer(wide ? filmWide : film, (p) => {
     p.muted = true;
@@ -96,7 +97,7 @@ export function SplashFilm({ onDone }: { onDone: () => void }) {
   if (skip !== false) return null;
 
   return (
-    <Animated.View exiting={FadeOut.duration(260)} style={{ position: 'absolute', inset: 0, backgroundColor: '#39383a', zIndex: 50 }}>
+    <Animated.View exiting={FadeOut.duration(260)} style={{ position: 'absolute', inset: 0, backgroundColor: wide ? '#ffffff' : '#39383a', zIndex: 50 }}>
       <VideoView player={player} style={{ flex: 1 }} contentFit="cover" nativeControls={false} allowsPictureInPicture={false} />
     </Animated.View>
   );

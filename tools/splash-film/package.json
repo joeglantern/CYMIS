@@ -1,0 +1,17 @@
+{
+  "name": "cymis-splash-film",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node -e \"require('fs').cpSync('../../apps/app/assets/video/splash.mp4','public/splash.mp4');require('fs').cpSync('../../apps/app/assets/images/poster.jpg','public/poster.jpg')\"",
+    "preview": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts Wide out/raw.mp4 --codec=h264 --crf=18"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.520",
+    "@remotion/google-fonts": "4.0.520",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.520"
+  }
+}

@@ -29,8 +29,10 @@
         background: #39383a url('/splash-first.jpg') center / cover no-repeat;
         transition: opacity 260ms ease;
       }
-      @media (min-aspect-ratio: 1/1) {
+      /* Same rule as the app: wide screens get the landscape film, which opens on white. */
+      @media (min-aspect-ratio: 21/20) {
         #boot {
+          background-color: #ffffff;
           background-image: url('/splash-first-wide.jpg');
         }
       }
