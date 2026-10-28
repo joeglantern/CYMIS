@@ -86,6 +86,9 @@ chmod 700 ~/cymis-staging
 chmod 644 s3.json
 
 docker compose -p cymis-staging up -d --build --remove-orphans
+# Caddy reads its config only at start (its admin API is off), so restart it
+# to pick up Caddyfile changes. It takes about a second.
+docker compose -p cymis-staging restart web >/dev/null
 
 url_of() {
   for _ in $(seq 1 60); do
