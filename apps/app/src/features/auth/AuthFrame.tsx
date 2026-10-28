@@ -7,6 +7,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useEffect } from 'react';
+import { useBoot } from '@/state/boot';
 import { ThemeProvider, useLayout, useTheme } from '@/theme/theme';
 import { fonts, radius } from '@/theme/tokens';
 import { Txt } from '@/ui';
@@ -201,11 +202,15 @@ function Drift({ children, style, originX, originY }: { children: ReactNode; sty
 function LivingLight({ style, cover }: { style: object; cover?: boolean }) {
   const reduce = useReducedMotion();
   const shown = useSharedValue(0);
+  // Starts once the opening film is over, so two videos never play at once.
+  const filmDone = useBoot((s) => s.filmDone);
   const player = useVideoPlayer(reduce ? null : lightLoop, (p) => {
     p.muted = true;
     p.loop = true;
-    p.play();
   });
+  useEffect(() => {
+    if (filmDone && !reduce) player.play();
+  }, [filmDone, reduce, player]);
   useEventListener(player, 'playingChange', ({ isPlaying }) => {
     if (isPlaying) shown.value = withTiming(1, { duration: 900 });
   });

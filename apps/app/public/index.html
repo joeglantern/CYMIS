@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>%WEB_TITLE%</title>
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        overflow: hidden;
+        margin: 0;
+        background: #ffffff;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+      /* The opening film's first frame, shown while the app loads. The app
+         plays the film from this exact frame, then removes this layer. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483000;
+        background: #39383a url('/splash-first.jpg') center / cover no-repeat;
+        transition: opacity 260ms ease;
+      }
+      @media (min-aspect-ratio: 1/1) {
+        #boot {
+          background-image: url('/splash-first-wide.jpg');
+        }
+      }
+      #boot.gone {
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
+    <script>
+      // Decide before anything paints, so the first frame never flashes for
+      // someone who will not see the film.
+      (function () {
+        var seen = false;
+        try {
+          seen = sessionStorage.getItem('cymis.film') === '1';
+        } catch (e) {}
+        var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.__cymisFilm = !(seen || calm);
+      })();
+    </script>
+  </head>
+
+  <body>
+    <noscript>Cymis needs JavaScript turned on.</noscript>
+    <div id="boot" aria-hidden="true"></div>
+    <script>
+      if (!window.__cymisFilm) document.getElementById('boot').remove();
+    </script>
+    <div id="root"></div>
+  </body>
+</html>
