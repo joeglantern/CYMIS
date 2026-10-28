@@ -14,6 +14,11 @@ Read this first, it changes a few items below.
 - **Sign in limits are per person now** (see Small known gaps). The test tip in item 2 about flushing Redis still helps, but twelve different staff IDs from one address no longer hit the limit.
 - **`offline-sync.md` is less urgent.** The app already follows the sync contract (`apps/app/src/offline/engine.ts`). Still write it, from what the server does, so the two can be checked against each other.
 - **Test helpers:** `scripts/demo-data.mjs` (a supervisor, three crew and a live audit) and `scripts/mock-audit.mjs` (a running audit from a small JSON list).
+- **New on 29 October** (see `CHANGELOG.md` 0.2.0):
+  - Signed in devices: `GET /auth/sessions`, `DELETE /auth/sessions/:id`, `POST /auth/sessions/end-others`, and `POST /users/:id/sign-out-everywhere` for admins. Access tokens now carry the session id (`fam`), and a signed out session is refused at once through a Redis mark (`apps/api/src/modules/auth/sessions.ts`).
+  - `GET /app-config` (minimum and latest app version, feature switches, a notice) driven by `APP_MIN_VERSION`, `APP_LATEST_VERSION`, `FEATURES_OFF` and `APP_NOTICE`.
+  - `POST /client-errors`: crash reports from the apps, written to the log as `app crash report`. Production should ship these logs somewhere searchable (item 3).
+  - `/health/live` returns `version` and `commit`. Set `GIT_COMMIT` in production builds too.
 
 ## What is already done
 
