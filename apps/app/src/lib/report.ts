@@ -7,6 +7,28 @@ import { APP_VERSION } from '@/state/appConfig';
 // Only the error itself is sent: never form input, scans or tokens.
 
 const seen = new Map<string, number>();
+
+/** A screen's code file is gone because a newer version was deployed while this tab was open. */
+export function isStaleBundle(err: unknown) {
+  const e = err as { name?: string; message?: string } | null;
+  return Platform.OS === 'web' && !!e && (e.name === 'AsyncRequireError' || /Loading module .*\/_expo\/static\/.* failed/.test(e.message ?? ''));
+}
+
+/** Reloads once to pick up the new version. Returns false if it already tried in the last minute. */
+export function reloadForNewVersion() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+  const KEY = 'cymis.reloaded-at';
+  let last = 0;
+  try {
+    last = Number(sessionStorage.getItem(KEY) ?? 0);
+    sessionStorage.setItem(KEY, String(Date.now()));
+  } catch {
+    // Without storage we still reload, once per page load.
+  }
+  if (Date.now() - last < 60_000) return false;
+  window.location.reload();
+  return true;
+}
 const SAME_ERROR_GAP_MS = 60_000;
 
 export function reportError(err: unknown, screen?: string) {
@@ -38,8 +60,14 @@ export function installCrashReporting() {
 
   if (Platform.OS === 'web') {
     if (typeof window === 'undefined') return;
-    window.addEventListener('error', (ev) => reportError(ev.error ?? ev.message, window.location.pathname));
-    window.addEventListener('unhandledrejection', (ev) => reportError(ev.reason, window.location.pathname));
+    window.addEventListener('error', (ev) => {
+      if (isStaleBundle(ev.error) && reloadForNewVersion()) return;
+      reportError(ev.error ?? ev.message, window.location.pathname);
+    });
+    window.addEventListener('unhandledrejection', (ev) => {
+      if (isStaleBundle(ev.reason) && reloadForNewVersion()) return;
+      reportError(ev.reason, window.location.pathname);
+    });
     return;
   }
 

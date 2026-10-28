@@ -83,6 +83,30 @@ describe('signed in devices', () => {
   });
 });
 
+describe('two tabs refreshing at once', () => {
+  it('keeps the person signed in when the same token arrives twice in the same instant', async () => {
+    const u = await createUser(t.ctx, 'AUDITOR');
+    const { refreshToken } = await login(t.app, u.staffId);
+    const send = () => t.app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken } });
+    const [a, b] = await Promise.all([send(), send()]);
+    expect([a.statusCode, b.statusCode]).toEqual([200, 200]);
+    // Both new tokens work, and they are still one device.
+    expect((await call('GET', '/auth/me', a.json().accessToken)).statusCode).toBe(200);
+    expect((await call('GET', '/auth/me', b.json().accessToken)).statusCode).toBe(200);
+    expect((await call('GET', '/auth/sessions', a.json().accessToken)).json().sessions).toHaveLength(1);
+  });
+
+  it('still ends the session when an old token comes back long after', async () => {
+    const u = await createUser(t.ctx, 'AUDITOR');
+    const { refreshToken } = await login(t.app, u.staffId);
+    expect((await t.app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken } })).statusCode).toBe(200);
+    // Pretend the rotation happened a minute ago.
+    await t.ctx.db.refreshToken.updateMany({ where: { userId: u.id, replacedById: { not: null } }, data: { revokedAt: new Date(Date.now() - 60_000) } });
+    const late = await t.app.inject({ method: 'POST', url: '/api/v1/auth/refresh', payload: { refreshToken } });
+    expect(late.statusCode).toBe(401);
+  });
+});
+
 describe('app config and crash reports', () => {
   it('serves versions, switched off features and no notice', async () => {
     const res = await call('GET', '/app-config');

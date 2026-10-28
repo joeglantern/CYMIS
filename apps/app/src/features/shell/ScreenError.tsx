@@ -2,7 +2,7 @@ import { router, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { feedback } from '@/feedback';
-import { reportError } from '@/lib/report';
+import { isStaleBundle, reloadForNewVersion, reportError } from '@/lib/report';
 import { useTheme } from '@/theme/theme';
 import { Button, EmptyState } from '@/ui';
 
@@ -15,6 +15,8 @@ export function ScreenError({ error, retry }: ErrorBoundaryProps) {
   const path = usePathname();
 
   useEffect(() => {
+    // A new version went live while this tab was open: load it, quietly.
+    if (isStaleBundle(error) && reloadForNewVersion()) return;
     feedback.error();
     reportError(error, path);
     if (__DEV__) console.error(error);

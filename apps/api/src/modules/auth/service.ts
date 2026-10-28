@@ -183,6 +183,18 @@ export async function refresh(
   if (found.expiresAt <= now) throw new UnauthorizedError('Your session has expired', 'session_expired');
   if (!found.user.isActive) throw new UnauthorizedError();
 
+  // A token used twice within a few seconds is two tabs or a retry racing,
+  // not a stolen token. The second one gets its own token in the same family.
+  const reissue = async () => {
+    const familyStillLive = await ctx.db.refreshToken.count({
+      where: { familyId: found.familyId, revokedAt: null, expiresAt: { gt: now } },
+    });
+    if (familyStillLive === 0 && found.revokedAt && now.getTime() - found.revokedAt.getTime() > 2_000) {
+      throw new UnauthorizedError('Please sign in again', 'session_revoked');
+    }
+    return issueTokens(ctx, sign, found.user, client, found.familyId, { ip: meta.ip, deviceLabel: found.deviceLabel });
+  };
+
   if (found.revokedAt) {
     const withinGrace = found.replacedById !== null && now.getTime() - found.revokedAt.getTime() < REFRESH_GRACE_MS;
     if (!withinGrace) {
@@ -200,21 +212,16 @@ export async function refresh(
       });
       throw new UnauthorizedError('Please sign in again', 'session_revoked');
     }
-    // Two tabs or a retry raced each other. Give this one its own token in the same family.
-    const familyStillLive = await ctx.db.refreshToken.count({
-      where: { familyId: found.familyId, revokedAt: null, expiresAt: { gt: now } },
-    });
-    if (familyStillLive === 0) throw new UnauthorizedError('Please sign in again', 'session_revoked');
-    return issueTokens(ctx, sign, found.user, client, found.familyId, { ip: meta.ip, deviceLabel: found.deviceLabel });
+    return reissue();
   }
 
-  return ctx.db.$transaction(async (tx) => {
-    // Claim the token. If another request got here first, count is 0.
+  const won = await ctx.db.$transaction(async (tx) => {
+    // Claim the token. If another request got here in the same instant, count is 0.
     const claimed = await tx.refreshToken.updateMany({
       where: { id: found.id, revokedAt: null },
       data: { revokedAt: now },
     });
-    if (claimed.count === 0) throw new UnauthorizedError('Please sign in again', 'session_revoked');
+    if (claimed.count === 0) return null;
     const issued = await issueTokens(
       ctx,
       sign,
@@ -227,6 +234,8 @@ export async function refresh(
     await tx.refreshToken.update({ where: { id: found.id }, data: { replacedById: issued.tokenId } });
     return issued;
   });
+  // Lost the race by a moment: same as a reuse inside the grace window.
+  return won ?? reissue();
 }
 
 /** Ends the sign in that this refresh token belongs to. Quietly does nothing for unknown tokens. */

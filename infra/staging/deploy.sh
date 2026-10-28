@@ -45,7 +45,12 @@ cd ~/cymis-staging
 tar -xzf src.tgz && rm src.tgz
 # Refresh the web files in place: the web container mounts this folder, and
 # replacing the folder itself would leave it serving the old, deleted one.
-mkdir -p infra/staging/web && find infra/staging/web -mindepth 1 -delete && tar -xzf web.tgz -C infra/staging/web && rm web.tgz
+# Old code files stay for two weeks, so a tab opened before this deploy can
+# still load the screens it has not opened yet.
+mkdir -p infra/staging/web
+find infra/staging/web -mindepth 1 -maxdepth 1 ! -name _expo -exec rm -rf {} +
+[ -d infra/staging/web/_expo ] && find infra/staging/web/_expo -type f -mtime +14 -delete
+tar -xzf web.tgz --touch -C infra/staging/web && rm web.tgz
 cd infra/staging
 umask 077
 

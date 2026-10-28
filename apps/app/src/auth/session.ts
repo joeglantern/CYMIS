@@ -70,11 +70,17 @@ function refreshOnce(): Promise<string | null> {
     try {
       const stored = IS_WEB ? undefined : await secureToken.get();
       if (!IS_WEB && !stored) return null;
-      const res = await api<AuthResponse>('/auth/refresh', {
-        method: 'POST',
-        body: stored ? { refreshToken: stored } : {},
-        anonymous: true,
-      });
+      const call = () =>
+        api<AuthResponse>('/auth/refresh', {
+          method: 'POST',
+          body: stored ? { refreshToken: stored } : {},
+          anonymous: true,
+        });
+      // Browser tabs share one refresh cookie, and each refresh replaces it.
+      // Take turns, so two tabs never send the same cookie at once; the one
+      // that waits sends the fresh cookie the first one got back.
+      const locks = IS_WEB && typeof navigator !== 'undefined' ? (navigator as { locks?: { request: <T>(name: string, cb: () => Promise<T>) => Promise<T> } }).locks : undefined;
+      const res = locks ? await locks.request('cymis-refresh', call) : await call();
       await accept(res);
       return res.accessToken;
     } catch (err) {
