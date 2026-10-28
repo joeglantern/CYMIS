@@ -14,6 +14,8 @@ interface SettingsState {
   seenScannerTips: boolean;
   /** Which screens an admin or supervisor is looking at. Null means the default for this device. */
   viewAs: 'ADMIN' | 'SUPERVISOR' | 'AUDITOR' | null;
+  /** Dashboard sidebar shrunk to an icon rail. */
+  sidebarCollapsed: boolean;
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void;
 }
 
@@ -26,6 +28,7 @@ export const useSettings = create<SettingsState>()(
       keepAwake: true,
       seenScannerTips: false,
       viewAs: null,
+      sidebarCollapsed: false,
       set: (patch) => set(patch),
     }),
     {

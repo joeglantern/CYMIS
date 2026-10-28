@@ -7,6 +7,7 @@ import { XIcon } from 'phosphor-react-native/src/icons/X';
 import { ArrowCircleUpIcon } from 'phosphor-react-native/src/icons/ArrowCircleUp';
 import { DeviceMobileIcon } from 'phosphor-react-native/src/icons/DeviceMobile';
 import { DesktopIcon } from 'phosphor-react-native/src/icons/Desktop';
+import { SidebarSimpleIcon } from 'phosphor-react-native/src/icons/SidebarSimple';
 import { CaretLeftIcon } from 'phosphor-react-native/src/icons/CaretLeft';
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
@@ -87,6 +88,7 @@ export const icons = {
   'arrow-circle-up': ArrowCircleUpIcon,
   'device-mobile': DeviceMobileIcon,
   'desktop': DesktopIcon,
+  'sidebar-simple': SidebarSimpleIcon,
   'caret-left': CaretLeftIcon,
   'caret-right': CaretRightIcon,
   'caret-down': CaretDownIcon,
