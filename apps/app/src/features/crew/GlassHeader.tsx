@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { create } from 'zustand';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts } from '@/theme/tokens';
 import { Frost, Txt } from '@/ui';
@@ -18,6 +19,29 @@ export function useHeaderScroll() {
     },
   });
   return { y, onScroll };
+}
+
+const useTabTaps = create<Record<string, number>>(() => ({}));
+
+/** The tab bar calls this when someone taps the tab they are already on. */
+export function tapActiveTab(name: string) {
+  useTabTaps.setState((s) => ({ [name]: (s[name] ?? 0) + 1 }));
+}
+
+/**
+ * Tap the open tab to jump back to the top; tap again at the top to refresh,
+ * the way every big app does it.
+ */
+export function useTabReselect(name: string, y: SharedValue<number>, toTop: () => void, refresh?: () => void) {
+  const taps = useTabTaps((s) => s[name] ?? 0);
+  const first = useRef(taps);
+  const latest = useRef({ toTop, refresh });
+  latest.current = { toTop, refresh };
+  useEffect(() => {
+    if (taps === first.current) return;
+    if (y.value > 4) latest.current.toTop();
+    else latest.current.refresh?.();
+  }, [taps, y]);
 }
 
 /** Room to leave under the content so the floating tab bar never covers it. */

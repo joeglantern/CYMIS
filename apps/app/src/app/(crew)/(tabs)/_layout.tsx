@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { feedback } from '@/feedback';
+import { tapActiveTab } from '@/features/crew/GlassHeader';
 import { useQueue } from '@/offline/engine';
 import { useTheme } from '@/theme/theme';
 import { brand, fonts } from '@/theme/tokens';
@@ -72,8 +73,9 @@ function FloatingTabs({
               accessibilityState={{ selected: on }}
               accessibilityLabel={item.label}
               onPress={() => {
-                if (!on) feedback.select();
-                navigateToTab(route.key);
+                feedback.select();
+                if (on) tapActiveTab(route.name);
+                else navigateToTab(route.key);
               }}
               hitSlop={4}
             >

@@ -10,6 +10,15 @@ const config: ExpoConfig = {
   scheme: 'cymis',
   version: '0.1.0',
   orientation: 'default',
+  // Over the air updates: JavaScript fixes reach phones without a store
+  // release. A new native build is needed only when the app version changes.
+  runtimeVersion: { policy: 'appVersion' },
+  updates: {
+    url: 'https://u.expo.dev/d52a58c9-b248-472c-ac64-13145417e669',
+    // Check on launch, but never hold the app up for it on a weak yard signal.
+    checkAutomatically: 'ON_LOAD',
+    fallbackToCacheTimeout: 0,
+  },
   icon: './assets/images/icon.png',
   userInterfaceStyle: 'automatic',
   backgroundColor: '#ffffff',

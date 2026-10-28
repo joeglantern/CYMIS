@@ -237,7 +237,10 @@ function Detail({
       {photo ? (
         url.data ? (
           <Image
-            source={{ uri: url.data.url }}
+            // The link changes every few minutes but the photo never does, so cache it by its id.
+            source={{ uri: url.data.url, cacheKey: `photo-${photo.id}` }}
+            cachePolicy="memory-disk"
+            transition={{ duration: 160, effect: 'cross-dissolve' }}
             accessibilityLabel={`Photo of the container door taken by ${scan.auditor.fullName}`}
             contentFit="cover"
             style={{ width: '100%', height: 200, borderRadius: radius.md, backgroundColor: c.paper2 }}

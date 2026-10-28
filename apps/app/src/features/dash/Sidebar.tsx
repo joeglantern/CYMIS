@@ -4,6 +4,7 @@ import { Pressable, ScrollView, View, type ScrollViewInstance } from 'react-nati
 import { useAudits } from '@/api/queries';
 import { session, useSession } from '@/auth/session';
 import { useView } from '@/auth/view';
+import { DevicesSheet } from '@/features/account/DevicesSheet';
 import { ViewSwitcher } from '@/features/shell/ViewSwitcher';
 import { feedback } from '@/feedback';
 import { useTheme } from '@/theme/theme';
@@ -114,6 +115,7 @@ export function Sidebar() {
   const user = useSession((s) => s.user);
   const { main, admin } = useNav();
   const signOut = useSignOut();
+  const [devices, setDevices] = useState(false);
   return (
     <View
       role="navigation"
@@ -148,6 +150,13 @@ export function Sidebar() {
             Help and guides
           </Txt>
         </Pressable>
+        <Pressable accessibilityRole="button" onPress={() => setDevices(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, height: 36, paddingHorizontal: 10 }}>
+          <Icon name="device-mobile" size={18} color={c.muted} />
+          <Txt variant="bodySm" tone="muted">
+            Signed in devices
+          </Txt>
+        </Pressable>
+        <DevicesSheet open={devices} onClose={() => setDevices(false)} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 12, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: c.rule }}>
           <Avatar name={user?.fullName ?? 'Cymis'} size={32} />
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -180,6 +189,7 @@ export function TopNav() {
   const { main, admin } = useNav();
   const signOut = useSignOut();
   const [open, setOpen] = useState(false);
+  const [devices, setDevices] = useState(false);
   const bar = useRef<ScrollViewInstance>(null);
   return (
     <View
@@ -209,8 +219,10 @@ export function TopNav() {
         </View>
         <ViewSwitcher />
         <Button label="Help and guides" variant="secondary" icon="question" block size="lg" onPress={() => { setOpen(false); router.push('/help'); }} />
+        <Button label="Signed in devices" variant="secondary" icon="device-mobile" block size="lg" onPress={() => { setOpen(false); setDevices(true); }} />
         <Button label="Sign out" variant="danger-quiet" icon="sign-out" block size="lg" onPress={() => { setOpen(false); void signOut(); }} />
       </Sheet>
+      <DevicesSheet open={devices} onClose={() => setDevices(false)} />
     </View>
   );
 }

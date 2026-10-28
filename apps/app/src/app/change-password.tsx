@@ -54,7 +54,7 @@ function Form() {
       router.replace('/');
     } catch (err) {
       feedback.error();
-      setError(err instanceof ApiError && err.status === 401 ? 'The temporary password is not right.' : err instanceof ApiError ? err.message : 'Something went wrong.');
+      setError(err instanceof ApiError && err.status === 401 ? 'The temporary password is not right.' : err instanceof ApiError ? err.message : 'The app hit a problem on this phone. Close it, open it again and try once more.');
     } finally {
       setBusy(false);
     }

@@ -1,7 +1,8 @@
-import { router, type ErrorBoundaryProps } from 'expo-router';
+import { router, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { feedback } from '@/feedback';
+import { reportError } from '@/lib/report';
 import { useTheme } from '@/theme/theme';
 import { Button, EmptyState } from '@/ui';
 
@@ -11,11 +12,13 @@ import { Button, EmptyState } from '@/ui';
  */
 export function ScreenError({ error, retry }: ErrorBoundaryProps) {
   const { c } = useTheme();
+  const path = usePathname();
 
   useEffect(() => {
     feedback.error();
+    reportError(error, path);
     if (__DEV__) console.error(error);
-  }, [error]);
+  }, [error, path]);
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', backgroundColor: c.paper, padding: 16 }}>

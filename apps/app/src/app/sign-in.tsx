@@ -44,7 +44,7 @@ function SignInForm() {
         else if (err.status === 423 || err.code === 'ACCOUNT_LOCKED') setError({ field: 'form', text: err.message });
         else setError({ field: 'form', text: err.message });
       } else {
-        setError({ field: 'form', text: 'Something went wrong. Try again.' });
+        setError({ field: 'form', text: 'The app hit a problem on this phone. Close it, open it again and try once more.' });
       }
       setPassword('');
       passwordRef.current?.focus();

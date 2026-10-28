@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useAnimatedRef } from 'react-native-reanimated';
 import { SyncButton } from '@/features/crew/CrewHeader';
-import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
+import { GlassBar, LargeTitle, useHeaderScroll, useTabReselect, useTabSpace } from '@/features/crew/GlassHeader';
 import { ScanRow, scanBucket } from '@/features/crew/ScanRow';
 import { recentScans, useQueue, type LocalScan } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
@@ -31,6 +31,8 @@ export default function History() {
   const q = useQuery({ queryKey: ['history', version], queryFn: () => recentScans(null, 500) });
   const { y, onScroll } = useHeaderScroll();
   const tabSpace = useTabSpace();
+  const listRef = useAnimatedRef<Animated.FlatList<unknown>>();
+  useTabReselect('history', y, () => listRef.current?.scrollToOffset({ offset: 0, animated: true }), () => void q.refetch());
 
   const rows = useMemo(() => {
     const term = search.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -60,6 +62,7 @@ export default function History() {
     <View style={{ flex: 1, backgroundColor: c.paper }}>
       <GlassBar y={y} title="History" right={<SyncButton compact />} />
       <Animated.FlatList
+        ref={listRef as never}
         onScroll={onScroll}
         scrollEventThrottle={16}
         data={rows}

@@ -13,10 +13,13 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { queryClient } from '@/api/queries';
 import { session, socketToken, useSession } from '@/auth/session';
 import { preloadSounds } from '@/feedback';
+import { installCrashReporting } from '@/lib/report';
 import { startSyncEngine } from '@/offline/engine';
+import { startAppConfig } from '@/state/appConfig';
 import { configureSocket, startRealtime } from '@/realtime/socket';
 import { ScreenError } from '@/features/shell/ScreenError';
 import { SplashFilm } from '@/features/shell/SplashFilm';
+import { UpdateGate } from '@/features/shell/UpdateGate';
 import { useBoot } from '@/state/boot';
 import { WebStyles } from '@/features/shell/WebStyles';
 import { ThemeProvider, useTheme } from '@/theme/theme';
@@ -32,6 +35,8 @@ let booted = false;
 function boot() {
   if (booted) return;
   booted = true;
+  installCrashReporting();
+  startAppConfig();
   configureSocket(socketToken);
   startSyncEngine();
   startRealtime();
@@ -77,6 +82,7 @@ export default function RootLayout() {
             <ToastProvider>
               <ConfirmProvider>
                 <Root ready={ready} />
+                {ready ? <UpdateGate /> : null}
                 {ready && !filmDone ? <SplashFilm onDone={endFilm} /> : null}
               </ConfirmProvider>
             </ToastProvider>

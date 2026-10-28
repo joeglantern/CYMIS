@@ -41,7 +41,7 @@ export function ChangePasswordSheet({ open, onClose }: { open: boolean; onClose:
       feedback.error();
       if (err instanceof ApiError && err.offline) setError('Changing your password needs signal. Try again when you are back online.');
       else if (err instanceof ApiError && err.status === 401) setError('Your current password is not right.');
-      else setError(err instanceof ApiError ? err.message : 'Something went wrong.');
+      else setError(err instanceof ApiError ? err.message : 'The app hit a problem on this phone. Close it, open it again and try once more.');
     } finally {
       setBusy(false);
     }

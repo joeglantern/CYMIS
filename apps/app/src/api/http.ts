@@ -37,13 +37,13 @@ export class ApiError extends Error {
 function friendly(status: number, code: string, message?: string): string {
   if (message && !/^(internal|bad request)/i.test(message)) return message;
   if (status === 0) return 'No connection to the server. Check your signal and try again.';
-  if (status === 401) return 'Your session ended. Sign in again.';
+  if (status === 401) return code === 'session_revoked' ? 'This device was signed out. Sign in again.' : 'Your session ended. Sign in again.';
   if (status === 403) return 'You do not have access to this.';
   if (status === 404) return 'That could not be found. It may have been removed.';
   if (status === 409) return 'Someone changed this at the same time. Reload and try again.';
   if (status === 429) return 'Too many tries. Wait a minute and try again.';
   if (status >= 500) return 'The server had a problem. Try again in a moment.';
-  return code === 'VALIDATION_ERROR' ? 'Some of the details are not right.' : 'Something went wrong. Try again.';
+  return code === 'VALIDATION_ERROR' ? 'Some of the details are not right. Check them and try again.' : `The server turned this down (error ${status}). Try again, and tell your supervisor if it keeps happening.`;
 }
 
 export interface TokenSource {
@@ -68,6 +68,8 @@ export interface RequestOptions {
   signal?: AbortSignal;
   /** Raw body, for file uploads. Sent as is. */
   form?: FormData;
+  /** Give up after this long and treat it as no connection. */
+  timeoutMs?: number;
 }
 
 function buildUrl(path: string, query?: RequestOptions['query']) {
@@ -84,6 +86,13 @@ async function send(path: string, opts: RequestOptions, token: string | null): P
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
   if (token && !opts.anonymous) headers.Authorization = `Bearer ${token}`;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let signal = opts.signal;
+  if (opts.timeoutMs && !signal) {
+    const ctrl = new AbortController();
+    timer = setTimeout(() => ctrl.abort(), opts.timeoutMs);
+    signal = ctrl.signal;
+  }
   try {
     return await fetch(buildUrl(path, opts.query), {
       method: opts.method ?? (opts.body !== undefined || opts.form ? 'POST' : 'GET'),
@@ -91,11 +100,14 @@ async function send(path: string, opts: RequestOptions, token: string | null): P
       body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
       // The web dashboard keeps its refresh token in an httpOnly cookie.
       credentials: IS_WEB ? 'include' : 'omit',
-      signal: opts.signal,
+      signal,
     });
   } catch (err) {
-    if ((err as Error).name === 'AbortError') throw err;
+    // Our own timeout counts as no connection; a caller's abort is passed on.
+    if ((err as Error).name === 'AbortError' && !timer) throw err;
     throw new ApiError(0, 'NETWORK', friendly(0, 'NETWORK'));
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 

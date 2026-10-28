@@ -106,7 +106,7 @@ function UnlockSheet() {
       setPassword('');
       if (err instanceof ApiError && err.offline) setError('Password unlock needs signal. Use face or fingerprint to unlock offline.');
       else if (err instanceof ApiError && err.status === 401) setError('That password is not right.');
-      else setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
+      else setError(err instanceof ApiError ? err.message : 'The app hit a problem on this phone. Close it, open it again and try once more.');
       pwRef.current?.focus();
     } finally {
       setBusy(false);

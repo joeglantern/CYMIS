@@ -1,16 +1,17 @@
 import Constants from 'expo-constants';
 import { useState } from 'react';
+import { DevicesSheet } from '@/features/account/DevicesSheet';
 import { ChangePasswordSheet } from '@/features/crew/ChangePasswordSheet';
 import { ViewSwitcher } from '@/features/shell/ViewSwitcher';
 import { useView } from '@/auth/view';
 import { router } from 'expo-router';
 import { Platform, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useAnimatedRef } from 'react-native-reanimated';
 import { IS_WEB } from '@/api/http';
 import { session, useSession } from '@/auth/session';
 import { feedback } from '@/feedback';
 import { SyncButton } from '@/features/crew/CrewHeader';
-import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
+import { GlassBar, LargeTitle, useHeaderScroll, useTabReselect, useTabSpace } from '@/features/crew/GlassHeader';
 import { useQueue, wipeLocalData } from '@/offline/engine';
 import { useSettings, type ThemePreference } from '@/state/settings';
 import { useLayout, useTheme } from '@/theme/theme';
@@ -26,8 +27,11 @@ export default function Settings() {
   const queued = useQueue((s) => s.queued + s.rejected);
   const confirm = useConfirm();
   const [pwOpen, setPwOpen] = useState(false);
+  const [devicesOpen, setDevicesOpen] = useState(false);
   const { y, onScroll } = useHeaderScroll();
   const tabSpace = useTabSpace();
+  const scroll = useAnimatedRef<Animated.ScrollView>();
+  useTabReselect('settings', y, () => scroll.current?.scrollTo({ y: 0, animated: true }));
   const { canSwitch } = useView();
 
   const signOut = async () => {
@@ -51,7 +55,7 @@ export default function Settings() {
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>
       <GlassBar y={y} title="Settings" right={<SyncButton compact />} />
-      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: tabSpace }}>
+      <Animated.ScrollView ref={scroll} onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={{ paddingBottom: tabSpace }}>
       <LargeTitle title="Settings" />
       <View style={{ paddingHorizontal: gutter, paddingTop: 8, gap: 28, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
         {user ? (
@@ -133,6 +137,8 @@ export default function Settings() {
           <NavRow icon="scroll" title="Terms and privacy" onPress={() => router.push({ pathname: '/legal/[doc]', params: { doc: 'privacy' } })} />
           <Divider />
           <NavRow icon="key" title="Change password" detail="Forgot it? Your supervisor can reset it." onPress={() => setPwOpen(true)} />
+          <Divider />
+          <NavRow icon="device-mobile" title="Signed in devices" detail="Sign out a phone you lost or handed back" onPress={() => setDevicesOpen(true)} />
         </View>
 
         <Button label="Sign out" icon="sign-out" variant="danger-quiet" size="lg" block onPress={signOut} />
@@ -143,6 +149,7 @@ export default function Settings() {
       </View>
       </Animated.ScrollView>
       <ChangePasswordSheet open={pwOpen} onClose={() => setPwOpen(false)} />
+      <DevicesSheet open={devicesOpen} onClose={() => setDevicesOpen(false)} />
     </View>
   );
 }

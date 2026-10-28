@@ -46,6 +46,15 @@ export default function People() {
     },
     onError: fail,
   });
+  const signOutAll = useMutation({
+    mutationFn: (u: UserDto) => endpoints.signOutEverywhere(u.id),
+    onSuccess: (r, u) => {
+      feedback.success();
+      const first = u.fullName.split(' ')[0];
+      toast({ text: r.ended === 0 ? `${first} was not signed in anywhere.` : `${first} is signed out on ${r.ended === 1 ? 'one device' : `${r.ended} devices`}.`, tone: 'success' });
+    },
+    onError: fail,
+  });
   const reset = useMutation({
     mutationFn: ({ id, password }: { id: string; password: string }) => endpoints.resetPassword(id, password),
     onError: fail,
@@ -188,6 +197,25 @@ export default function People() {
                   );
                 }}
               />
+              {isAdmin && editing.id !== me?.id ? (
+                <Button
+                  label="Sign out on every device"
+                  icon="device-mobile"
+                  variant="secondary"
+                  size="lg"
+                  block
+                  loading={signOutAll.isPending}
+                  onPress={async () => {
+                    const ok = await confirm({
+                      title: `Sign ${editing.fullName.split(' ')[0]} out everywhere?`,
+                      body: 'Use this for a lost or shared phone. Every device they are signed in on stops working now. Scans already sent are kept, and they can sign in again with their password.',
+                      confirmLabel: 'Sign out everywhere',
+                      danger: true,
+                    });
+                    if (ok) signOutAll.mutate(editing);
+                  }}
+                />
+              ) : null}
               {editing.id !== me?.id ? (
                 <Button
                   label={editing.isActive ? 'Turn off access' : 'Turn access back on'}

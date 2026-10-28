@@ -4,6 +4,9 @@ import type { IconProps as PhosphorProps } from 'phosphor-react-native';
 import { ScanIcon } from 'phosphor-react-native/src/icons/Scan';
 import { ScanSmileyIcon } from 'phosphor-react-native/src/icons/ScanSmiley';
 import { XIcon } from 'phosphor-react-native/src/icons/X';
+import { ArrowCircleUpIcon } from 'phosphor-react-native/src/icons/ArrowCircleUp';
+import { DeviceMobileIcon } from 'phosphor-react-native/src/icons/DeviceMobile';
+import { DesktopIcon } from 'phosphor-react-native/src/icons/Desktop';
 import { CaretLeftIcon } from 'phosphor-react-native/src/icons/CaretLeft';
 import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
 import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
@@ -81,6 +84,9 @@ export const icons = {
   'scan': ScanIcon,
   'scan-smiley': ScanSmileyIcon,
   'x': XIcon,
+  'arrow-circle-up': ArrowCircleUpIcon,
+  'device-mobile': DeviceMobileIcon,
+  'desktop': DesktopIcon,
   'caret-left': CaretLeftIcon,
   'caret-right': CaretRightIcon,
   'caret-down': CaretDownIcon,

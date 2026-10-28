@@ -1,5 +1,9 @@
 import type {
   ActivityDto,
+  AppConfigResponse,
+  ClientErrorBody,
+  EndedSessionsResponse,
+  SessionsResponse,
   AuditCounts,
   AuditDto,
   AuditStatus,
@@ -116,4 +120,14 @@ export const endpoints = {
   revokeServiceAccount: (id: string) => api<ServiceAccountDto>(`/admin/service-accounts/${id}/revoke`, { method: 'POST', body: {} }),
   activity: (q: { actorId?: string; entityType?: string; entityId?: string; cursor?: string; limit?: number } = {}) =>
     api<Page<ActivityDto>>('/admin/activity', { query: q as Q }),
+
+  // Signed in devices
+  sessions: () => api<SessionsResponse>('/auth/sessions'),
+  endSession: (id: string) => api<{ ok: true }>(`/auth/sessions/${id}`, { method: 'DELETE' }),
+  endOtherSessions: () => api<EndedSessionsResponse>('/auth/sessions/end-others', { method: 'POST', body: {} }),
+  signOutEverywhere: (userId: string) => api<EndedSessionsResponse>(`/users/${userId}/sign-out-everywhere`, { method: 'POST', body: {} }),
+
+  // App config and crash reports. Both work before sign in.
+  appConfig: () => api<AppConfigResponse>('/app-config', { anonymous: true, timeoutMs: 6_000 }),
+  clientError: (body: ClientErrorBody) => api<{ ok: true }>('/client-errors', { method: 'POST', body, anonymous: true, timeoutMs: 6_000 }),
 };

@@ -2,10 +2,10 @@ import type { AuditDto } from '@cymis/schemas';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { RefreshControl, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useAnimatedRef } from 'react-native-reanimated';
 import { useSession } from '@/auth/session';
 import { SyncButton } from '@/features/crew/CrewHeader';
-import { GlassBar, LargeTitle, useHeaderScroll, useTabSpace } from '@/features/crew/GlassHeader';
+import { GlassBar, LargeTitle, useHeaderScroll, useTabReselect, useTabSpace } from '@/features/crew/GlassHeader';
 import { queryClient } from '@/api/queries';
 import { loadMyAudits, prepareAudit } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
@@ -25,6 +25,8 @@ export default function MyAudits() {
   const user = useSession((s) => s.user);
   const q = useQuery({ queryKey: ['my-audits'], queryFn: loadMyAudits, refetchInterval: 60_000 });
   const { y, onScroll } = useHeaderScroll();
+  const scroll = useAnimatedRef<Animated.ScrollView>();
+  useTabReselect('audits', y, () => scroll.current?.scrollTo({ y: 0, animated: true }), () => void q.refetch());
   const tabSpace = useTabSpace();
 
   const audits = q.data?.audits ?? [];
@@ -39,6 +41,7 @@ export default function MyAudits() {
     <View style={{ flex: 1, backgroundColor: c.paper2 }}>
       <GlassBar y={y} title="Your audits" right={<SyncButton compact />} />
       <Animated.ScrollView
+        ref={scroll}
         onScroll={onScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: tabSpace }}

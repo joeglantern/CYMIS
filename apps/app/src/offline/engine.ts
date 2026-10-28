@@ -4,7 +4,7 @@ import * as Network from 'expo-network';
 import { AppState, type AppStateStatus } from 'react-native';
 import { create } from 'zustand';
 import { endpoints } from '@/api/endpoints';
-import { ApiError } from '@/api/http';
+import { API_URL, ApiError } from '@/api/http';
 import { hasAccessToken, session, useSession } from '@/auth/session';
 import { feedback } from '@/feedback';
 import { deviceId, uuidv7 } from '@/lib/ids';
@@ -309,7 +309,7 @@ export function syncNow(): Promise<SyncOutcome> {
         return { sent, rejected, problem: 'offline' };
       }
       if (err instanceof ApiError && err.status === 401) return { sent, rejected, problem: 'signed-out' };
-      return { sent, rejected, problem: 'error', message: err instanceof Error ? err.message : 'Something went wrong.' };
+      return { sent, rejected, problem: 'error', message: err instanceof Error ? err.message : 'Sending stopped on a problem in the app. Your scans are kept and will try again.' };
     } finally {
       useQueue.setState({ syncing: false });
       await refreshCounts();
@@ -343,6 +343,24 @@ async function uploadPhotos() {
   }
 }
 
+/** Asks the server directly, twice, a moment apart. True if either answer comes back. */
+async function serverReachable(): Promise<boolean> {
+  for (let i = 0; i < 2; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 1_500));
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3_000);
+    try {
+      const res = await fetch(`${API_URL}/health/live`, { signal: ctrl.signal });
+      if (res.ok) return true;
+    } catch {
+      // Try once more.
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return false;
+}
+
 /* Start up */
 
 let started = false;
@@ -353,16 +371,21 @@ export function startSyncEngine() {
   started = true;
   void db.init().then(refreshCounts);
 
-  Network.getNetworkStateAsync()
-    .then((s) => useQueue.setState({ online: s.isInternetReachable !== false && s.isConnected !== false }))
-    .catch(() => undefined);
-
-  Network.addNetworkStateListener((s) => {
-    const online = s.isInternetReachable !== false && s.isConnected !== false;
+  const apply = async (s: Network.NetworkState) => {
+    let online = s.isInternetReachable !== false && s.isConnected !== false;
+    // Phones often report "no internet" for a moment while switching between
+    // yard Wi-Fi and mobile data. Only say offline once the server agrees.
+    if (!online && s.isConnected !== false) online = await serverReachable();
     const was = useQueue.getState().online;
     useQueue.setState({ online });
     if (online && !was) scheduleSync(800);
-  });
+  };
+
+  Network.getNetworkStateAsync()
+    .then(apply)
+    .catch(() => undefined);
+
+  Network.addNetworkStateListener((s) => void apply(s));
 
   let last: AppStateStatus = (AppState.currentState as AppStateStatus | null) ?? 'active';
   AppState.addEventListener('change', (next) => {
