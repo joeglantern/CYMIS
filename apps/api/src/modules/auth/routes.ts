@@ -1,11 +1,14 @@
 import {
   AuthResponse,
   ChangePasswordBody,
+  EndedSessionsResponse,
+  IdParams,
   LoginBody,
   LogoutBody,
   Me,
   OkResponse,
   RefreshBody,
+  SessionsResponse,
   type ClientKind,
 } from '@cymis/schemas';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -24,13 +27,14 @@ import {
   type IssuedTokens,
   type SignAccess,
 } from './service.js';
+import { endOtherSessions, endSession, listSessions } from './sessions.js';
 
 export const REFRESH_COOKIE = 'cymis_rt';
 const COOKIE_PATH = '/api/v1/auth';
 
 export const authRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app, { ctx }) => {
-  const sign: SignAccess = (user) => {
-    const token = app.jwt.sign({ sub: user.id, typ: 'access', pv: passwordVersion(user.passwordChangedAt) });
+  const sign: SignAccess = (user, sessionId) => {
+    const token = app.jwt.sign({ sub: user.id, typ: 'access', pv: passwordVersion(user.passwordChangedAt), fam: sessionId });
     return { token, expiresAt: new Date(Date.now() + ctx.env.ACCESS_TOKEN_TTL_SECONDS * 1000) };
   };
 
@@ -129,6 +133,43 @@ export const authRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app
       const user = requireUser(request);
       const issued = await changePassword(ctx, sign, user.id, request.body, meta(request));
       return sendTokens(reply, request.body.client, issued);
+    },
+  );
+
+  // Signed in devices. Lets someone sign out a phone they lost or handed back.
+  app.get(
+    '/sessions',
+    { schema: { tags: ['auth'], response: { 200: SessionsResponse } }, preHandler: app.guard({ roles: 'any', allowPasswordChange: true }) },
+    async (request) => {
+      const user = requireUser(request);
+      const sessionId = request.principal?.kind === 'user' ? request.principal.sessionId : undefined;
+      return { sessions: await listSessions(ctx, user.id, sessionId) };
+    },
+  );
+
+  app.delete(
+    '/sessions/:id',
+    {
+      schema: { tags: ['auth'], params: IdParams, response: { 200: OkResponse } },
+      preHandler: app.guard({ roles: 'any' }),
+      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+    },
+    async (request) => {
+      await endSession(ctx, requireUser(request).id, request.params.id, request.ip ?? null);
+      return { ok: true as const };
+    },
+  );
+
+  app.post(
+    '/sessions/end-others',
+    {
+      schema: { tags: ['auth'], response: { 200: EndedSessionsResponse } },
+      preHandler: app.guard({ roles: 'any' }),
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    },
+    async (request) => {
+      const keep = request.principal?.kind === 'user' ? request.principal.sessionId : undefined;
+      return { ended: await endOtherSessions(ctx, requireUser(request).id, keep, request.ip ?? null) };
     },
   );
 };

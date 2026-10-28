@@ -1,5 +1,6 @@
 import {
   CreateUserBody,
+  EndedSessionsResponse,
   IdParams,
   ResetPasswordBody,
   UpdateUserBody,
@@ -10,6 +11,7 @@ import {
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { AppContext } from '../../context.js';
 import { STAFF_ROLES, requireUser } from '../../plugins/auth.js';
+import { endAllSessionsFor } from '../auth/sessions.js';
 import { createUser, getUser, listUsers, resetPassword, unlockUser, updateUser } from './service.js';
 
 export const userRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app, { ctx }) => {
@@ -60,5 +62,16 @@ export const userRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app
     '/:id/unlock',
     { schema: { tags: ['users'], params: IdParams, response: { 200: UserDto } }, preHandler: adminOnly },
     async (request) => unlockUser(ctx, request.params.id, actor(request)),
+  );
+
+  // Lost or stolen phone: every device this person is signed in on stops working now.
+  app.post(
+    '/:id/sign-out-everywhere',
+    { schema: { tags: ['users'], params: IdParams, response: { 200: EndedSessionsResponse } }, preHandler: adminOnly },
+    async (request) => {
+      const by = actor(request);
+      await getUser(ctx, request.params.id);
+      return { ended: await endAllSessionsFor(ctx, by.id, request.params.id, by.ip) };
+    },
   );
 };

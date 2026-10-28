@@ -33,7 +33,7 @@ export interface RequestMeta {
 }
 
 /** Signs an access token. `passwordVersion` ties the token to the current password. */
-export type SignAccess = (user: { id: string; passwordChangedAt: Date | null }) => { token: string; expiresAt: Date };
+export type SignAccess = (user: { id: string; passwordChangedAt: Date | null }, sessionId: string) => { token: string; expiresAt: Date };
 
 export function passwordVersion(passwordChangedAt: Date | null): number {
   return passwordChangedAt ? passwordChangedAt.getTime() : 0;
@@ -60,7 +60,7 @@ async function issueTokens(
   meta: RequestMeta,
   db: Pick<Prisma.TransactionClient, 'refreshToken'> = ctx.db,
 ): Promise<IssuedTokens & { tokenId: string }> {
-  const access = sign(user);
+  const access = sign(user, familyId);
   const refreshToken = randomToken(32);
   const refreshExpiresAt = addDays(new Date(), ctx.env.REFRESH_TOKEN_TTL_DAYS);
   const tokenId = newId();

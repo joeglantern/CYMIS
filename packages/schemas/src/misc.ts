@@ -94,3 +94,30 @@ export const ActivityQuery = CursorQuery.extend({
   entityId: z.string().max(64).optional(),
 });
 export type ActivityQuery = z.infer<typeof ActivityQuery>;
+
+// App config: read by the apps on launch, safe defaults if it cannot be reached.
+
+export const AppConfigResponse = z.object({
+  /** Versions below this must update before they can be used. */
+  minVersion: z.string(),
+  /** Newest version. Older ones see a gentle banner. */
+  latestVersion: z.string(),
+  /** Remote switches. A missing key means on. */
+  features: z.record(z.string(), z.boolean()),
+  /** Optional line shown to everyone, for example planned downtime. */
+  notice: z.string().nullable(),
+});
+export type AppConfigResponse = z.infer<typeof AppConfigResponse>;
+
+// Crash reports from the apps. Kept short, never contains form input.
+
+export const ClientErrorBody = z.object({
+  message: z.string().trim().min(1).max(500),
+  stack: z.string().max(4000).optional(),
+  screen: z.string().max(200).optional(),
+  appVersion: z.string().max(40).optional(),
+  platform: z.enum(['ios', 'android', 'web']),
+  /** OTA bundle id, so a crash can be tied to an update. */
+  updateId: z.string().max(80).optional(),
+});
+export type ClientErrorBody = z.infer<typeof ClientErrorBody>;

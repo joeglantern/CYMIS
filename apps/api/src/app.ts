@@ -12,6 +12,7 @@ import type { AppContext } from './context.js';
 import { sha256Hex } from './lib/crypto.js';
 import { newId } from './lib/ids.js';
 import { loggerOptions } from './lib/logger.js';
+import { appRoutes } from './modules/app/routes.js';
 import { adminRoutes } from './modules/admin/routes.js';
 import { auditRoutes } from './modules/audits/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
@@ -109,6 +110,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
       await api.register(containerRoutes, { prefix: '/containers', ctx });
       await api.register(reportRoutes, { ctx });
       await api.register(adminRoutes, { prefix: '/admin', ctx });
+      await api.register(appRoutes, { ctx });
     },
     { prefix: API_PREFIX },
   );

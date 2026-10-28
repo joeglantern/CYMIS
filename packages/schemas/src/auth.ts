@@ -55,3 +55,21 @@ export const ChangePasswordBody = z
     path: ['newPassword'],
   });
 export type ChangePasswordBody = z.infer<typeof ChangePasswordBody>;
+
+/** One signed in device. All refresh tokens from one sign in share an id. */
+export const SessionDto = z.object({
+  id: Id,
+  deviceLabel: z.string().nullable(),
+  ip: z.string().nullable(),
+  startedAt: IsoDateTime,
+  lastActiveAt: IsoDateTime,
+  /** The device asking. */
+  current: z.boolean(),
+});
+export type SessionDto = z.infer<typeof SessionDto>;
+
+export const SessionsResponse = z.object({ sessions: z.array(SessionDto) });
+export type SessionsResponse = z.infer<typeof SessionsResponse>;
+
+export const EndedSessionsResponse = z.object({ ended: z.number().int() });
+export type EndedSessionsResponse = z.infer<typeof EndedSessionsResponse>;

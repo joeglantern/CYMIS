@@ -49,6 +49,17 @@ const EnvSchema = z
 
     /** Run the background workers inside the API process. Handy locally, off in production. */
     WORKERS_IN_PROCESS: bool,
+
+    /** Git commit of this build, shown by /health/live. Set by the deploy. */
+    GIT_COMMIT: z.string().max(64).default('dev'),
+    /** App versions below this are asked to update before they can be used. */
+    APP_MIN_VERSION: z.string().regex(/^\d+\.\d+\.\d+$/).default('0.0.0'),
+    /** Newest app version. Older ones see a gentle update banner. */
+    APP_LATEST_VERSION: z.string().regex(/^\d+\.\d+\.\d+$/).default('0.0.0'),
+    /** Comma separated feature switches to turn off, for example "photos,autoscan". */
+    FEATURES_OFF: z.string().default(''),
+    /** A line every app shows, for example planned downtime. Empty for none. */
+    APP_NOTICE: z.string().max(200).default(''),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production') {

@@ -9,6 +9,8 @@ import { ForbiddenError, UnauthorizedError } from '../lib/errors.js';
 export interface UserPrincipal {
   kind: 'user';
   user: { id: string; staffId: string; fullName: string; role: Role; mustChangePassword: boolean };
+  /** The sign in this token came from. Missing on tokens issued before sessions existed. */
+  sessionId?: string;
 }
 
 export interface ServicePrincipal {
@@ -23,7 +25,12 @@ export interface AccessTokenPayload {
   typ: 'access';
   /** Password version. A token stops working the moment the password changes. */
   pv: number;
+  /** Session (refresh token family). Signing a device out stops its tokens at once. */
+  fam?: string;
 }
+
+/** Redis key that marks a signed out session until its last access token has expired. */
+export const revokedSessionKey = (sessionId: string) => `revoked-session:${sessionId}`;
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -68,6 +75,9 @@ async function authenticateUser(app: FastifyInstance, ctx: AppContext, token: st
     throw new UnauthorizedError();
   }
   if (payload.typ !== 'access') throw new UnauthorizedError();
+  if (payload.fam && (await ctx.redis.exists(revokedSessionKey(payload.fam)))) {
+    throw new UnauthorizedError('This device was signed out. Sign in again', 'session_revoked');
+  }
 
   const user = await ctx.db.user.findUnique({
     where: { id: payload.sub },
@@ -96,6 +106,7 @@ async function authenticateUser(app: FastifyInstance, ctx: AppContext, token: st
       role: user.role,
       mustChangePassword: user.mustChangePassword,
     },
+    ...(payload.fam ? { sessionId: payload.fam } : {}),
   };
 }
 
