@@ -58,6 +58,8 @@ const EnvSchema = z
     APP_LATEST_VERSION: z.string().regex(/^\d+\.\d+\.\d+$/).default('0.0.0'),
     /** Comma separated feature switches to turn off, for example "photos,autoscan". */
     FEATURES_OFF: z.string().default(''),
+    /** Which server this is, shown to people as a ribbon outside production. */
+    APP_ENVIRONMENT: z.enum(['production', 'staging', 'development']).optional(),
     /** A line every app shows, for example planned downtime. Empty for none. */
     APP_NOTICE: z.string().max(200).default(''),
   })

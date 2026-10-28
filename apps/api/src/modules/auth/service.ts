@@ -134,6 +134,18 @@ export async function login(ctx: AppContext, sign: SignAccess, input: LoginBody,
     throw new UnauthorizedError('Staff ID or password is not right', 'invalid_credentials');
   }
 
+  // What the person should see about their last visit, read before we overwrite it.
+  const lastDevice = user.lastLoginAt
+    ? await ctx.db.refreshToken.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'desc' }, select: { deviceLabel: true, createdAt: true } })
+    : null;
+  const previousSignIn = user.lastLoginAt
+    ? {
+        at: (lastDevice && lastDevice.createdAt > user.lastLoginAt ? lastDevice.createdAt : user.lastLoginAt).toISOString(),
+        device: lastDevice?.deviceLabel ?? null,
+        failedAttempts: user.failedLoginCount,
+      }
+    : null;
+
   // Upgrade old hashes silently if the settings ever change.
   const rehash = argon2.needsRehash(user.passwordHash, ARGON_OPTIONS);
   const updated = await ctx.db.user.update({
@@ -158,7 +170,7 @@ export async function login(ctx: AppContext, sign: SignAccess, input: LoginBody,
     ip: meta.ip,
     data: { client: input.client, device: input.deviceLabel ?? null },
   });
-  return tokens;
+  return { ...tokens, response: { ...tokens.response, previousSignIn } };
 }
 
 /**

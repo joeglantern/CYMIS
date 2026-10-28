@@ -9,13 +9,23 @@ function body(code: string, message: string, details?: unknown): ErrorResponse {
   return { error: details === undefined ? { code, message } : { code, message, details } };
 }
 
+/** Every error carries the request id, so a person can quote it and we can find the log line. */
+function withRef(b: ErrorResponse, requestId: string): ErrorResponse {
+  return { error: { ...b.error, requestId } };
+}
+
 /**
  * One error shape for every response. Clients only ever see a code, a short
  * message and, for validation, which fields are wrong. Never a stack trace.
  */
 export const errorsPlugin = fp(
   async (app: FastifyInstance) => {
+    app.addHook('onSend', async (request, reply) => {
+      reply.header('x-request-id', request.id);
+    });
     app.setErrorHandler((error: FastifyError, request, reply) => {
+      const send = reply.send.bind(reply);
+      reply.send = ((payload: ErrorResponse) => send(withRef(payload, request.id))) as typeof reply.send;
       if (hasZodFastifySchemaValidationErrors(error)) {
         const details = error.validation.map((v) => ({
           field: v.instancePath.replace(/^\//, '').replace(/\//g, '.') || error.validationContext || 'body',
@@ -59,7 +69,7 @@ export const errorsPlugin = fp(
     });
 
     app.setNotFoundHandler((request, reply) => {
-      reply.status(404).send(body('not_found', `No route for ${request.method} ${request.url.split('?')[0]}`));
+      reply.status(404).send(withRef(body('not_found', `No route for ${request.method} ${request.url.split('?')[0]}`), request.id));
     });
   },
   { name: 'errors' },

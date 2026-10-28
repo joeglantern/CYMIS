@@ -108,10 +108,29 @@ describe('two tabs refreshing at once', () => {
 });
 
 describe('app config and crash reports', () => {
-  it('serves versions, switched off features and no notice', async () => {
+  it('serves versions, switched off features, no notice and which server this is', async () => {
     const res = await call('GET', '/app-config');
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ minVersion: '1.2.0', latestVersion: '1.4.0', features: { photos: false, autoscan: false }, notice: null });
+    expect(res.json()).toEqual({ minVersion: '1.2.0', latestVersion: '1.4.0', features: { photos: false, autoscan: false }, notice: null, environment: 'development' });
+  });
+
+  it('gives every error a reference that matches the response header', async () => {
+    const res = await call('GET', '/auth/me');
+    expect(res.statusCode).toBe(401);
+    const ref = res.json().error.requestId;
+    expect(ref).toBeTruthy();
+    expect(res.headers['x-request-id']).toBe(ref);
+    const missing = await call('GET', '/no-such-route');
+    expect(missing.json().error.requestId).toBeTruthy();
+  });
+
+  it('tells a person when the account was last used and about wrong passwords since', async () => {
+    const u = await createUser(t.ctx, 'AUDITOR');
+    const first = await t.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { staffId: u.staffId, password: PASSWORD, deviceLabel: 'Galaxy A15' } });
+    expect(first.json().previousSignIn).toBeNull();
+    await t.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { staffId: u.staffId, password: 'not the password' } });
+    const second = await t.app.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { staffId: u.staffId, password: PASSWORD, deviceLabel: 'Chrome on Windows' } });
+    expect(second.json().previousSignIn).toMatchObject({ device: 'Galaxy A15', failedAttempts: 1 });
   });
 
   it('takes a crash report without sign in and refuses junk', async () => {

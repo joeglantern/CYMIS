@@ -13,3 +13,6 @@ Contract changes (anything in `packages/schemas`) must be listed here.
 - `AppConfigResponse`: minimum and latest app version, feature switches and a notice, for `GET /app-config`.
 - `ClientErrorBody`: crash reports from the apps, for `POST /client-errors`.
 - `/health/live` now also returns `version` and `commit`.
+- `ErrorResponse.error.requestId`: a reference for support, also sent as the `x-request-id` header.
+- `AuthResponse.previousSignIn`: on sign in, when the account was last used, on what, and wrong passwords since.
+- `AppConfigResponse.environment`: production, staging or development.

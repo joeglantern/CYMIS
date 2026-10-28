@@ -35,7 +35,9 @@ describe('sign in', () => {
     const unknown = await post('/auth/login', { staffId: 'nobody', password: 'nope nope nope' });
     expect(wrong.statusCode).toBe(401);
     expect(unknown.statusCode).toBe(401);
-    expect(wrong.json()).toEqual(unknown.json());
+    // Same code and message, so nobody can tell which staff IDs exist. Only the support reference differs.
+    const strip = (b: { error: { requestId?: string } }) => ({ ...b.error, requestId: undefined });
+    expect(strip(wrong.json())).toEqual(strip(unknown.json()));
   });
 
   it('locks the account after too many wrong tries, then an admin can unlock it', async () => {

@@ -36,6 +36,8 @@ x-api-env: &api-env
   APP_LATEST_VERSION: ${APP_LATEST_VERSION:-0.0.0}
   FEATURES_OFF: ${FEATURES_OFF:-}
   APP_NOTICE: ${APP_NOTICE:-}
+  # Shows the "Test server" ribbon in the apps.
+  APP_ENVIRONMENT: staging
 
 services:
   postgres:

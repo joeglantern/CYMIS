@@ -106,6 +106,8 @@ export const AppConfigResponse = z.object({
   features: z.record(z.string(), z.boolean()),
   /** Optional line shown to everyone, for example planned downtime. */
   notice: z.string().nullable(),
+  /** Which server this is. Anything but production shows a ribbon so test data is never mistaken for real. */
+  environment: z.enum(['production', 'staging', 'development']).optional(),
 });
 export type AppConfigResponse = z.infer<typeof AppConfigResponse>;
 

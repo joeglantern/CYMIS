@@ -33,6 +33,15 @@ export const AuthResponse = z.object({
   refreshToken: z.string().optional(),
   refreshTokenExpiresAt: IsoDateTime,
   user: Me,
+  /** Sent on sign in only: the last time this account was used, and wrong passwords since. */
+  previousSignIn: z
+    .object({
+      at: IsoDateTime,
+      device: z.string().nullable(),
+      failedAttempts: z.number().int(),
+    })
+    .nullable()
+    .optional(),
 });
 export type AuthResponse = z.infer<typeof AuthResponse>;
 

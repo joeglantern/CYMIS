@@ -16,6 +16,7 @@ export const appRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app,
       latestVersion: ctx.env.APP_LATEST_VERSION,
       features: Object.fromEntries(off.map((f) => [f, false])),
       notice: ctx.env.APP_NOTICE || null,
+      environment: ctx.env.APP_ENVIRONMENT ?? (ctx.env.NODE_ENV === 'production' ? 'production' : 'development'),
     };
   });
 

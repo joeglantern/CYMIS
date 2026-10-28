@@ -66,6 +66,8 @@ export const ErrorResponse = z.object({
     code: z.string(),
     message: z.string(),
     details: z.unknown().optional(),
+    /** Reference for support. The same id is in the server log. */
+    requestId: z.string().optional(),
   }),
 });
 export type ErrorResponse = z.infer<typeof ErrorResponse>;
