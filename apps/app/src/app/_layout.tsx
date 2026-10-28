@@ -19,6 +19,7 @@ import { startAppConfig } from '@/state/appConfig';
 import { configureSocket, startRealtime } from '@/realtime/socket';
 import { ScreenError } from '@/features/shell/ScreenError';
 import { SplashFilm } from '@/features/shell/SplashFilm';
+import { EnvRibbon, IdleGuard, LastVisitNotice } from '@/features/shell/TrustLayer';
 import { UpdateGate } from '@/features/shell/UpdateGate';
 import { useBoot } from '@/state/boot';
 import { WebStyles } from '@/features/shell/WebStyles';
@@ -83,6 +84,9 @@ export default function RootLayout() {
               <ConfirmProvider>
                 <Root ready={ready} />
                 {ready ? <UpdateGate /> : null}
+                {ready ? <EnvRibbon /> : null}
+                <IdleGuard />
+                <LastVisitNotice />
                 {ready && !filmDone ? <SplashFilm onDone={endFilm} /> : null}
               </ConfirmProvider>
             </ToastProvider>

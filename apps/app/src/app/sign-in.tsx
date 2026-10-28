@@ -144,6 +144,10 @@ function SignInForm() {
         <FooterLink label="Terms of use" onPress={() => router.push('/legal/terms')} />
         <FooterLink label="Privacy" onPress={() => router.push('/legal/privacy')} />
       </View>
+      {/* The notice government and company systems show before sign in. */}
+      <Txt variant="caption" tone="muted" align="center" style={{ fontSize: 11, lineHeight: 15, marginTop: -6 }}>
+        For authorised staff only. Sign ins and changes are recorded.
+      </Txt>
     </>
   );
 }

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, TextInput, View, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useView } from '@/auth/view';
+import { KeyboardHelp, SkipLink } from '@/features/dash/KeyboardHelp';
 import { Sidebar, TopNav } from '@/features/dash/Sidebar';
 import { useLayout, useTheme } from '@/theme/theme';
 import { breakpoints, fonts, radius } from '@/theme/tokens';
@@ -28,13 +29,15 @@ export default function DashboardLayout() {
         paddingBottom: insets.bottom,
       }}
     >
+      <SkipLink />
       {wide ? <Sidebar /> : <TopNav />}
       <View style={{ flex: 1, minWidth: 0 }}>
         <TopBar />
-        <View style={{ flex: 1 }}>
+        <View nativeID="main" role="main" style={{ flex: 1 }}>
           <Slot />
         </View>
       </View>
+      <KeyboardHelp />
     </View>
   );
 }

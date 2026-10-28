@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { api, ApiError, IS_WEB, setTokenSource } from '@/api/http';
 import { kv } from '@/lib/kv';
+import { useLastVisit } from '@/state/lastVisit';
 import { secureToken } from './secure';
 
 export type SessionStatus = 'loading' | 'signedOut' | 'locked' | 'signedIn';
@@ -136,6 +137,7 @@ export const session = {
       anonymous: true,
     });
     await accept(res);
+    if (res.previousSignIn) useLastVisit.setState({ previous: res.previousSignIn });
     return res.user;
   },
 

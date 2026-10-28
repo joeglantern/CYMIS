@@ -22,6 +22,8 @@ export class ApiError extends Error {
     public code: string,
     message: string,
     public details?: unknown,
+    /** Support reference from the server, also in its log. */
+    public requestId?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -122,9 +124,13 @@ async function parse<T>(res: Response): Promise<T> {
     }
   }
   if (!res.ok) {
-    const err = (data as { error?: { code?: string; message?: string; details?: unknown } } | null)?.error;
+    const err = (data as { error?: { code?: string; message?: string; details?: unknown; requestId?: string } } | null)?.error;
     const code = err?.code ?? `HTTP_${res.status}`;
-    throw new ApiError(res.status, code, friendly(res.status, code, err?.message), err?.details);
+    const ref = err?.requestId ?? res.headers.get('x-request-id') ?? undefined;
+    let message = friendly(res.status, code, err?.message);
+    // Server faults get a short reference people can read out to support.
+    if (res.status >= 500 && ref) message = `${message} Reference ${ref.slice(-8).toUpperCase()}.`;
+    throw new ApiError(res.status, code, message, err?.details, ref);
   }
   return data as T;
 }
