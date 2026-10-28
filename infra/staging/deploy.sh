@@ -24,6 +24,9 @@ cd "$ROOT"
 echo "Building the web app"
 (cd apps/app && EXPO_PUBLIC_API_URL=same-origin npx expo export --platform web --output-dir dist-staging --clear >/dev/null)
 
+COMMIT="$(git rev-parse --short HEAD)"
+git diff --quiet HEAD -- apps packages infra || COMMIT="$COMMIT-dirty"
+
 echo "Packing the source"
 TMP="$(mktemp -d)"
 git ls-files -co --exclude-standard -- package.json pnpm-lock.yaml pnpm-workspace.yaml .dockerignore packages apps/api apps/app/package.json infra/staging \
@@ -36,7 +39,7 @@ ssh "$TARGET" "mkdir -p ~/$REMOTE_DIR"
 scp -q "$TMP/src.tgz" "$TMP/web.tgz" "$TARGET:$REMOTE_DIR/"
 rm -rf "$TMP"
 
-OUT="$(ssh "$TARGET" bash -s <<'REMOTE'
+OUT="$(ssh "$TARGET" "GIT_COMMIT=$COMMIT bash -s" <<'REMOTE'
 set -euo pipefail
 cd ~/cymis-staging
 tar -xzf src.tgz && rm src.tgz
@@ -63,6 +66,9 @@ S3_PUBLIC_ENDPOINT=
 ENV
   echo "FIRST_ADMIN_PASSWORD=$ADMIN_PW" > .first-admin
 fi
+
+# Record which commit is running, so /health/live can say.
+if grep -q '^GIT_COMMIT=' .env; then sed -i "s#^GIT_COMMIT=.*#GIT_COMMIT=$GIT_COMMIT#" .env; else echo "GIT_COMMIT=$GIT_COMMIT" >> .env; fi
 
 set -a; . ./.env; set +a
 cat > s3.json <<JSON

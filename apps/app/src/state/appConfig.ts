@@ -4,6 +4,9 @@ import { AppState, Platform } from 'react-native';
 import { create } from 'zustand';
 import { endpoints } from '@/api/endpoints';
 import { kv } from '@/lib/kv';
+import { olderThan } from '@/lib/version';
+
+export { olderThan };
 
 // Settings the server can change without a new release: block a broken old
 // version, nudge people to update, switch a feature off, or show a notice.
@@ -23,16 +26,6 @@ interface ConfigState {
 }
 
 export const useAppConfig = create<ConfigState>(() => ({ config: null, dismissedNotice: null, dismissedUpdate: null, loadedAt: 0 }));
-
-/** Compares "1.2.10" and "1.3.0" the way people expect. */
-export function olderThan(a: string, b: string) {
-  const pa = a.split('.').map((n) => Number.parseInt(n, 10) || 0);
-  const pb = b.split('.').map((n) => Number.parseInt(n, 10) || 0);
-  for (let i = 0; i < 3; i++) {
-    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) < (pb[i] ?? 0);
-  }
-  return false;
-}
 
 async function load() {
   try {

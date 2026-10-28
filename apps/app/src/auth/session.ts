@@ -42,8 +42,16 @@ export function cachedProfile(): Me | null {
   }
 }
 
+/** "Chrome on Windows", so people can tell their sessions apart. */
+function browserLabel() {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  const system = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : '';
+  return system ? `${browser} on ${system}` : browser;
+}
+
 function deviceLabel() {
-  if (IS_WEB) return 'Web browser';
+  if (IS_WEB) return browserLabel();
   const name = Constants.deviceName ?? (Platform.OS === 'ios' ? 'iPhone or iPad' : 'Android device');
   return name.slice(0, 100);
 }

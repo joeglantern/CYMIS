@@ -1,6 +1,6 @@
 import type { SessionDto } from '@cymis/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { feedback } from '@/feedback';
 import { useTheme } from '@/theme/theme';
@@ -20,7 +20,8 @@ function ago(iso: string) {
 }
 
 function iconFor(label: string | null): IconName {
-  return label && /web|chrome|safari|firefox|edge|windows|mac/i.test(label) ? 'desktop' : 'device-mobile';
+  if (!label || /iphone|ipad|android/i.test(label)) return 'device-mobile';
+  return /web|browser|chrome|safari|firefox|edge|opera|windows|mac|linux/i.test(label) ? 'desktop' : 'device-mobile';
 }
 
 /**
@@ -75,7 +76,7 @@ export function DevicesSheet({ open, onClose }: { open: boolean; onClose: () => 
           {(q.error as Error).message}
         </Txt>
       ) : (
-        <View style={{ gap: 2 }}>
+        <ScrollView style={{ maxHeight: 380 }} contentContainerStyle={{ gap: 2 }}>
           {sessions.map((s) => (
             <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: c.rule }}>
               <View style={{ width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: c.paper2 }}>
@@ -102,7 +103,7 @@ export function DevicesSheet({ open, onClose }: { open: boolean; onClose: () => 
               )}
             </View>
           ))}
-        </View>
+        </ScrollView>
       )}
 
       {others > 1 ? (

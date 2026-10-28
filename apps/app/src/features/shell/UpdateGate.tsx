@@ -95,7 +95,7 @@ function TopBar({ text, action, onAction, onClose }: { text: string; action?: st
         top: insets.top + 8,
         left: 12,
         right: 12,
-        zIndex: 55,
+        zIndex: 25,
         alignSelf: 'center',
         maxWidth: 560,
         marginHorizontal: 'auto',

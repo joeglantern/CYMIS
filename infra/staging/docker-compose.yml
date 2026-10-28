@@ -29,6 +29,13 @@ x-api-env: &api-env
   S3_FORCE_PATH_STYLE: "true"
   SEED_ADMIN_STAFF_ID: ${SEED_ADMIN_STAFF_ID:-ADMIN}
   SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+  # Shown by /health/live, set by deploy.sh.
+  GIT_COMMIT: ${GIT_COMMIT:-dev}
+  # Remote app settings. Change them in .env and restart the api.
+  APP_MIN_VERSION: ${APP_MIN_VERSION:-0.0.0}
+  APP_LATEST_VERSION: ${APP_LATEST_VERSION:-0.0.0}
+  FEATURES_OFF: ${FEATURES_OFF:-}
+  APP_NOTICE: ${APP_NOTICE:-}
 
 services:
   postgres:
