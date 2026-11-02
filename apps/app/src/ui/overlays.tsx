@@ -210,25 +210,42 @@ export interface ConfirmInput {
   danger?: boolean;
 }
 
+/** Two real choices. Escape, tapping away and Cancel all give null, and null means do nothing. */
+export interface ChoiceInput {
+  title: string;
+  body?: string;
+  confirmLabel: string;
+  altLabel: string;
+  cancelLabel?: string;
+}
+export type Choice = 'confirm' | 'alt' | null;
+
 const ConfirmContext = createContext<(c: ConfirmInput) => Promise<boolean>>(async () => false);
+const ChoiceContext = createContext<(c: ChoiceInput) => Promise<Choice>>(async () => null);
 
 export function useConfirm() {
   return useContext(ConfirmContext);
 }
 
+export function useChoice() {
+  return useContext(ChoiceContext);
+}
+
 export function ConfirmProvider({ children }: { children: ReactNode }) {
-  const [req, setReq] = useState<(ConfirmInput & { resolve: (v: boolean) => void }) | null>(null);
+  const [req, setReq] = useState<(ConfirmInput & { altLabel?: string; resolve: (v: Choice) => void }) | null>(null);
 
   const ask = useCallback(
     (input: ConfirmInput) =>
       new Promise<boolean>((resolve) => {
         if (input.danger) feedback.select();
-        setReq({ ...input, resolve });
+        setReq({ ...input, resolve: (v) => resolve(v === 'confirm') });
       }),
     [],
   );
 
-  const close = (v: boolean) => {
+  const choose = useCallback((input: ChoiceInput) => new Promise<Choice>((resolve) => setReq({ ...input, resolve })), []);
+
+  const close = (v: Choice) => {
     req?.resolve(v);
     setReq(null);
   };
@@ -237,8 +254,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConfirmContext.Provider value={value}>
-      {children}
-      <Sheet open={!!req} onClose={() => close(false)} label={req?.title ?? 'Confirm'} width={440}>
+      <ChoiceContext.Provider value={choose}>{children}</ChoiceContext.Provider>
+      <Sheet open={!!req} onClose={() => close(null)} label={req?.title ?? 'Confirm'} width={440}>
         {req ? (
           <>
             <Txt variant="heading">{req.title}</Txt>
@@ -250,13 +267,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <View style={{ gap: 8, marginTop: 6 }}>
               {req.danger ? (
                 <>
-                  <Button label={req.cancelLabel ?? 'Keep it'} size="lg" block onPress={() => close(false)} />
-                  <Button label={req.confirmLabel} variant="danger-quiet" size="lg" block onPress={() => close(true)} />
+                  <Button label={req.cancelLabel ?? 'Keep it'} size="lg" block onPress={() => close(null)} />
+                  <Button label={req.confirmLabel} variant="danger-quiet" size="lg" block onPress={() => close('confirm')} />
                 </>
               ) : (
                 <>
-                  <Button label={req.confirmLabel} size="lg" block onPress={() => close(true)} />
-                  <Button label={req.cancelLabel ?? 'Cancel'} variant="quiet" size="lg" block onPress={() => close(false)} />
+                  <Button label={req.confirmLabel} size="lg" block onPress={() => close('confirm')} />
+                  {req.altLabel ? <Button label={req.altLabel} variant="secondary" size="lg" block onPress={() => close('alt')} /> : null}
+                  <Button label={req.cancelLabel ?? 'Cancel'} variant="quiet" size="lg" block onPress={() => close(null)} />
                 </>
               )}
             </View>

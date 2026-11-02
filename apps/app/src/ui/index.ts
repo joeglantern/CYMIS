@@ -31,4 +31,4 @@ export {
   Divider,
   type PillOption,
 } from './surfaces';
-export { ToastProvider, useToast, Sheet, ConfirmProvider, useConfirm } from './overlays';
+export { ToastProvider, useToast, Sheet, ConfirmProvider, useChoice, useConfirm } from './overlays';

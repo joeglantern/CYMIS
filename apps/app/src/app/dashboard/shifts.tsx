@@ -13,7 +13,7 @@ import { feedback } from '@/feedback';
 import { addDays, dayKey, dayWord, eatTime, longDay, parseTime, shiftTimes } from '@/lib/eat';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts, radius } from '@/theme/tokens';
-import { Avatar, Button, Card, EmptyState, FilterPills, Icon, LiveBadge, Pill, SectionTitle, Skeleton, TextField, Txt, useConfirm, useToast } from '@/ui';
+import { Avatar, Button, Card, EmptyState, FilterPills, Icon, LiveBadge, Pill, SectionTitle, Skeleton, TextField, Txt, useChoice, useConfirm, useToast } from '@/ui';
 
 type Tab = 'upcoming' | 'past';
 
@@ -54,6 +54,7 @@ function ShiftRow({ shift, first, selected, narrow, onOpen }: { shift: ShiftDto;
   return (
     <Pressable
       accessibilityRole="button"
+      {...({ dataSet: { focusInset: 'true' } } as object)}
       accessibilityState={{ selected }}
       accessibilityLabel={`${shift.name}, ${eatTime(shift.startsAt)} to ${eatTime(shift.endsAt)}, ${shift.audit.name}, ${clerkWords(shift)}, ${statusWords[shift.audit.status]}`}
       onPress={() => {
@@ -156,6 +157,7 @@ function ShiftForm({ shift, planId, docked, onClose, onSaved }: { shift: ShiftDt
   const qc = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
+  const choose = useChoice();
   const today = dayKey(Date.now());
   const plans = useAudits({});
   const open = (plans.data?.items ?? []).filter((a) => OPEN.includes(a.status));
@@ -256,20 +258,22 @@ function ShiftForm({ shift, planId, docked, onClose, onSaved }: { shift: ShiftDt
     let moveThem = false;
     if (change.moves.length) {
       const one = change.moves.length === 1;
-      moveThem = await confirm({
+      const choice = await choose({
         title: one ? `Move ${change.moves[0]!.name} to this shift?` : `Move ${change.moves.length} clerks to this shift?`,
         body: one
           ? `They are also on ${shiftNames(change.moves[0]!.from)}. Move takes them off it. Keep on both leaves them on both.`
           : `Also on another shift: ${change.moves.map((m) => `${m.name} (${shiftNames(m.from)})`).join(', ')}. Move takes them off it. Keep on both leaves them on both.`,
         confirmLabel: 'Move',
-        cancelLabel: 'Keep on both',
+        altLabel: 'Keep on both',
       });
+      if (!choice) return;
+      moveThem = choice === 'confirm';
     }
     if (change.leaving.length) {
       const one = change.leaving.length === 1;
       const ok = await confirm({
         title: 'Take this yard plan off their phone?',
-        body: `${change.leaving.map((l) => l.name).join(', ')} ${one ? 'has' : 'have'} no other shift on this plan and ${one ? 'was' : 'were'} not given it directly, so it leaves their phone. Any of their scans not yet sent will be turned down. Move them to another shift first if they are still working it.`,
+        body: `${change.leaving.map((l) => l.name).join(', ')} ${one ? 'has' : 'have'} no other shift on this plan and ${one ? 'was' : 'were'} not given it directly, so it leaves their phone. Scans they have already taken still arrive. Move them to another shift first if they are still working it.`,
         confirmLabel: 'Take them off',
         danger: true,
       });
@@ -281,7 +285,7 @@ function ShiftForm({ shift, planId, docked, onClose, onSaved }: { shift: ShiftDt
   const askDelete = async () => {
     const ok = await confirm({
       title: `Delete ${shift!.name}?`,
-      body: 'Clerks who are on this yard plan only through this shift lose it from their phones, and any of their scans not yet sent will be turned down. Clerks given the plan directly keep it.',
+      body: 'Clerks who are on this yard plan only through this shift lose it from their phones. Scans they have already taken still arrive. Clerks given the plan directly keep it.',
       confirmLabel: 'Delete shift',
       danger: true,
     });
@@ -441,6 +445,8 @@ export default function Shifts() {
   const shifts = useShifts(tab === 'past' ? { endsBefore: startOfToday, order: 'desc' } : { endsFrom: startOfToday, order: 'asc' });
   const plans = useAudits({});
   const hasOpenPlan = (plans.data?.items ?? []).some((a) => OPEN.includes(a.status));
+  // Arrived from a yard plan: keep the way back to it in view.
+  const fromPlan = useAudit(params.plan);
   const items = useMemo(() => shifts.data?.items ?? [], [shifts.data]);
 
   const panel = params.shift;
@@ -455,7 +461,7 @@ export default function Shifts() {
   }, [panel, editing, shifts.isSuccess]);
 
   const openShift = (id: string) => router.setParams({ shift: id });
-  const closeForm = () => router.setParams({ shift: undefined, plan: undefined });
+  const closeForm = () => router.setParams({ shift: undefined });
   const newShift = () => router.setParams({ shift: 'new' });
   const newPlan = () => router.push('/dashboard/yard-plans/new' as never);
 
@@ -467,6 +473,7 @@ export default function Shifts() {
   const body = (
     <Page gap={24} maxWidth={1040}>
       <PageHeader
+        crumbs={fromPlan.data ? [{ label: fromPlan.data.name, href: `/dashboard/yard-plans/${fromPlan.data.id}` }, { label: 'Shift planning' }] : undefined}
         title="Shift planning"
         subtitle="Who works which yard plan, and when. All times are East Africa Time."
         actions={!formOpen && hasOpenPlan && items.length ? <Button label="New shift" icon="plus" onPress={newShift} /> : undefined}
