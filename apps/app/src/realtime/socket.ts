@@ -148,13 +148,33 @@ export function useAuditRoom(auditId: string | null | undefined, qc: QueryClient
   return { present, connected };
 }
 
-/** Tells the room this person is scanning, every 30 seconds while the scanner is open. */
+/**
+ * Tells the room this person is scanning, every 30 seconds while the scanner is
+ * open, and that they stopped when it closes. Only the scanner does this, so
+ * "scanning" stays true: someone looking at a plan never shows as working on it.
+ */
 export function usePresenceHeartbeat(auditId: string | null | undefined, active: boolean) {
   useEffect(() => {
     if (!auditId || !active) return;
-    const beat = () => socket?.connected && socket.emit('presence:heartbeat', { auditId });
+    const s = socket;
+    // The server only hears someone in the room, and a reconnect or a direct link leaves them outside it.
+    const beat = () => {
+      if (s?.connected) s.emit('audit:join', { auditId }, () => s.emit('presence:heartbeat', { auditId }));
+    };
     beat();
+    s?.on('connect', beat);
     const t = setInterval(beat, 30_000);
-    return () => clearInterval(t);
+    return () => {
+      clearInterval(t);
+      s?.off('connect', beat);
+    };
   }, [auditId, active]);
+
+  // Pausing to confirm a scan is still scanning. Closing the scanner is not.
+  useEffect(() => {
+    if (!auditId) return;
+    return () => {
+      if (socket?.connected) socket.emit('presence:stopped', { auditId });
+    };
+  }, [auditId]);
 }

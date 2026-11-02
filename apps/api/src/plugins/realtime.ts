@@ -88,7 +88,7 @@ export const realtimePlugin = fp<{ ctx: AppContext }>(
           await socket.join(rooms.audit(auditId));
           if (user.role !== 'AUDITOR') await socket.join(rooms.auditStaff(auditId));
           socket.data.audits.add(auditId);
-          await ctx.presence.touch(auditId, user);
+          // Looking at a plan is not working on it. Presence comes from the scanner's heartbeat and from scans.
           reply({
             ok: true,
             auditId,
@@ -108,6 +108,12 @@ export const realtimePlugin = fp<{ ctx: AppContext }>(
         await socket.leave(rooms.audit(parsed.data.auditId));
         await socket.leave(rooms.auditStaff(parsed.data.auditId));
         socket.data.audits.delete(parsed.data.auditId);
+        await ctx.presence.leave(parsed.data.auditId, user.id).catch(() => undefined);
+      });
+
+      socket.on('presence:stopped', async (payload) => {
+        const parsed = AuditPayload.safeParse(payload);
+        if (!parsed.success || !socket.data.audits.has(parsed.data.auditId)) return;
         await ctx.presence.leave(parsed.data.auditId, user.id).catch(() => undefined);
       });
 

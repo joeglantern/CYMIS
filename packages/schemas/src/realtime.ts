@@ -9,7 +9,7 @@ import type { ScanDto } from './scans.js';
 export interface PresenceEntry {
   userId: string;
   fullName: string;
-  /** When we last saw a scan or a heartbeat from them. */
+  /** When we last saw a fresh scan or a scanner heartbeat from them. Viewing a plan does not count. */
   lastSeenAt: string;
 }
 
@@ -34,6 +34,8 @@ export interface ClientToServerEvents {
   'audit:leave': (payload: { auditId: string }) => void;
   /** Sent every 30 seconds or so while the scanner screen is open. */
   'presence:heartbeat': (payload: { auditId: string }) => void;
+  /** Sent when the scanner closes, so nobody shows as scanning for two minutes after they stopped. */
+  'presence:stopped': (payload: { auditId: string }) => void;
 }
 
 export const SOCKET_ERRORS = {

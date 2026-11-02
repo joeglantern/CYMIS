@@ -57,6 +57,8 @@ async function classify(
   return { result: expected ? 'MATCHED' : 'UNEXPECTED', expectedContainerId: expected?.id ?? null, duplicateOfId: null };
 }
 
+const SCANNING_NOW_MS = 2 * 60 * 1000;
+
 interface AuditCheck {
   audit: Audit | null;
   allowed: boolean;
@@ -190,11 +192,14 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
 
   const results: SyncResultItem[] = [];
   const touched = new Set<string>();
+  const scanningNow = new Set<string>();
   for (const item of items) {
     const { result, created } = await syncOne(ctx, user, item, checks.get(item.auditId)!);
     results.push(result);
     if (created && result.scan) {
       touched.add(item.auditId);
+      // A phone catching up on old scans is not someone scanning now.
+      if (Date.now() - new Date(item.capturedAt).getTime() <= SCANNING_NOW_MS) scanningNow.add(item.auditId);
       ctx.broadcaster.toAuditStaff(item.auditId, 'scan:created', { auditId: item.auditId, scan: result.scan });
       if (result.scan.flags.length > 0) {
         ctx.broadcaster.toAuditStaff(item.auditId, 'flag:raised', {
@@ -208,7 +213,7 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
 
   for (const auditId of touched) {
     ctx.progress.schedule(auditId);
-    await ctx.presence.touch(auditId, { id: user.id, fullName: user.fullName });
+    if (scanningNow.has(auditId)) await ctx.presence.touch(auditId, { id: user.id, fullName: user.fullName });
   }
   return { results, serverTime: new Date().toISOString() };
 }
