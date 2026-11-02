@@ -6,6 +6,10 @@ import { LEAFLET_CSS } from './leafletCss';
 import { MAP_FALLBACK, MAP_TILES, TILE_TIMEOUT_MS } from './tiles';
 import type { BlockMapProps } from './types';
 
+// Both maps ship in this one download. If two lazy files each imported Leaflet, Metro would lift it into
+// the bundle every first visit loads, clerks included. The production export check caught exactly that.
+export { default as LiveMap } from './LiveMap';
+
 const INK = '#0e0e0e';
 const MUTED = '#55544f';
 

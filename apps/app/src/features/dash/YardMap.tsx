@@ -1,184 +1,258 @@
-import type { Bucket, ResultRow } from '@cymis/schemas';
-import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import type { BayDto, BaysResponse } from '@cymis/schemas';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useMemo, type ReactNode } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { endpoints } from '@/api/endpoints';
+import { ApiError } from '@/api/http';
+import { useBays } from '@/api/queries';
 import { useTheme } from '@/theme/theme';
 import { fonts } from '@/theme/tokens';
-import { EmptyState, Skeleton, Txt, bucketColours } from '@/ui';
+import { EmptyState, FilterPills, Icon, Skeleton, Txt, bucketColours, type IconName } from '@/ui';
+import { MAX_ROWS, NEEDS_DECISION, NOT_IN_A_BLOCK, bayWords, blockOptions, cellState, countDecisions, filterBays, toRows, total, type CellState } from './bays';
 
-const BUCKETS: Bucket[] = ['found', 'missing', 'unexpected', 'mismatched'];
-const CAP = 3000;
-
-/** Every result row for an audit, all buckets, up to a cap. Enough to draw the map. */
-export function useAllResults(auditId: string, live: boolean) {
-  return useQuery({
-    queryKey: ['results-all', auditId],
-    queryFn: async () => {
-      const out: ResultRow[] = [];
-      for (const b of BUCKETS) {
-        let cursor: string | undefined;
-        do {
-          const page = await endpoints.results(auditId, b, cursor, 200);
-          out.push(...page.items);
-          cursor = page.nextCursor ?? undefined;
-        } while (cursor && out.length < CAP);
-      }
-      return out;
-    },
-    refetchInterval: live ? 45_000 : false,
-  });
-}
-
-type CellState = 'found' | 'missing' | 'review' | 'unexpected' | 'open';
-
-interface Bay {
-  key: string;
-  bay: string;
-  state: CellState;
-  counts: Record<Bucket, number>;
-}
-
-/** Splits a location like A01-02-3 into a row (A01) and a bay (02). */
-export function splitLocation(loc: string | null): { row: string; bay: string } | null {
-  if (!loc) return null;
-  const parts = loc.trim().toUpperCase().split(/[\s\-/.]+/).filter(Boolean);
-  if (!parts.length) return null;
-  return { row: parts[0]!, bay: parts[1] ?? '1' };
-}
-
-function cellState(k: Record<Bucket, number>, live: boolean): CellState {
-  if (k.mismatched > 0) return 'review';
-  if (k.missing > 0) return live ? 'open' : 'missing';
-  if (k.unexpected > 0) return 'unexpected';
-  return 'found';
-}
-
-const words: Record<CellState, string> = {
-  found: 'all found',
-  missing: 'boxes missing',
-  review: 'needs review',
-  unexpected: 'unexpected box',
-  open: 'not all scanned yet',
+const LEGEND: Record<CellState, string> = {
+  found: 'All found',
+  review: 'Needs review, with how many',
+  unexpected: 'Has an unexpected box',
+  open: 'Not all scanned',
+  missing: 'Boxes missing',
 };
 
-/**
- * One square per bay, coloured by what is in it. Rows are the first part of
- * the location code. Tap a bay to filter the lists below to it.
- */
-export function YardMap({
-  rows,
-  loading,
-  live,
-  selected,
-  onSelect,
-}: {
-  rows: ResultRow[] | undefined;
-  loading: boolean;
-  live: boolean;
-  selected: string | null;
-  onSelect: (prefix: string | null) => void;
-}) {
+/** How each state looks. A found box stays grey. Only what needs someone stands out. */
+function useCellLook() {
   const { c } = useTheme();
-
-  const grid = useMemo(() => {
-    const byRow = new Map<string, Map<string, Record<Bucket, number>>>();
-    let located = 0;
-    for (const r of rows ?? []) {
-      const loc = splitLocation(r.location);
-      if (!loc) continue;
-      located++;
-      const bays = byRow.get(loc.row) ?? new Map<string, Record<Bucket, number>>();
-      const k = bays.get(loc.bay) ?? { found: 0, missing: 0, unexpected: 0, mismatched: 0 };
-      k[r.bucket]++;
-      bays.set(loc.bay, k);
-      byRow.set(loc.row, bays);
+  return (s: CellState): { box: object; fg: string; icon?: IconName } => {
+    switch (s) {
+      case 'found':
+        return { box: { backgroundColor: c.rule }, fg: c.ink2, icon: 'check' };
+      case 'open':
+        return { box: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.ruleStrong }, fg: c.muted };
+      case 'review': {
+        const k = bucketColours(c, NEEDS_DECISION);
+        return { box: { backgroundColor: k.bg }, fg: k.fg };
+      }
+      case 'unexpected': {
+        const k = bucketColours(c, 'unexpected');
+        return { box: { backgroundColor: k.bg }, fg: k.fg, icon: 'warning-circle' };
+      }
+      case 'missing': {
+        const k = bucketColours(c, 'missing');
+        return { box: { backgroundColor: k.bg }, fg: k.fg, icon: 'x' };
+      }
     }
-    const total = rows?.length ?? 0;
-    const list = [...byRow.entries()]
-      .sort(([a], [b]) => a.localeCompare(b, 'en', { numeric: true }))
-      .slice(0, 40)
-      .map(([row, bays]) => ({
-        row,
-        bays: [...bays.entries()]
-          .sort(([a], [b]) => a.localeCompare(b, 'en', { numeric: true }))
-          .map(([bay, counts]): Bay => ({ key: `${row}-${bay}`, bay, counts, state: cellState(counts, live) })),
-      }));
-    return { list, coverage: total ? located / total : 0 };
-  }, [rows, live]);
-
-  if (loading) return <Skeleton height={200} radius={10} />;
-  if (!rows?.length || grid.coverage < 0.3)
-    return (
-      <EmptyState
-        icon="map-trifold"
-        title="No yard locations in this list"
-        body="The map needs a location column in the terminal export, like A01-02-3. The lists below still work."
-      />
-    );
-
-  const look = (s: CellState) => {
-    if (s === 'open') return { backgroundColor: c.paper2, borderWidth: 1, borderColor: c.rule };
-    const key = s === 'review' ? 'review' : s;
-    return { backgroundColor: bucketColours(c, key).bg, borderWidth: s === 'unexpected' ? 1 : 0, borderColor: 'rgba(14,14,14,0.35)' };
   };
+}
 
-  const maxBays = Math.max(...grid.list.map((r) => r.bays.length));
+function CellMark({ state, bay, look }: { state: CellState; bay: BayDto; look: ReturnType<ReturnType<typeof useCellLook>> }) {
+  if (state === 'review') {
+    return <Txt style={{ fontFamily: fonts.monoMedium, fontSize: 12, lineHeight: 16 }} color={look.fg}>{bay.mismatched > 99 ? '99+' : String(bay.mismatched)}</Txt>;
+  }
+  return look.icon ? <Icon name={look.icon} size={14} weight="bold" color={look.fg} /> : null;
+}
+
+/** One square per bay. Rows are the first part of the location code. */
+function Grid({ bays, live, selected, onSelect }: { bays: BayDto[]; live: boolean; selected?: string | null | undefined; onSelect?: ((place: string | null) => void) | undefined }) {
+  const { c } = useTheme();
+  const lookOf = useCellLook();
+  const { rows, hiddenRows } = useMemo(() => toRows(bays), [bays]);
+  const maxBays = Math.max(1, ...rows.map((r) => r.bays.length));
+  const states = new Set(bays.map((b) => cellState(b, live)));
 
   return (
     <View style={{ gap: 12 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator>
-        <View style={{ gap: 8, minWidth: Math.max(520, maxBays * 34 + 110) }}>
-          {grid.list.map((r, ri) => {
-            const done = r.bays.filter((b) => b.state !== 'open').length;
+        {/* Room around the squares, so a focus ring is not cut off by the scroller. */}
+        <View style={{ gap: 8, paddingVertical: 4, paddingRight: 4, minWidth: Math.max(onSelect ? 520 : 320, maxBays * 34 + 110) }}>
+          {rows.map((r) => {
+            const done = r.bays.filter((b) => cellState(b, live) !== 'open').length;
             const rowOn = selected === r.row;
             return (
-              <Animated.View key={r.row} entering={FadeInDown.delay(Math.min(ri, 14) * 45).duration(320)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Show row ${r.row}`} onPress={() => onSelect(rowOn ? null : r.row)} style={{ width: 44 }}>
-                  <Txt style={{ fontFamily: fonts.monoMedium, fontSize: 13, textDecorationLine: rowOn ? 'underline' : 'none' }}>{r.row}</Txt>
-                </Pressable>
+              <View key={r.row} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                {onSelect ? (
+                  <Pressable accessibilityRole="button" accessibilityLabel={`Show row ${r.row}`} onPress={() => onSelect(rowOn ? null : r.row)} style={{ width: 44 }}>
+                    <Txt style={{ fontFamily: fonts.monoMedium, fontSize: 13, textDecorationLine: rowOn ? 'underline' : 'none' }}>{r.row}</Txt>
+                  </Pressable>
+                ) : (
+                  <Txt style={{ width: 44, fontFamily: fonts.monoMedium, fontSize: 13 }}>{r.row}</Txt>
+                )}
                 <View style={{ flex: 1, flexDirection: 'row', gap: 5 }}>
                   {r.bays.map((b) => {
-                    const on = selected === b.key;
-                    return (
+                    const key = `${r.row}-${b.bay}`;
+                    const on = selected === key;
+                    const state = cellState(b, live);
+                    const look = lookOf(state);
+                    const cell = { flex: 1, maxWidth: 48, minWidth: 24, height: 30, borderRadius: 6, alignItems: 'center', justifyContent: 'center', ...look.box } as const;
+                    return onSelect ? (
                       <Pressable
-                        key={b.key}
+                        key={key}
                         accessibilityRole="button"
-                        accessibilityLabel={`${r.row} bay ${b.bay}: ${words[b.state]}`}
-                        onPress={() => onSelect(on ? null : b.key)}
+                        accessibilityLabel={bayWords(r.row, b, live)}
+                        accessibilityState={{ selected: on }}
+                        onPress={() => onSelect(on ? null : key)}
                         style={(s) => ({
-                          flex: 1,
-                          maxWidth: 48,
-                          minWidth: 24,
-                          height: 30,
-                          borderRadius: 6,
-                          ...look(b.state),
+                          ...cell,
                           opacity: (s as { hovered?: boolean }).hovered ? 0.8 : 1,
                           boxShadow: on ? `0px 0px 0px 2px ${c.paper}, 0px 0px 0px 4px ${c.ink}` : undefined,
                         })}
-                      />
+                      >
+                        <CellMark state={state} bay={b} look={look} />
+                      </Pressable>
+                    ) : (
+                      <View key={key} accessible accessibilityLabel={bayWords(r.row, b, live)} style={cell}>
+                        <CellMark state={state} bay={b} look={look} />
+                      </View>
                     );
                   })}
                 </View>
-                <Txt style={{ width: 60, textAlign: 'right', fontFamily: fonts.mono, fontSize: 12 }} tone="muted">
+                <Txt style={{ width: 60, textAlign: 'right', fontFamily: fonts.mono, fontSize: 12 }} tone="muted" accessibilityLabel={`${done} of ${r.bays.length} bays done`}>
                   {`${done} / ${r.bays.length}`}
                 </Txt>
-              </Animated.View>
+              </View>
             );
           })}
         </View>
       </ScrollView>
+      {hiddenRows > 0 ? (
+        <Txt variant="caption" tone="ink2">
+          {`Showing the first ${MAX_ROWS} rows. ${hiddenRows} more ${hiddenRows === 1 ? 'row is' : 'rows are'} not shown. Pick a block to narrow it down.`}
+        </Txt>
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, rowGap: 6 }}>
-        {(['found', 'review', 'unexpected', live ? 'open' : 'missing'] as CellState[]).map((s) => (
-          <View key={s} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 12, height: 12, borderRadius: 3, ...look(s) }} />
-            <Txt variant="caption" tone="muted">
-              {s === 'open' ? 'Not all scanned' : s === 'review' ? 'Needs review' : s === 'found' ? 'All found' : s === 'unexpected' ? 'Has an unexpected box' : 'Boxes missing'}
-            </Txt>
-          </View>
-        ))}
+        {(['found', 'review', 'unexpected', live ? 'open' : 'missing'] as CellState[])
+          .filter((s) => s !== 'unexpected' || states.has(s))
+          .map((s) => {
+            const look = lookOf(s);
+            return (
+              <View key={s} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 16, height: 16, borderRadius: 4, alignItems: 'center', justifyContent: 'center', ...look.box }}>
+                  {s === 'review' ? <Txt style={{ fontFamily: fonts.monoMedium, fontSize: 10, lineHeight: 12 }} color={look.fg}>2</Txt> : look.icon ? <Icon name={look.icon} size={10} weight="bold" color={look.fg} /> : null}
+                </View>
+                <Txt variant="caption" tone="muted">
+                  {LEGEND[s]}
+                </Txt>
+              </View>
+            );
+          })}
       </View>
     </View>
+  );
+}
+
+function outsideWords(data: BaysResponse, compact: boolean | undefined): string | null {
+  const k = data.withoutLocation;
+  const n = total(k);
+  if (!n) return null;
+  const base =
+    k.unexpected === n
+      ? `${n} unexpected ${n === 1 ? 'box is' : 'boxes are'} not on the grid, because the list gives no location for ${n === 1 ? 'it' : 'them'}.`
+      : `${n} ${n === 1 ? 'box has' : 'boxes have'} no yard location, so ${n === 1 ? 'it is' : 'they are'} not on the grid.`;
+  // Otherwise the plan says something is waiting and the grid seems to say nothing is.
+  if (!k.mismatched || compact) return base;
+  return `${base} ${k.mismatched} of them ${k.mismatched === 1 ? 'needs' : 'need'} a decision in the Review queue.`;
+}
+
+/**
+ * The bay grid with its filters, kept in the address so a view can be shared.
+ * Clerks get this too: it holds counts only, and without onSelect the bays are not buttons.
+ */
+export function LiveBays({
+  auditId,
+  live,
+  selected,
+  onSelect,
+  compact,
+  title,
+}: {
+  auditId: string;
+  live: boolean;
+  selected?: string | null;
+  onSelect?: (place: string | null) => void;
+  compact?: boolean;
+  title?: ReactNode;
+}) {
+  const params = useLocalSearchParams<{ block?: string; only?: string }>();
+  const q = useBays(auditId, live);
+  const data = q.data;
+  const allBays = useMemo(() => data?.bays ?? [], [data]);
+  const options = useMemo(() => (data ? blockOptions(data.blocks, allBays) : []), [data, allBays]);
+  const block = options.some((o) => o.id === params.block) ? params.block : undefined;
+  const reviewOnly = params.only === 'review';
+  const shown = useMemo(() => filterBays(allBays, { block, reviewOnly }), [allBays, block, reviewOnly]);
+  const inBlock = useMemo(() => filterBays(allBays, { block }), [allBays, block]);
+  const decisions = countDecisions(inBlock);
+
+  if (q.isPending) {
+    return (
+      <>
+        {title}
+        <Skeleton height={compact ? 120 : 200} radius={10} />
+      </>
+    );
+  }
+
+  const offline = q.error instanceof ApiError && q.error.offline;
+  if (!data) {
+    if (compact) {
+      return (
+        <>
+          {title}
+          <Txt variant="bodySm" tone="muted">
+            {offline ? 'The yard map needs signal. Your scans are safe and keep saving.' : 'The yard map could not load. Your scans are safe and keep saving.'}
+          </Txt>
+        </>
+      );
+    }
+    return (
+      <>
+        {title}
+        <EmptyState icon="warning-circle" title="Could not load the yard map" body={(q.error as Error | null)?.message ?? 'Try again in a moment.'} />
+      </>
+    );
+  }
+
+  if (!allBays.length) {
+    return compact ? null : (
+      <>
+        {title}
+        <EmptyState icon="map-trifold" title="No yard locations in this list" body="The map needs a location column in the terminal export, like A01-02-3. The lists below still work." />
+      </>
+    );
+  }
+
+  const outside = outsideWords(data, compact);
+  return (
+    <>
+      {title}
+      <View style={{ gap: 12 }}>
+        {options.length ? (
+          <FilterPills<string> label="Which block" value={block ?? 'all'} onChange={(v) => router.setParams({ block: v === 'all' ? undefined : v })} options={options} />
+        ) : null}
+        <FilterPills<string>
+          label="Show"
+          value={reviewOnly ? 'review' : 'all'}
+          onChange={(v) => router.setParams({ only: v === 'review' ? 'review' : undefined })}
+          options={[
+            { id: 'all', label: 'All bays' },
+            { id: 'review', label: 'Needs review only', count: decisions },
+          ]}
+        />
+        {shown.length ? (
+          <Grid bays={shown} live={live} selected={selected} onSelect={onSelect} />
+        ) : (
+          <Txt variant="bodySm" tone="muted" style={{ paddingVertical: 12 }}>
+            {reviewOnly ? 'No bay here needs a decision.' : block === NOT_IN_A_BLOCK ? 'Every bay is in a block.' : 'No bays here yet.'}
+          </Txt>
+        )}
+        {outside ? (
+          <Txt variant="caption" tone="muted">
+            {outside}
+          </Txt>
+        ) : null}
+        {q.isError ? (
+          <Txt variant="caption" tone="ink2">
+            {offline ? 'No signal. This shows the last counts the phone received.' : 'Could not refresh. This shows the last counts received.'}
+          </Txt>
+        ) : null}
+      </View>
+    </>
   );
 }

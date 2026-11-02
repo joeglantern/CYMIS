@@ -1,8 +1,8 @@
-import type { AuditDto, Bucket } from '@cymis/schemas';
+import { splitLocation, type AuditDto, type Bucket } from '@cymis/schemas';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { keys, queryClient, useAudit, useProgress, useResults, useScans } from '@/api/queries';
 import { feedback } from '@/feedback';
@@ -14,13 +14,16 @@ import { barProps, dayTime, minutesAgo, time } from '@/features/dash/format';
 import { Column, Columns, Page, PageHeader, StatGrid } from '@/features/dash/Page';
 import { ReportButton } from '@/features/dash/Reports';
 import { resultColumns, scanColumns } from '@/features/dash/scanColumns';
-import { splitLocation, useAllResults, YardMap } from '@/features/dash/YardMap';
+import { SiteMap } from '@/features/dash/SiteMap';
+import { LiveBays } from '@/features/dash/YardMap';
 import { useAuditRoom } from '@/realtime/socket';
 import { useTheme } from '@/theme/theme';
 import { Avatar, BucketBar, Button, EmptyState, FilterPills, LiveBadge, SectionTitle, Skeleton, StatTile, TextField, Txt, fmt, useConfirm, useToast } from '@/ui';
 
 export default function LiveAudit() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, place: placeParam } = useLocalSearchParams<{ id: string; place?: string }>();
+  const place = placeParam ?? null;
+  const setPlace = (p: string | null) => router.setParams({ place: p ?? undefined });
   const { c } = useTheme();
   const qc = useQueryClient();
   const toast = useToast();
@@ -30,8 +33,6 @@ export default function LiveAudit() {
   const { present, connected } = useAuditRoom(id, queryClient);
   const live = audit.data?.status === 'ACTIVE';
   const scans = useScans(id);
-  const all = useAllResults(id ?? '', live);
-  const [place, setPlace] = useState<string | null>(null);
 
   const close = useMutation({
     mutationFn: () => endpoints.closeAudit(id!),
@@ -127,8 +128,13 @@ export default function LiveAudit() {
 
       <Columns>
         <Column grow={3} basis={520}>
-          <SectionTitle title="Yard map" aside="Each square is one bay. Tap one to see its boxes." />
-          <YardMap rows={all.data} loading={all.isPending} live={live} selected={place} onSelect={setPlace} />
+          <LiveBays
+            auditId={a.id}
+            live={live}
+            selected={place}
+            onSelect={setPlace}
+            title={<SectionTitle title="Bay grid" aside="Each square is one bay. Tap one to see its boxes." />}
+          />
         </Column>
         <Column grow={1} basis={260}>
           <SectionTitle title="On it now" />
@@ -161,6 +167,13 @@ export default function LiveAudit() {
           <PlanShifts plan={a} open={live} />
         </Column>
       </Columns>
+
+      {Platform.OS === 'web' ? (
+        <View style={{ gap: 14 }}>
+          <SectionTitle title="Site map" aside={live ? 'Updates live' : undefined} />
+          <SiteMap auditId={a.id} live={live} />
+        </View>
+      ) : null}
 
       <View style={{ gap: 14 }}>
         <SectionTitle title="Latest scans" aside={live ? 'Updates live' : undefined} />

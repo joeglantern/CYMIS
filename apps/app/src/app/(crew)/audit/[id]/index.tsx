@@ -7,6 +7,7 @@ import { useSession } from '@/auth/session';
 import { SyncButton, useSyncState } from '@/features/crew/CrewHeader';
 import { ScanRow } from '@/features/crew/ScanRow';
 import { localProgress, prepareAudit, recentScans, useQueue } from '@/offline/engine';
+import { LiveBays } from '@/features/dash/YardMap';
 import { useAuditRoom } from '@/realtime/socket';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts, type } from '@/theme/tokens';
@@ -143,6 +144,19 @@ export default function AuditHome() {
                   <Button label="See all on this phone" variant="quiet" onPress={() => router.push('/history')} style={{ marginTop: 6, marginLeft: -12 }} />
                 ) : null}
               </View>
+            </View>
+
+            <View style={{ gap: 10 }} accessibilityLabel="Yard map">
+              <LiveBays
+                auditId={a.id}
+                live={a.status === 'ACTIVE'}
+                compact
+                title={
+                  <Txt variant="label" tone="muted" caps accessibilityRole="header">
+                    Yard map
+                  </Txt>
+                }
+              />
             </View>
           </>
         )}

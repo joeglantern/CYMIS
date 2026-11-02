@@ -7,6 +7,7 @@ import type {
   AuditCounts,
   AuditDto,
   AuditStatus,
+  BaysResponse,
   Bucket,
   ColumnMap,
   ColumnMappingDto,
@@ -30,6 +31,7 @@ import type {
   ResultRow,
   ReviewScanBody,
   ShiftDto,
+  YardMapResponse,
   ShiftListResponse,
   UpdateShiftBody,
   Role,
@@ -56,6 +58,10 @@ export interface Page<T> {
 type Q = Record<string, string | number | boolean | undefined | null>;
 
 export const endpoints = {
+  // Yard map
+  bays: (auditId: string) => api<BaysResponse>(`/audits/${auditId}/bays`),
+  yardMap: (auditId: string) => api<YardMapResponse>(`/audits/${auditId}/map`),
+
   // Shifts
   shifts: (q: { auditId?: string; endsFrom?: string; endsBefore?: string; order?: 'asc' | 'desc'; limit?: number } = {}) =>
     api<ShiftListResponse>('/shifts', { query: q as Q }),

@@ -23,6 +23,8 @@ export const keys = {
   audits: (filter?: object) => ['audits', filter ?? {}] as const,
   audit: (id: string) => ['audit', id] as const,
   shifts: (filter?: object) => ['shifts', filter ?? {}] as const,
+  bays: (id: string) => ['bays', id] as const,
+  yardMap: (id: string) => ['yard-map', id] as const,
   progress: (id: string) => ['progress', id] as const,
   scans: (auditId: string, filter?: object) => (filter ? (['scans', auditId, filter] as const) : (['scans', auditId] as const)),
   results: (auditId: string, bucket: Bucket) => ['results', auditId, bucket] as const,
@@ -37,6 +39,15 @@ export const keys = {
   activity: (filter?: object) => ['activity', filter ?? {}] as const,
   serviceAccounts: () => ['service-accounts'] as const,
 };
+
+/** Sockets refresh these as scans land. Polling is the fallback for when the socket is down. */
+export function useBays(auditId: string, live: boolean) {
+  return useQuery({ queryKey: keys.bays(auditId), queryFn: () => endpoints.bays(auditId), refetchInterval: live ? 45_000 : false });
+}
+
+export function useYardMap(auditId: string, live: boolean) {
+  return useQuery({ queryKey: keys.yardMap(auditId), queryFn: () => endpoints.yardMap(auditId), refetchInterval: live ? 45_000 : false });
+}
 
 export function useShifts(filter: { auditId?: string; endsFrom?: string; endsBefore?: string; order?: 'asc' | 'desc' } = {}) {
   return useQuery({ queryKey: keys.shifts(filter), queryFn: () => endpoints.shifts(filter) });

@@ -7,6 +7,7 @@ import { useSession } from '@/auth/session';
 import { AuditRow, FeedLine } from '@/features/dash/AuditRows';
 import { longDate, minutesAgo } from '@/features/dash/format';
 import { Column, Columns, Page, PageHeader, StatGrid } from '@/features/dash/Page';
+import { YardGlance } from '@/features/dash/YardGlance';
 import { Button, EmptyState, SectionTitle, Skeleton, StatTile } from '@/ui';
 
 export default function Overview() {
@@ -92,6 +93,8 @@ export default function Overview() {
         </Column>
 
         <Column grow={1} basis={280}>
+          <YardGlance plans={audits} />
+          <View style={{ height: 14 }} />
           <SectionTitle title="Latest" aside="Updates every few seconds" />
           {feeds.some((f) => f.isPending) && audits.length ? (
             <View style={{ gap: 12, paddingTop: 8 }}>
