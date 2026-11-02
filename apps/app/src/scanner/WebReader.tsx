@@ -2,6 +2,7 @@ import { File } from 'expo-file-system';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
+import { READER_CROP } from './readerCrop';
 
 // A second way to read numbers, for builds without the phone's own text
 // reader (Expo Go). A hidden browser view runs the same reader the web app
@@ -19,7 +20,7 @@ const html = `<!doctype html><html><head><meta name="viewport" content="width=de
     await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ', tessedit_pageseg_mode: '11' });
     const load = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
     const prep = (img, invert) => {
-      const sx = img.width * 0.06, sy = img.height * 0.22, sw = img.width * 0.88, sh = img.height * 0.56;
+      const sw = img.width * ${READER_CROP.width}, sh = img.height * ${READER_CROP.height}, sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
       const k = Math.min(1, 1400 / sw);
       const c = document.createElement('canvas'); c.width = Math.round(sw * k); c.height = Math.round(sh * k);
       const x = c.getContext('2d'); x.filter = 'grayscale(1) contrast(1.6)' + (invert ? ' invert(1)' : '');
