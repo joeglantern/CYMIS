@@ -113,9 +113,11 @@ export async function completePhoto(ctx: AppContext, user: User, photoId: string
 }
 
 export async function photoUrl(ctx: AppContext, principal: Principal, photoId: string, thumb: boolean): Promise<PhotoUrlResponse> {
-  const photo = await ctx.db.photo.findUnique({ where: { id: photoId }, include: { scan: { select: { auditId: true } } } });
+  const photo = await ctx.db.photo.findUnique({ where: { id: photoId }, include: { scan: { select: { auditId: true, auditorId: true } } } });
   if (!photo || photo.status !== 'UPLOADED') throw new NotFoundError('Photo');
   await loadAuditFor(ctx, photo.scan.auditId, principal, { scopes: ['results:read'] });
+  // A clerk sees their own scans, so their own photos. Staff and integration keys are unchanged.
+  if (principal.kind === 'user' && principal.user.role === 'AUDITOR' && photo.scan.auditorId !== principal.user.id) throw new NotFoundError('Photo');
   const key = thumb && photo.thumbKey ? photo.thumbKey : photo.storageKey;
   return {
     url: await ctx.storage.signDownload(key, VIEW_LINK_SECONDS),
