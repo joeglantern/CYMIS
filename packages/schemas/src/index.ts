@@ -6,6 +6,7 @@ export * from './facilities.js';
 export * from './imports.js';
 export * from './shifts.js';
 export * from './audits.js';
+export * from './yardmap.js';
 export * from './scans.js';
 export * from './misc.js';
 export * from './realtime.js';

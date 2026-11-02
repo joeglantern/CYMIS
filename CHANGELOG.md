@@ -36,3 +36,11 @@ Additive. Old clients keep working.
 - `LatLng`, `Boundary`, `boundaryProblem`, `BOUNDARY_MIN_POINTS`, `BOUNDARY_MAX_POINTS`: a block's shape, 3 to 50 points with no repeats and no crossing edges.
 - New error codes: `yard_has_active_sections`, `yard_turned_off`, `yard_other_facility`.
 - Migration `20261102120000_yards_and_block_shapes`.
+
+## 0.4.0 (2026-11-02)
+
+- `BaysResponse`, `BayDto`, `BayBlock`, `BayCounts`: counts per bay, for the new `GET /audits/:id/bays`. Open to anyone who can see the plan, and it names nobody.
+- `YardMapResponse`, `MapBlock`, `ScanPoint`: shapes and recent scan positions, for the new `GET /audits/:id/map`. Admins and supervisors only.
+- `splitLocation`: moved here from the app, so the grid and the server split a location the same way.
+- Behaviour: `scan:created`, `scan:updated` and `flag:raised` now go only to staff in a plan's room, because they carry a clerk's name and position. Clerks still get `audit:progress`, `audit:status`, `expected:updated` and `presence:update`.
+- Behaviour: for a clerk, `GET /audits/:id/scans` returns only their own scans and `GET /scans/:id` refuses anyone else's. The app's clerk screens never called either.
