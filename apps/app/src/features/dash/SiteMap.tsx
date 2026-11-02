@@ -22,7 +22,7 @@ class MapBoundary extends Component<{ children: ReactNode }, { failed: boolean }
       return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16 }}>
           <Txt variant="bodySm" tone="ink2" align="center">
-            The map could not load. The counts below and the bay grid above are still right.
+            The yard map could not load. The counts below and the bay grid above are still right.
           </Txt>
           <Button label="Reload the page" variant="secondary" onPress={() => globalThis.location?.reload()} />
         </View>
@@ -45,7 +45,7 @@ export function SiteMap({ auditId, live }: { auditId: string; live: boolean }) {
   if (!q.data) {
     return (
       <Txt variant="bodySm" tone="muted">
-        {`The map could not load. ${(q.error as Error | null)?.message ?? ''} The bay grid above still works.`}
+        {`The yard map could not load. ${(q.error as Error | null)?.message ?? ''} The bay grid above still works.`}
       </Txt>
     );
   }

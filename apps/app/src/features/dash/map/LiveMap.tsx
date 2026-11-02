@@ -156,7 +156,7 @@ export default function LiveMap({ blocks, points, decisionColour, onTileState }:
         className="cymis-live-map"
         tabIndex={0}
         role="application"
-        aria-label="Map of the site. Arrow keys move the map. The same counts are listed under it."
+        aria-label="Yard map. Arrow keys move the map. The same counts are listed under it."
         style={{ position: 'absolute', inset: 0, isolation: 'isolate' }}
       />
     </>

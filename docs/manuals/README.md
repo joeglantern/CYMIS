@@ -19,7 +19,7 @@ Sections by audience:
 - Colours and chips (Everyone)
 - Setting up a yard plan (Supervisors)
 - Planning shifts (Supervisors)
-- The bay grid and site map (Supervisors)
+- The bay grid and yard map (Supervisors)
 - Watching a yard plan live (Supervisors)
 - The review queue (Supervisors)
 - Closing and reports (Supervisors)

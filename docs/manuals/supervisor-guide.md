@@ -42,20 +42,20 @@ A shift says which clerks work a yard plan and when. Open **Shift planning** to 
 
 > Shift times are for planning. They never stop a scan: a clerk working late or early still saves, and so does a phone with no signal.
 
-## The bay grid and site map
+## The bay grid and yard map
 
 A yard plan page shows where the work is and where the problems are, and updates as clerks scan. **Yard at a glance** on Overview gives the short version.
 
 - In the **bay grid** each square is one bay. A found box stays grey. A square with a number and a strong colour has that many boxes waiting for a decision.
 - Use the filters to see one block, or **Needs review only**. A block filter needs the block to have location codes in Yard management.
-- The **site map** shows the blocks an admin has drawn, each with its counts, and a block with many boxes waiting is marked. Dots with initials show where recent scans were made.
+- The **yard map** shows the blocks an admin has drawn, each with its counts, and a block with many boxes waiting is marked. Dots with initials show where recent scans were made.
 - A scan with no location is counted in words, such as "12 scans have no location". It is never placed on the map by guesswork. Clerks choose whether the phone shares location.
 
 > The map says where a scan was made, not where a box should be. Cymis does not know a box is in the right place.
 
 ## Watching a yard plan live
 
-The live page updates as clerks scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.
+The live page updates as clerks scan, with no refresh. You see the totals, the bay grid, who is scanning and where, and the latest scans.
 
 A clerk shown as offline is still working. Their scans arrive when their phone finds signal.
 

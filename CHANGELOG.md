@@ -44,3 +44,8 @@ Additive. Old clients keep working.
 - `splitLocation`: moved here from the app, so the grid and the server split a location the same way.
 - Behaviour: `scan:created`, `scan:updated` and `flag:raised` now go only to staff in a plan's room, because they carry a clerk's name and position. Clerks still get `audit:progress`, `audit:status`, `expected:updated` and `presence:update`.
 - Behaviour: for a clerk, `GET /audits/:id/scans` returns only their own scans and `GET /scans/:id` refuses anyone else's. The app's clerk screens never called either.
+- Behaviour: for a clerk, `GET /photos/:id/url` works only for a photo on their own scan.
+- `AuditCounts.offListReview`: the part of `mismatched` not on the list. So expected = found + missing + (mismatched - offListReview). What is left to scan is `missing`, never expected minus found.
+- `presence:stopped`: a new socket event, sent when the scanner closes.
+- Behaviour: presence means the scanner is open or a fresh scan came in. Joining a plan's room no longer counts, and neither does a phone sending old scans.
+- Reports: a new summary row, `Of those, not on the list`.

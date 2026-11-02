@@ -64,9 +64,8 @@ export default function LiveAudit() {
 
   const a = audit.data;
   const k = progress.data ?? a.counts;
-  // People viewing the page also join the room. Only count the crew on this audit.
-  const crewIds = new Set(a.assignees.map((p) => p.id));
-  const scanning = present.filter((p) => crewIds.has(p.userId));
+  // Presence means the scanner is open or a scan has just come in, whoever it is. Viewing a page does not count.
+  const scanning = present;
 
   const askClose = async () => {
     const ok = await confirm({
@@ -121,7 +120,7 @@ export default function LiveAudit() {
         <StatTile compact label="Found" value={k.found} bucket="found" />
         <StatTile compact label={live ? 'Not found yet' : 'Missing'} value={k.missing} bucket={live ? undefined : 'missing'} detail={live ? 'Still to scan' : undefined} />
         <StatTile compact label="Unexpected" value={k.unexpected} bucket="unexpected" />
-        <StatTile compact label="Needs review" value={k.mismatched} bucket="review" detail={k.pendingReview ? `${k.pendingReview} waiting` : undefined} />
+        <StatTile compact label="Needs review" value={k.mismatched} bucket="review" detail={k.offListReview ? `${k.offListReview} not on the list` : k.pendingReview ? `${k.pendingReview} waiting` : undefined} />
       </StatGrid>
 
       <BucketBar {...barProps(k, live)} />
@@ -170,7 +169,7 @@ export default function LiveAudit() {
 
       {Platform.OS === 'web' ? (
         <View style={{ gap: 14 }}>
-          <SectionTitle title="Site map" aside={live ? 'Updates live' : undefined} />
+          <SectionTitle title="Yard map" aside={live ? 'Updates live' : undefined} />
           <SiteMap auditId={a.id} live={live} />
         </View>
       ) : null}

@@ -3,6 +3,8 @@
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
+import { sha256Hex } from '../src/lib/crypto.js';
+import { newId } from '../src/lib/ids.js';
 import { VALID, makeApp, makeAudit, resetData, scanItem, userWithToken, type TestApp } from './helpers.js';
 
 let t: TestApp;
@@ -155,7 +157,98 @@ describe('site map', () => {
   });
 });
 
+describe('counts add up', () => {
+  it('expected = found + missing + review on the list, for staff and for a clerk, in counts, bays and the report', async () => {
+    const { audit } = await plan();
+    await sync(clerk, [scanItem(audit.id, VALID.a), scanItem(audit.id, VALID.b), scanItem(audit.id, VALID.c)]);
+    // The photo reader raises review on a matched box like this.
+    await t.ctx.db.scan.updateMany({ where: { auditId: audit.id, containerNumber: { in: [VALID.a, VALID.b] } }, data: { reviewStatus: 'PENDING', flags: ['COLOUR_MISMATCH'] } });
+    // A hand typed number with a bad check digit, not on the list: waiting for review, and extra to the list.
+    await sync(clerk, [scanItem(audit.id, 'MSKU9070329', { entryMethod: 'MANUAL' })]);
+    await t.ctx.progress.invalidate(audit.id);
+
+    for (const who of [sup, clerk]) {
+      const k = (await get(`/audits/${audit.id}/progress`, who)).json();
+      expect(k).toMatchObject({ expected: 4, found: 1, mismatched: 3, offListReview: 1, missing: 1 });
+      expect(k.found + k.missing + (k.mismatched - k.offListReview)).toBe(k.expected);
+
+      const card = (await get(`/audits/${audit.id}`, who)).json().counts;
+      expect(card.found + card.missing + (card.mismatched - card.offListReview)).toBe(card.expected);
+
+      const body = (await get(`/audits/${audit.id}/bays`, who)).json();
+      const on = (key: 'found' | 'missing' | 'mismatched') => body.bays.reduce((n: number, b: Record<string, number>) => n + b[key]!, 0);
+      expect(on('found') + on('missing') + on('mismatched')).toBe(k.expected);
+      expect(body.withoutLocation.mismatched).toBe(k.offListReview);
+    }
+
+  });
+});
+
+describe('who shows as scanning', () => {
+  const opened: Socket[] = [];
+  const open = async (token: string) => {
+    if (!t.app.server.listening) await t.app.listen({ port: 0, host: '127.0.0.1' });
+    const port = (t.app.server.address() as AddressInfo).port;
+    return new Promise<Socket>((resolve, reject) => {
+      const s = connect(`http://127.0.0.1:${port}`, { transports: ['websocket'], auth: { token } });
+      opened.push(s);
+      s.on('connect', () => resolve(s));
+      s.on('connect_error', reject);
+    });
+  };
+  const join = (s: Socket, auditId: string) => new Promise<{ present: { userId: string }[] }>((resolve) => s.emit('audit:join', { auditId }, resolve));
+  const present = async (auditId: string) => (await t.ctx.presence.list(auditId)).map((p) => p.userId);
+  afterAll(() => opened.forEach((s) => s.close()));
+
+  it('viewing a plan does not count, for staff or a clerk', async () => {
+    const { audit } = await plan();
+    const staff = await open(sup.token);
+    const viewer = await open(clerk.token);
+    expect((await join(staff, audit.id)).present).toEqual([]);
+    expect((await join(viewer, audit.id)).present).toEqual([]);
+    expect(await present(audit.id)).toEqual([]);
+  });
+
+  it('an open scanner counts, whoever holds it, and closing it stops at once', async () => {
+    const { audit } = await plan();
+    const s = await open(clerk.token);
+    await join(s, audit.id);
+    s.emit('presence:heartbeat', { auditId: audit.id });
+    await new Promise((r) => setTimeout(r, 200));
+    expect(await present(audit.id)).toEqual([clerk.user.id]);
+    s.emit('presence:stopped', { auditId: audit.id });
+    await new Promise((r) => setTimeout(r, 200));
+    expect(await present(audit.id)).toEqual([]);
+  });
+
+  it('a fresh scan counts, but a phone catching up on old scans does not', async () => {
+    const { audit } = await plan();
+    await sync(clerk, [scanItem(audit.id, VALID.a, { capturedAt: new Date(Date.now() - 3_600_000).toISOString() })]);
+    expect(await present(audit.id)).toEqual([]);
+    await sync(clerk, [scanItem(audit.id, VALID.b)]);
+    expect(await present(audit.id)).toEqual([clerk.user.id]);
+  });
+});
+
 describe('what a clerk is sent about other people', () => {
+  it('a photo link is only for their own scan, while staff and keys are unchanged', async () => {
+    const { audit } = await plan();
+    const scanId = (await sync(other, [scanItem(audit.id, VALID.a)])).json().results[0].scan.id;
+    const mineId = (await sync(clerk, [scanItem(audit.id, VALID.b)])).json().results[0].scan.id;
+    const photo = (id: string, n: string) =>
+      t.ctx.db.photo.create({ data: { id: newId(), scanId: id, storageKey: `t/${n}.jpg`, contentType: 'image/jpeg', sizeBytes: 10, status: 'UPLOADED' } });
+    const theirs = await photo(scanId, 'theirs');
+    const mine = await photo(mineId, 'mine');
+
+    expect((await get(`/photos/${theirs.id}/url`, clerk)).statusCode).toBe(404);
+    expect((await get(`/photos/${mine.id}/url`, clerk)).statusCode).toBe(200);
+    expect((await get(`/photos/${theirs.id}/url`, sup)).statusCode).toBe(200);
+
+    const key = 'cym_testkeyforphotolinkcheck';
+    await t.ctx.db.serviceAccount.create({ data: { name: 'Photo test', keyHash: sha256Hex(key), keyPrefix: key.slice(0, 8), scopes: ['results:read'], createdById: sup.user.id } });
+    expect((await get(`/photos/${theirs.id}/url`, { headers: { authorization: `Bearer ${key}` } })).statusCode).toBe(200);
+  });
+
   it('the scan list returns only their own scans, whatever they ask for', async () => {
     const { audit } = await plan();
     await sync(clerk, [scanItem(audit.id, VALID.a)]);
@@ -182,7 +275,7 @@ describe('what a clerk is sent about other people', () => {
 
   it('live scan events go to staff in the room, and a clerk gets only the counts', async () => {
     const { audit } = await plan();
-    await t.app.listen({ port: 0, host: '127.0.0.1' });
+    if (!t.app.server.listening) await t.app.listen({ port: 0, host: '127.0.0.1' });
     const port = (t.app.server.address() as AddressInfo).port;
     const open = (token: string) =>
       new Promise<Socket>((resolve, reject) => {

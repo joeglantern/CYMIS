@@ -45,7 +45,7 @@ export const helpSections: HelpSection[] = [
         t: 'list',
         ordered: true,
         items: [
-          'Open your yard plan and tap **Scan containers**. If you have a shift, its day and times show on the plan card. Shift times never stop a scan. The yard map on the plan page shows how far each bay has got. It needs signal, but scanning does not.',
+          'Open your yard plan and tap **Scan containers**. If you have a shift, its day and times show on the plan card. Shift times never stop a scan. The bay grid on the plan page shows how far each bay has got. It needs signal, but scanning does not.',
           'Point the camera at the door so the painted number is inside the yellow corners. Hold steady.',
           'When the yellow corners close in and the phone buzzes, the number is locked. There is nothing to press.',
           'Check the number on the sheet, pick the box colour if it is not already picked, then tap **Scan next**. That saves the box and goes back to the camera.',
@@ -213,7 +213,7 @@ export const helpSections: HelpSection[] = [
   },
   {
     id: 'yard-map',
-    title: 'The bay grid and site map',
+    title: 'The bay grid and yard map',
     audience: 'supervisors',
     blocks: [
       {
@@ -225,7 +225,7 @@ export const helpSections: HelpSection[] = [
         items: [
           'In the **bay grid** each square is one bay. A found box stays grey. A square with a number and a strong colour has that many boxes waiting for a decision.',
           'Use the filters to see one block, or **Needs review only**. A block filter needs the block to have location codes in Yard management.',
-          'The **site map** shows the blocks an admin has drawn, each with its counts, and a block with many boxes waiting is marked. Dots with initials show where recent scans were made.',
+          'The **yard map** shows the blocks an admin has drawn, each with its counts, and a block with many boxes waiting is marked. Dots with initials show where recent scans were made.',
           'A scan with no location is counted in words, such as "12 scans have no location". It is never placed on the map by guesswork. Clerks choose whether the phone shares location.',
         ],
       },
@@ -242,7 +242,7 @@ export const helpSections: HelpSection[] = [
     blocks: [
       {
         t: 'p',
-        text: 'The live page updates as clerks scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.',
+        text: 'The live page updates as clerks scan, with no refresh. You see the totals, the bay grid, who is scanning and where, and the latest scans.',
       },
       {
         t: 'p',

@@ -196,7 +196,7 @@ export function LiveBays({
         <>
           {title}
           <Txt variant="bodySm" tone="muted">
-            {offline ? 'The yard map needs signal. Your scans are safe and keep saving.' : 'The yard map could not load. Your scans are safe and keep saving.'}
+            {offline ? 'The bay grid needs signal. Your scans are safe and keep saving.' : 'The bay grid could not load. Your scans are safe and keep saving.'}
           </Txt>
         </>
       );
@@ -204,7 +204,7 @@ export function LiveBays({
     return (
       <>
         {title}
-        <EmptyState icon="warning-circle" title="Could not load the yard map" body={(q.error as Error | null)?.message ?? 'Try again in a moment.'} />
+        <EmptyState icon="warning-circle" title="Could not load the bay grid" body={(q.error as Error | null)?.message ?? 'Try again in a moment.'} />
       </>
     );
   }
@@ -213,7 +213,7 @@ export function LiveBays({
     return compact ? null : (
       <>
         {title}
-        <EmptyState icon="map-trifold" title="No yard locations in this list" body="The map needs a location column in the terminal export, like A01-02-3. The lists below still work." />
+        <EmptyState icon="map-trifold" title="No yard locations in this list" body="The bay grid needs a location column in the terminal export, like A01-02-3. The lists below still work." />
       </>
     );
   }
