@@ -4,6 +4,8 @@ import type { Redis } from 'ioredis';
 
 export const rooms = {
   audit: (auditId: string) => `audit:${auditId}`,
+  /** Staff watching a plan. Scan events name a clerk and where they were, so clerks are not in here. */
+  auditStaff: (auditId: string) => `audit:${auditId}:staff`,
   user: (userId: string) => `user:${userId}`,
   supervisors: 'role:supervisor',
 } as const;
@@ -29,6 +31,10 @@ export class Broadcaster {
       event,
       payload,
     );
+  }
+
+  toAuditStaff<E extends EventName>(auditId: string, event: E, payload: Payload<E>): void {
+    (this.emitter.to(rooms.auditStaff(auditId)) as unknown as { emit: (e: E, p: Payload<E>) => void }).emit(event, payload);
   }
 
   toUser<E extends EventName>(userId: string, event: E, payload: Payload<E>): void {

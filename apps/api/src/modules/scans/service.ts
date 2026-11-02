@@ -195,9 +195,9 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
     results.push(result);
     if (created && result.scan) {
       touched.add(item.auditId);
-      ctx.broadcaster.toAudit(item.auditId, 'scan:created', { auditId: item.auditId, scan: result.scan });
+      ctx.broadcaster.toAuditStaff(item.auditId, 'scan:created', { auditId: item.auditId, scan: result.scan });
       if (result.scan.flags.length > 0) {
-        ctx.broadcaster.toAudit(item.auditId, 'flag:raised', {
+        ctx.broadcaster.toAuditStaff(item.auditId, 'flag:raised', {
           auditId: item.auditId,
           scanId: result.scan.id,
           flags: result.scan.flags,
@@ -216,13 +216,15 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
 export async function listScans(ctx: AppContext, principal: Principal, auditId: string, q: ScanListQuery) {
   await loadAuditFor(ctx, auditId, principal, { scopes: ['results:read'] });
   const cursor = decodeCursor(q.cursor);
+  // A clerk sees their own scans. Who else scanned what, and where, stays with staff.
+  const onlyOwn = principal.kind === 'user' && principal.user.role === 'AUDITOR' ? principal.user.id : null;
   const where: Prisma.ScanWhereInput = {
     auditId,
     ...(q.result ? { result: q.result } : {}),
     ...(q.flagged === true ? { flags: { isEmpty: false } } : {}),
     ...(q.flagged === false ? { flags: { isEmpty: true } } : {}),
     ...(q.reviewStatus ? { reviewStatus: q.reviewStatus } : {}),
-    ...(q.auditorId ? { auditorId: q.auditorId } : {}),
+    ...(onlyOwn ? { auditorId: onlyOwn } : q.auditorId ? { auditorId: q.auditorId } : {}),
     ...(q.q ? { containerNumber: { startsWith: q.q } } : {}),
   };
   const rows = await ctx.db.scan.findMany({
@@ -240,6 +242,7 @@ export async function getScan(ctx: AppContext, principal: Principal, scanId: str
   const scan = await ctx.db.scan.findUnique({ where: { id: scanId }, include: scanInclude });
   if (!scan) throw new NotFoundError('Scan');
   await loadAuditFor(ctx, scan.auditId, principal, { scopes: ['results:read'] });
+  if (principal.kind === 'user' && principal.user.role === 'AUDITOR' && scan.auditorId !== principal.user.id) throw new NotFoundError('Scan');
   return toScanDto(scan);
 }
 
@@ -377,7 +380,7 @@ export async function reviewScan(
 
   for (const id of changed) {
     const dto = await loadScanDto(ctx, id);
-    if (dto) ctx.broadcaster.toAudit(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
+    if (dto) ctx.broadcaster.toAuditStaff(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
   }
   ctx.progress.schedule(scan.auditId);
   return (await loadScanDto(ctx, scanId))!;

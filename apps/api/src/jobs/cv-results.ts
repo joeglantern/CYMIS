@@ -61,8 +61,8 @@ export async function applyCvResult(ctx: AppContext, result: CvResult): Promise<
   });
 
   const dto = toScanDto(updated);
-  ctx.broadcaster.toAudit(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
-  if (raised) ctx.broadcaster.toAudit(scan.auditId, 'flag:raised', { auditId: scan.auditId, scanId: scan.id, flags: dto.flags });
+  ctx.broadcaster.toAuditStaff(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
+  if (raised) ctx.broadcaster.toAuditStaff(scan.auditId, 'flag:raised', { auditId: scan.auditId, scanId: scan.id, flags: dto.flags });
   ctx.progress.schedule(scan.auditId);
 }
 

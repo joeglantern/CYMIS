@@ -86,6 +86,7 @@ export const realtimePlugin = fp<{ ctx: AppContext }>(
             return reply({ ok: false, error: 'not_found' });
           }
           await socket.join(rooms.audit(auditId));
+          if (user.role !== 'AUDITOR') await socket.join(rooms.auditStaff(auditId));
           socket.data.audits.add(auditId);
           await ctx.presence.touch(auditId, user);
           reply({
@@ -105,6 +106,7 @@ export const realtimePlugin = fp<{ ctx: AppContext }>(
         const parsed = AuditPayload.safeParse(payload);
         if (!parsed.success) return;
         await socket.leave(rooms.audit(parsed.data.auditId));
+        await socket.leave(rooms.auditStaff(parsed.data.auditId));
         socket.data.audits.delete(parsed.data.auditId);
         await ctx.presence.leave(parsed.data.auditId, user.id).catch(() => undefined);
       });

@@ -108,7 +108,7 @@ export async function completePhoto(ctx: AppContext, user: User, photoId: string
 
   const scan = await ctx.db.scan.findUniqueOrThrow({ where: { id: photo.scanId }, include: scanInclude });
   const dto = toScanDto(scan);
-  ctx.broadcaster.toAudit(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
+  ctx.broadcaster.toAuditStaff(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
   return dto;
 }
 
