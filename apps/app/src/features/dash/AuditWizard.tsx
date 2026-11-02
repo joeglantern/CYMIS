@@ -128,7 +128,7 @@ export function AuditWizard({ auditId }: { auditId?: string }) {
       </Step>
 
       <Step n={6} title="Start" state={at === 5 ? 'now' : 'later'}>
-        {auditId && step === 'start' && audit.data ? <StartStep auditId={auditId} expected={audit.data.counts.expected} crew={audit.data.assignees.length} onBack={() => setCrewDone(false)} /> : null}
+        {auditId && step === 'start' && audit.data ? <StartStep auditId={auditId} expected={audit.data.counts.expected} crew={audit.data.assignees.length} shifts={(audit.data.shifts ?? []).length} onBack={() => setCrewDone(false)} /> : null}
       </Step>
     </Page>
   );
@@ -615,7 +615,7 @@ function CrewStep({ auditId, plan, current, onDone }: { auditId: string; plan: A
     if (losses.length) {
       const ok = await confirm({
         title: losses.length === 1 ? `Take ${losses[0]!.name} off their shifts too?` : `Take ${losses.length} people off their shifts too?`,
-        body: `${losses.map((l) => `${l.name}: ${l.shifts}`).join('. ')}. Coming off this yard plan also takes them off these shifts.`,
+        body: `${losses.map((l) => `${l.name}: ${l.shifts}`).join('. ')}. Coming off this yard plan also takes them off these shifts. Scans they have already taken still arrive.`,
         confirmLabel: 'Take them off',
         cancelLabel: 'Go back',
         danger: true,
@@ -655,7 +655,7 @@ function CrewStep({ auditId, plan, current, onDone }: { auditId: string; plan: A
 
 /* Step 6 */
 
-function StartStep({ auditId, expected, crew, onBack }: { auditId: string; expected: number; crew: number; onBack: () => void }) {
+function StartStep({ auditId, expected, crew, shifts, onBack }: { auditId: string; expected: number; crew: number; shifts: number; onBack: () => void }) {
   const toast = useToast();
   const confirm = useConfirm();
   const qc = useQueryClient();
@@ -688,6 +688,16 @@ function StartStep({ auditId, expected, crew, onBack }: { auditId: string; expec
           }}
         />
         <Button label="Change the clerks" variant="secondary" size="lg" onPress={onBack} />
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <Txt variant="bodySm" tone="muted">
+          {shifts ? `${count(shifts, 'shift')} planned.` : 'Working in shifts? Plan them now, or after you start.'}
+        </Txt>
+        <Button
+          label={shifts ? 'See the shifts' : 'Plan shifts'}
+          variant="quiet"
+          onPress={() => router.push((shifts ? `/dashboard/shifts?plan=${auditId}` : `/dashboard/shifts?shift=new&plan=${auditId}`) as never)}
+        />
       </View>
     </View>
   );

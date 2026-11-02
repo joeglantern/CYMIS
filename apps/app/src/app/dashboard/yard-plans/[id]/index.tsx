@@ -1,11 +1,12 @@
-import type { Bucket } from '@cymis/schemas';
+import type { AuditDto, Bucket } from '@cymis/schemas';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { keys, queryClient, useAudit, useProgress, useResults, useScans } from '@/api/queries';
 import { feedback } from '@/feedback';
+import { dayKey, dayWord, eatTime } from '@/lib/eat';
 import { useSettings } from '@/state/settings';
 import { AuditStatus } from '@/features/dash/AuditRows';
 import { DataTable } from '@/features/dash/DataTable';
@@ -155,6 +156,9 @@ export default function LiveAudit() {
           {a.assignees.length ? (
             <Txt variant="caption" tone="muted">{`${a.assignees.length} ${a.assignees.length === 1 ? 'person' : 'people'} on this yard plan`}</Txt>
           ) : null}
+          <View style={{ height: 10 }} />
+          <SectionTitle title="Shifts" />
+          <PlanShifts plan={a} open={live} />
         </Column>
       </Columns>
 
@@ -175,6 +179,59 @@ export default function LiveAudit() {
 
       <ResultLists auditId={a.id} counts={k} place={place} onClearPlace={() => setPlace(null)} />
     </Page>
+  );
+}
+
+/** The plan's shifts, soonest first, each opening on the shift page. */
+function PlanShifts({ plan, open }: { plan: AuditDto; open: boolean }) {
+  const { c } = useTheme();
+  const shifts = plan.shifts ?? [];
+  const today = dayKey(Date.now());
+  const add = () => router.push(`/dashboard/shifts?shift=new&plan=${plan.id}` as never);
+  if (!shifts.length) {
+    return open ? (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
+        <Txt variant="bodySm" tone="muted">
+          No shifts yet.
+        </Txt>
+        <Button label="Plan one" variant="quiet" onPress={add} />
+      </View>
+    ) : (
+      <Txt variant="bodySm" tone="muted">
+        No shifts were planned.
+      </Txt>
+    );
+  }
+  return (
+    <View>
+      {shifts.map((s, i) => {
+        const past = dayKey(s.endsAt) < today;
+        return (
+          <Pressable
+            key={s.id}
+            accessibilityRole="link"
+            accessibilityLabel={`${s.name}, ${dayWord(dayKey(s.startsAt))}, ${eatTime(s.startsAt)} to ${eatTime(s.endsAt)}`}
+            onPress={() => router.push(`/dashboard/shifts?shift=${s.id}&plan=${plan.id}${past ? '&view=past' : ''}` as never)}
+            style={(st) => ({
+              gap: 2,
+              paddingVertical: 10,
+              borderTopWidth: i === 0 ? 0 : 1,
+              borderTopColor: c.rule,
+              backgroundColor: (st as { hovered?: boolean }).hovered ? c.hover : 'transparent',
+              opacity: st.pressed ? 0.7 : 1,
+            })}
+          >
+            <Txt variant="bodySmStrong">{s.name}</Txt>
+            <Txt variant="caption" tone="muted">
+              {`${dayWord(dayKey(s.startsAt))}, `}
+              <Txt variant="monoSm" tone="muted">{`${eatTime(s.startsAt)} to ${eatTime(s.endsAt)}`}</Txt>
+              {`, ${s.clerkIds.length} ${s.clerkIds.length === 1 ? 'clerk' : 'clerks'}`}
+            </Txt>
+          </Pressable>
+        );
+      })}
+      {open ? <Button label="Add a shift" variant="quiet" onPress={add} style={{ marginTop: 4, marginLeft: -12 }} /> : null}
+    </View>
   );
 }
 
