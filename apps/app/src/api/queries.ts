@@ -22,6 +22,7 @@ export const queryClient = new QueryClient({
 export const keys = {
   audits: (filter?: object) => ['audits', filter ?? {}] as const,
   audit: (id: string) => ['audit', id] as const,
+  shifts: (filter?: object) => ['shifts', filter ?? {}] as const,
   progress: (id: string) => ['progress', id] as const,
   scans: (auditId: string, filter?: object) => (filter ? (['scans', auditId, filter] as const) : (['scans', auditId] as const)),
   results: (auditId: string, bucket: Bucket) => ['results', auditId, bucket] as const,
@@ -36,6 +37,10 @@ export const keys = {
   activity: (filter?: object) => ['activity', filter ?? {}] as const,
   serviceAccounts: () => ['service-accounts'] as const,
 };
+
+export function useShifts(filter: { auditId?: string; endsFrom?: string; endsBefore?: string; order?: 'asc' | 'desc' } = {}) {
+  return useQuery({ queryKey: keys.shifts(filter), queryFn: () => endpoints.shifts(filter) });
+}
 
 export function useAudits(filter: { status?: AuditStatus; mine?: boolean } = {}) {
   return useQuery({ queryKey: keys.audits(filter), queryFn: () => endpoints.audits({ ...filter, limit: 100 }) });

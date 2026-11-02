@@ -10,7 +10,7 @@ import { dayTime } from '@/features/dash/format';
 import { Page, PageHeader } from '@/features/dash/Page';
 import { FilterPills } from '@/ui';
 
-type Kind = 'all' | 'section' | 'user' | 'audit' | 'import' | 'scan' | 'service_account';
+type Kind = 'all' | 'section' | 'user' | 'audit' | 'shift' | 'import' | 'scan' | 'service_account';
 
 /** "audit.closed" becomes "Yard plan closed". The stored code does not change. */
 function words(action: string) {
@@ -59,7 +59,7 @@ function ActivityPage() {
 
   return (
     <Page gap={22}>
-      <PageHeader title="Activity log" subtitle="Sign ins, imports, reviews, closes and changes to people. Kept as the record of who did what." />
+      <PageHeader title="Activity log" subtitle="Sign ins, imports, shifts, reviews, closes and changes to people. Kept as the record of who did what." />
       <FilterPills<Kind>
         label="Filter by kind"
         value={kind}
@@ -69,6 +69,7 @@ function ActivityPage() {
           { id: 'section', label: 'Sections' },
           { id: 'user', label: 'People and sign ins' },
           { id: 'audit', label: 'Yard plans' },
+          { id: 'shift', label: 'Shifts' },
           { id: 'import', label: 'Imports' },
           { id: 'scan', label: 'Reviews' },
           { id: 'service_account', label: 'Keys' },

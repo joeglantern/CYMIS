@@ -12,6 +12,7 @@ import type {
   ColumnMappingDto,
   ContainerJourneyResponse,
   CreateAuditBody,
+  CreateShiftBody,
   CreateFacilityBody,
   CreateSectionBody,
   CreateServiceAccountBody,
@@ -27,6 +28,9 @@ import type {
   ReportFormat,
   ResultRow,
   ReviewScanBody,
+  ShiftDto,
+  ShiftListResponse,
+  UpdateShiftBody,
   Role,
   ScanDto,
   ScanResult,
@@ -49,6 +53,13 @@ export interface Page<T> {
 type Q = Record<string, string | number | boolean | undefined | null>;
 
 export const endpoints = {
+  // Shifts
+  shifts: (q: { auditId?: string; endsFrom?: string; endsBefore?: string; order?: 'asc' | 'desc'; limit?: number } = {}) =>
+    api<ShiftListResponse>('/shifts', { query: q as Q }),
+  createShift: (body: Omit<CreateShiftBody, 'clerkIds'> & { clerkIds?: string[] }) => api<ShiftDto>('/shifts', { method: 'POST', body }),
+  updateShift: (id: string, body: UpdateShiftBody) => api<ShiftDto>(`/shifts/${id}`, { method: 'PATCH', body }),
+  deleteShift: (id: string) => api<null>(`/shifts/${id}`, { method: 'DELETE' }),
+
   // Audits
   audits: (q: { status?: AuditStatus; mine?: boolean; sectionId?: string; cursor?: string; limit?: number } = {}) =>
     api<Page<AuditDto>>('/audits', { query: { ...q, mine: q.mine === undefined ? undefined : String(q.mine) } as Q }),
