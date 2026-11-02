@@ -20,7 +20,7 @@ export default function Unlock() {
   );
 }
 
-const roleWords = { AUDITOR: 'yard crew', SUPERVISOR: 'supervisor', ADMIN: 'admin' } as const;
+const roleWords = { AUDITOR: 'clerk', SUPERVISOR: 'supervisor', ADMIN: 'admin' } as const;
 
 function UnlockSheet() {
   const { c } = useTheme();
@@ -125,7 +125,7 @@ function UnlockSheet() {
     }
     const ok = await confirm({
       title: 'Switch account?',
-      body: `${firstName} will be signed out of this phone. Their audits download again when they sign back in.`,
+      body: `${firstName} will be signed out of this phone. Their yard plans download again when they sign back in.`,
       confirmLabel: 'Sign out and switch',
       danger: true,
     });

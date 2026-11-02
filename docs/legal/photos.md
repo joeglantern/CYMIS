@@ -20,6 +20,6 @@ Every scan saves one photo of the container door. It proves the box was there an
 - People and faces. Wait a moment or move so they are out of shot.
 - Vehicle number plates and truck cabs.
 - Paperwork, screens, or anything with personal details on it.
-- Photos for anything other than the audit.
+- Photos for anything other than the yard plan count.
 
 > If someone ends up in a photo by accident, tell your supervisor. They can mark the scan so the photo is reviewed.

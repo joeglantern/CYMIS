@@ -53,9 +53,9 @@ export default function Overview() {
         </StatGrid>
       ) : (
         <StatGrid>
-          <StatTile label="Active audits" value={audits.length} detail={scanning ? `${scanning} with crew scanning` : 'None scanning yet'} />
-          <StatTile label="Scanned" value={sum((k) => k.scans)} detail={sections ? `Across ${sections} ${sections === 1 ? 'section' : 'sections'}` : 'In live audits'} />
-          <StatTile label="Not found yet" value={sum((k) => k.missing)} detail="Still to scan in live audits" />
+          <StatTile label="Active yard plans" value={audits.length} detail={scanning ? `${scanning} with clerks scanning` : 'None scanning yet'} />
+          <StatTile label="Scanned" value={sum((k) => k.scans)} detail={sections ? `Across ${sections} ${sections === 1 ? 'section' : 'sections'}` : 'In live yard plans'} />
+          <StatTile label="Not found yet" value={sum((k) => k.missing)} detail="Still to scan in live yard plans" />
           <StatTile
             label="Needs review"
             value={sum((k) => k.pendingReview)}
@@ -67,20 +67,20 @@ export default function Overview() {
 
       <Columns>
         <Column grow={2} basis={520}>
-          <SectionTitle title="Active audits" />
+          <SectionTitle title="Active yard plans" />
           {active.isPending ? (
             <View style={{ gap: 12, paddingTop: 8 }}>
               <Skeleton height={56} />
               <Skeleton height={56} />
             </View>
           ) : active.isError ? (
-            <EmptyState icon="warning-circle" title="Could not load audits" body={(active.error as Error).message} />
+            <EmptyState icon="warning-circle" title="Could not load yard plans" body={(active.error as Error).message} />
           ) : audits.length === 0 ? (
             <EmptyState
               icon="list-checks"
-              title="No audits running"
-              body="Start one from a terminal export and the crew get it on their phones straight away."
-              action={<Button label="New audit" icon="plus" onPress={() => router.push('/dashboard/audits/new' as never)} />}
+              title="No yard plans running"
+              body="Start one from a terminal export and the clerks get it on their phones straight away."
+              action={<Button label="New yard plan" icon="plus" onPress={() => router.push('/dashboard/yard-plans/new' as never)} />}
             />
           ) : (
             <View>

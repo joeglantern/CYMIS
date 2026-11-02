@@ -100,7 +100,7 @@ export default function Review() {
         }}
         loading={loading}
         error={(active.error as Error | null) ?? null}
-        empty={{ icon: 'check-circle', title: 'All clear', body: 'Flagged scans from live audits show up here. Nothing needs you right now.' }}
+        empty={{ icon: 'check-circle', title: 'All clear', body: 'Flagged scans from live yard plans show up here. Nothing needs you right now.' }}
       />
       {Platform.OS === 'web' && width >= 1000 && rows.length ? (
         <Txt variant="caption" tone="muted">
@@ -280,7 +280,7 @@ function Detail({
         </Fact>
         {scan.flags.includes('COLOUR_MISMATCH') ? (
           <Fact label="Colour">
-            <Txt variant="bodySm">{`Crew picked ${scan.colourChosen ?? 'nothing'}, photo looks ${scan.colourSuggested ?? 'unclear'}`}</Txt>
+            <Txt variant="bodySm">{`Clerk picked ${scan.colourChosen ?? 'nothing'}, photo looks ${scan.colourSuggested ?? 'unclear'}`}</Txt>
           </Fact>
         ) : null}
         <Fact label="On the list">

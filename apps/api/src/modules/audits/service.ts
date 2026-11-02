@@ -25,7 +25,7 @@ interface Actor {
 
 async function dto(ctx: AppContext, auditId: string): Promise<AuditDto> {
   const audit = await ctx.db.audit.findUnique({ where: { id: auditId }, include: auditInclude });
-  if (!audit) throw new NotFoundError('Audit');
+  if (!audit) throw new NotFoundError('Yard plan');
   return toAuditDto(audit, await ctx.progress.get(auditId));
 }
 
@@ -81,8 +81,8 @@ const OPEN: AuditStatus[] = ['DRAFT', 'ACTIVE'];
 
 export async function updateAudit(ctx: AppContext, auditId: string, input: UpdateAuditBody, actor: Actor) {
   const audit = await ctx.db.audit.findUnique({ where: { id: auditId } });
-  if (!audit) throw new NotFoundError('Audit');
-  if (!OPEN.includes(audit.status)) throw new ConflictError('This audit is finished and cannot be changed', 'audit_finished');
+  if (!audit) throw new NotFoundError('Yard plan');
+  if (!OPEN.includes(audit.status)) throw new ConflictError('This yard plan is finished and cannot be changed', 'audit_finished');
   await ctx.db.audit.update({ where: { id: auditId }, data: input });
   await logActivity(ctx.db, {
     actorId: actor.id,
@@ -113,8 +113,8 @@ async function transition(
   });
   if (result.count === 0) {
     const exists = await ctx.db.audit.findUnique({ where: { id: auditId }, select: { status: true } });
-    if (!exists) throw new NotFoundError('Audit');
-    throw new ConflictError(`This audit is ${exists.status.toLowerCase()} and cannot be moved to ${to.toLowerCase()}`, 'bad_status');
+    if (!exists) throw new NotFoundError('Yard plan');
+    throw new ConflictError(`This yard plan is ${exists.status.toLowerCase()} and cannot be moved to ${to.toLowerCase()}`, 'bad_status');
   }
   await logActivity(ctx.db, {
     actorId: actor.id,
@@ -143,8 +143,8 @@ export function cancelAudit(ctx: AppContext, auditId: string, actor: Actor) {
 
 export async function setAssignees(ctx: AppContext, auditId: string, input: SetAssigneesBody, actor: Actor) {
   const audit = await ctx.db.audit.findUnique({ where: { id: auditId }, select: { status: true } });
-  if (!audit) throw new NotFoundError('Audit');
-  if (!OPEN.includes(audit.status)) throw new ConflictError('This audit is finished and cannot be changed', 'audit_finished');
+  if (!audit) throw new NotFoundError('Yard plan');
+  if (!OPEN.includes(audit.status)) throw new ConflictError('This yard plan is finished and cannot be changed', 'audit_finished');
 
   const ids = [...new Set(input.userIds)];
   if (ids.length > 0) {
@@ -152,7 +152,7 @@ export async function setAssignees(ctx: AppContext, auditId: string, input: SetA
       where: { id: { in: ids }, isActive: true, role: { in: ['AUDITOR', 'SUPERVISOR'] } },
     });
     if (valid !== ids.length) {
-      throw new BadRequestError('Only active crew and supervisors can be assigned', 'bad_assignee');
+      throw new BadRequestError('Only active clerks and supervisors can be assigned', 'bad_assignee');
     }
   }
 

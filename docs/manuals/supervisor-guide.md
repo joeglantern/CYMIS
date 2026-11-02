@@ -2,40 +2,40 @@
 
 # Supervisor guide
 
-For supervisors running audits from the dashboard.
+For supervisors running yard plans from the dashboard.
 
 ## Colours and chips
 
 Every container ends up in one of these. Each chip always has an icon and a word, so colour is never the only clue.
 
 - **Found (green):** On the list and scanned.
-- **Missing (red):** On the list, not scanned yet. When the audit closes, these are the boxes nobody found.
+- **Missing (red):** On the list, not scanned yet. When the yard plan closes, these are the boxes nobody found.
 - **Unexpected (yellow):** Scanned, but not on the list. It may be in the wrong section, or the list may be out of date.
 - **Needs review (blue):** The phone and the server read something different, or the check digit failed. A supervisor decides.
-- **Scanned twice (grey):** Already scanned in this audit. The first scan counts.
+- **Scanned twice (grey):** Already scanned in this yard plan. The first scan counts.
 
-## Setting up an audit
+## Setting up a yard plan
 
-1. In the dashboard, click **New audit**, pick the yard section and give it a name crews will recognise.
+1. In the dashboard, click **New yard plan**, pick the yard section and give it a name clerks will recognise.
 2. Upload the export from your terminal system. Excel and CSV files work. The original file is kept for checking.
 3. Match the columns. Only the container number is required. Cymis remembers the matching for the next file with the same columns.
 4. Check the rows. Numbers with a wrong check digit, duplicates and boxes outside the section are listed so you can decide before loading.
-5. Pick the crew, then click **Start**. Their phones download the list straight away.
+5. Pick the clerks, then click **Start plan**. Their phones download the list straight away.
 
-> Loading a new file into a running audit adds to the list or replaces it. Phones pick up only the changes.
+> Loading a new file into a running yard plan adds to the list or replaces it. Phones pick up only the changes.
 
-## Watching an audit live
+## Watching a yard plan live
 
-The live page updates as crews scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.
+The live page updates as clerks scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.
 
-A crew member shown as offline is still working. Their scans arrive when their phone finds signal.
+A clerk shown as offline is still working. Their scans arrive when their phone finds signal.
 
 ## The review queue
 
 Scans land here when the phone and the server disagree on the number or colour, or when the check digit fails. For each one you see the photo, both readings and the expected box.
 
 - **Correct:** Use the right number or colour. The scan moves to the right bucket.
-- **Keep as read:** The crew had it right.
+- **Keep as read:** The clerk had it right.
 - **Reject:** The scan is wrong and should not count. A note is required.
 
 ### Keyboard shortcuts
@@ -50,7 +50,7 @@ Scans land here when the phone and the server disagree on the number or colour, 
 
 ## Closing and reports
 
-- Click **Close audit** when the count is done. Scans made before the close still arrive from phones that were offline.
+- Click **Close plan** when the count is done. Scans made before the close still arrive from phones that were offline.
 - Reports come as Excel, CSV or PDF. They are made in the background and appear in **Reports** when ready.
 - Clear the review queue first so the report is final.
 
@@ -83,5 +83,5 @@ Set it up in the phone settings first. Until then, unlock with your password, wh
 - **Check digit:** The last digit. It is worked out from the other ten, so a misread character almost always shows up.
 - **Expected list:** The containers the terminal system says are in the section. It comes from the uploaded export.
 - **Bucket:** Where a container ends up: found, missing, unexpected or needs review.
-- **Audit:** One count of one section, from start to close.
+- **Yard plan:** One count of one section, from start to close.
 - **Send queue:** Scans saved on the phone that have not reached the server yet.

@@ -96,7 +96,8 @@ export function SkipLink() {
         position: 'absolute',
         zIndex: 100,
         left: 12,
-        top: focused ? 12 : -60,
+        // Far enough up to stay hidden when the test server band pushes the page down.
+        top: focused ? 12 : -120,
         paddingHorizontal: 14,
         height: 40,
         justifyContent: 'center',

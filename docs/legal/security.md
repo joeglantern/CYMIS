@@ -35,7 +35,7 @@ Version 0.1, effective [effective date]
 | Role | Responsibility |
 | --- | --- |
 | Everyone | Report anything suspicious at once. Do not try to investigate alone. |
-| Supervisor | Make sure the report reaches the system owner. Pause affected audits if needed. |
+| Supervisor | Make sure the report reaches the system owner. Close affected yard plans if needed. |
 | System owner | Lead the response, contain the problem, keep a written record. |
 | Data protection officer | Decide whether personal data was affected, notify the ODPC and people affected when required. |
 | Technical team | Close the hole, restore from backup if needed, rotate keys and secrets. |

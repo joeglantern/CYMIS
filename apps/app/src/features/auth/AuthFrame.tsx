@@ -95,7 +95,7 @@ function Frame({
       </Txt>
       {tablet ? (
         <Txt variant="caption" tone="ink2">
-          Container audits
+          Yard planning
         </Txt>
       ) : null}
     </View>

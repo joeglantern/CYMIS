@@ -18,7 +18,7 @@ type RoleFilter = Role | 'ALL';
 const roleOptions = (['AUDITOR', 'SUPERVISOR', 'ADMIN'] as Role[]).map((r) => ({
   value: r,
   label: roleWords[r],
-  detail: r === 'AUDITOR' ? 'Scans containers on a phone' : r === 'SUPERVISOR' ? 'Sets up audits and reviews scans' : 'Everything, plus people and settings',
+  detail: r === 'AUDITOR' ? 'Scans containers on a phone' : r === 'SUPERVISOR' ? 'Sets up yard plans and reviews scans' : 'Everything, plus people and settings',
 }));
 
 export default function People() {
@@ -113,7 +113,7 @@ export default function People() {
           onChange={setRole}
           options={[
             { id: 'ALL', label: 'Everyone' },
-            { id: 'AUDITOR', label: 'Yard crew' },
+            { id: 'AUDITOR', label: 'Clerks' },
             { id: 'SUPERVISOR', label: 'Supervisors' },
             { id: 'ADMIN', label: 'Admins' },
           ]}

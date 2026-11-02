@@ -16,15 +16,15 @@ export default function Reports() {
 
   return (
     <Page gap={24} maxWidth={900}>
-      <PageHeader title="Reports" subtitle="Make a report for any live or closed audit. Live reports show the count so far." />
+      <PageHeader title="Reports" subtitle="Make a report for any live or closed yard plan. Live reports show the count so far." />
       {audits.isPending ? (
         <Skeleton height={44} />
       ) : list.length === 0 ? (
-        <EmptyState icon="file-pdf" title="No audits to report on" body="Reports are made from live or closed audits." />
+        <EmptyState icon="file-pdf" title="No yard plans to report on" body="Reports are made from live or closed yard plans." />
       ) : (
         <>
           <Select
-            label="Audit"
+            label="Yard plan"
             value={picked?.id}
             onChange={(v) => setId(v)}
             options={list.map((a) => ({ value: a.id, label: a.name, detail: `${a.section.name}, ${a.status === 'ACTIVE' ? 'live' : `closed ${day(a.closedAt).toLowerCase()}`}` }))}

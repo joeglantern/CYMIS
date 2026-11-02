@@ -179,7 +179,8 @@ export function EmptyState({
       <Txt variant="body" tone="muted" align="center" style={{ fontSize: 15, lineHeight: 22, marginBottom: 8 }}>
         {body}
       </Txt>
-      {action}
+      {/* Buttons align to the start by default. This keeps the action in the middle. */}
+      {action ? <View style={{ alignSelf: 'center' }}>{action}</View> : null}
     </View>
   );
 }

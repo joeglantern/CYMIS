@@ -121,9 +121,9 @@ export default function Containers() {
                     {[dayTime(e.occurredAt), e.section?.name, e.actor?.fullName].filter(Boolean).join(', ')}
                   </Txt>
                   {e.auditId ? (
-                    <Pressable accessibilityRole="link" onPress={() => router.push(`/dashboard/audits/${e.auditId}` as never)}>
+                    <Pressable accessibilityRole="link" onPress={() => router.push(`/dashboard/yard-plans/${e.auditId}` as never)}>
                       <Txt variant="caption" color={c.accent} style={{ textDecorationLine: 'underline' }}>
-                        Open the audit
+                        Open the yard plan
                       </Txt>
                     </Pressable>
                   ) : null}

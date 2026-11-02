@@ -104,7 +104,7 @@ const audits = (await call('/audits?limit=100', { token: admin })).items;
 let live = audits.find((a) => a.name === 'Block A morning count' && a.status !== 'CANCELLED');
 
 if (!live) {
-  live = await call('/audits', { token: admin, body: { sectionId: section.id, name: 'Block A morning count', notes: 'Demo audit' } });
+  live = await call('/audits', { token: admin, body: { sectionId: section.id, name: 'Block A morning count', notes: 'Demo yard plan' } });
   const owners = ['MSKU', 'CSQU', 'TGHU', 'HLXU', 'OOLU', 'MAEU', 'TCNU', 'GESU'];
   const prefix = section.locationCodes?.[0] ?? 'A';
   const rows = ['Container No,Size Type,Location,Vessel,F/E'];

@@ -30,9 +30,9 @@ function safeName(name: string): string {
 
 async function openAudit(ctx: AppContext, auditId: string) {
   const audit = await ctx.db.audit.findUnique({ where: { id: auditId }, include: { section: true } });
-  if (!audit) throw new NotFoundError('Audit');
+  if (!audit) throw new NotFoundError('Yard plan');
   if (audit.status !== 'DRAFT' && audit.status !== 'ACTIVE') {
-    throw new ConflictError('This audit is finished, so its list cannot change', 'audit_finished');
+    throw new ConflictError('This yard plan is finished, so its list cannot change', 'audit_finished');
   }
   return audit;
 }
@@ -109,7 +109,7 @@ export async function setMapping(ctx: AppContext, importId: string, input: SetMa
   if (input.mode === 'replace') {
     const scans = await ctx.db.scan.count({ where: { auditId: batch.auditId } });
     if (scans > 0) {
-      throw new ConflictError('Scans already exist for this audit. Use append instead of replace.', 'replace_after_scans');
+      throw new ConflictError('Scans already exist for this yard plan. Use append instead of replace.', 'replace_after_scans');
     }
   }
 

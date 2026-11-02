@@ -52,6 +52,9 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
   const insets = useSafeAreaInsets();
   const [colour, setColour] = useState<ColourName | undefined>();
   const [more, setMore] = useState(false);
+  // A rule above the buttons, only when details scroll out of sight behind them.
+  const [listH, setListH] = useState(0);
+  const [contentH, setContentH] = useState(0);
   const { check } = captured;
   const time = captured.capturedAt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
@@ -63,12 +66,15 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
       </Txt>
     </View>
   ) : check.result === 'matched' ? (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+    <View style={{ gap: 10 }}>
       <StatusChip bucket="found" label="On the list" />
       {check.expected?.location ? (
-        <Txt variant="bodySm" tone="muted">
-          Expected at <Txt variant="bodySm" style={{ fontFamily: fonts.mono }}>{check.expected.location}</Txt>
-        </Txt>
+        <View accessible accessibilityLabel={`List says ${check.expected.location}`} style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', columnGap: 10 }}>
+          <Txt variant="bodyStrong" tone="ink2" style={{ fontSize: tablet ? 18 : 16 }}>
+            List says
+          </Txt>
+          <Txt style={{ fontFamily: fonts.monoMedium, fontSize: tablet ? 34 : 28, lineHeight: tablet ? 42 : 36 }}>{check.expected.location}</Txt>
+        </View>
       ) : null}
     </View>
   ) : check.result === 'duplicate' ? (
@@ -77,7 +83,7 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
       <Txt variant="bodySm" tone="ink2">
         {check.firstScan
           ? `This box was scanned at ${new Date(check.firstScan.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}. No need to save it again.`
-          : 'This box is already counted in this audit.'}
+          : 'This box is already counted in this yard plan.'}
       </Txt>
     </View>
   ) : (
@@ -117,7 +123,10 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
     >
       <ScrollView
         bounces={false}
-        contentContainerStyle={{ gap: tablet ? 22 : 18, paddingTop: tablet ? 14 : 10, paddingHorizontal: tablet ? 32 : 20, paddingBottom: (tablet ? 32 : 22) + (tablet ? 0 : insets.bottom) }}
+        style={{ flexGrow: 0, flexShrink: 1 }}
+        onLayout={(e) => setListH(e.nativeEvent.layout.height)}
+        onContentSizeChange={(_w, h) => setContentH(h)}
+        contentContainerStyle={{ gap: tablet ? 22 : 18, paddingTop: tablet ? 14 : 10, paddingHorizontal: tablet ? 32 : 20, paddingBottom: tablet ? 18 : 14 }}
       >
         <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: c.ruleStrong }} />
 
@@ -201,21 +210,31 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
             </View>
           </View>
         ) : null}
-
-        <View style={{ gap: 8 }}>
-          {duplicate ? (
-            <>
-              <Button label="Scan the next box" size="xl" block onPress={onDiscard} />
-              <Button label="Save it again anyway" variant="quiet" size="lg" block loading={saving} onPress={() => onSave(colour)} />
-            </>
-          ) : (
-            <>
-              <Button label="Save and scan next" size="xl" block loading={saving} onPress={() => onSave(colour)} silent />
-              <Button label="Fix the number" variant="quiet" size="lg" block onPress={onFix} />
-            </>
-          )}
-        </View>
       </ScrollView>
+
+      {/* Outside the scroll, so the main button is on screen the moment the panel opens. */}
+      <View
+        style={{
+          gap: 8,
+          paddingTop: 12,
+          paddingHorizontal: tablet ? 32 : 20,
+          paddingBottom: (tablet ? 28 : 18) + (tablet ? 0 : insets.bottom),
+          borderTopWidth: contentH > listH + 1 ? 1 : 0,
+          borderTopColor: c.rule,
+        }}
+      >
+        {duplicate ? (
+          <>
+            <Button label="Scan next" accessibilityLabel="Scan next without saving this box again" size="xl" block onPress={onDiscard} />
+            <Button label="Save it again anyway" variant="quiet" size="lg" block loading={saving} onPress={() => onSave(colour)} />
+          </>
+        ) : (
+          <>
+            <Button label="Scan next" accessibilityLabel="Save this box and scan next" size="xl" block loading={saving} onPress={() => onSave(colour)} silent />
+            <Button label="Fix the number" variant="quiet" size="lg" block onPress={onFix} />
+          </>
+        )}
+      </View>
     </Animated.View>
   );
 }

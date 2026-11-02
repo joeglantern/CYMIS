@@ -17,7 +17,11 @@ const IS_WEB = Platform.OS === 'web';
 
 /* Test server ribbon */
 
-/** A small, always visible label on any server that is not the live one. */
+/**
+ * An always visible label on any server that is not the live one. On the web
+ * it is a band above the app rather than a layer on top of it, so it can never
+ * cover a control. The live server renders nothing, so its layout never moves.
+ */
 export function EnvRibbon() {
   const env = useAppConfig((s) => s.config?.environment);
   const insets = useSafeAreaInsets();
@@ -29,16 +33,12 @@ export function EnvRibbon() {
       accessibilityRole="text"
       accessibilityLabel={text}
       style={{
-        position: 'absolute',
-        zIndex: 40,
-        ...(IS_WEB ? { top: 0, alignSelf: 'center', left: '50%', transform: [{ translateX: '-50%' as unknown as number }] } : { top: insets.top + 2, alignSelf: 'center' }),
+        ...(IS_WEB
+          ? { height: 24, justifyContent: 'center' }
+          : { position: 'absolute', zIndex: 40, top: insets.top + 2, alignSelf: 'center', height: 20, paddingHorizontal: 8, borderRadius: 999 }),
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        paddingHorizontal: IS_WEB ? 10 : 8,
-        height: IS_WEB ? 24 : 20,
-        borderRadius: 999,
-        ...(IS_WEB ? { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomLeftRadius: 10, borderBottomRightRadius: 10 } : {}),
         backgroundColor: brand.yellow,
       }}
     >

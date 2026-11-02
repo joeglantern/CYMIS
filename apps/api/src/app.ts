@@ -84,7 +84,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
         info: {
           title: 'Cymis API',
           version: '1.0.0',
-          description: 'Container audit API. Every route needs a bearer token unless marked otherwise.',
+          description: 'Yard planning and container count API. Every route needs a bearer token unless marked otherwise.',
         },
         components: { securitySchemes: { bearer: { type: 'http', scheme: 'bearer' } } },
         security: [{ bearer: [] }],

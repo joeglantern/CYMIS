@@ -12,11 +12,14 @@ import { FilterPills } from '@/ui';
 
 type Kind = 'all' | 'section' | 'user' | 'audit' | 'import' | 'scan' | 'service_account';
 
-/** "audit.closed" becomes "Audit closed". */
+/** "audit.closed" becomes "Yard plan closed". The stored code does not change. */
 function words(action: string) {
-  const s = action.replace(/[._]/g, ' ').trim();
+  const s = action.replace(/[._]/g, ' ').replace(/\baudit\b/g, 'yard plan').trim();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+/** The kind of record, in the words people use. */
+const entityWords = (type: string) => (type === 'audit' ? 'yard plan' : type.replace(/_/g, ' '));
 
 export default function Activity() {
   return (
@@ -50,13 +53,13 @@ function ActivityPage() {
       ),
     },
     { key: 'what', label: 'What', flex: 1.4, render: (a) => <TextCell>{words(a.action)}</TextCell> },
-    { key: 'on', label: 'On', flex: 1, render: (a) => <MonoCell muted>{a.entityId ? `${a.entityType} ${a.entityId.slice(0, 8)}` : a.entityType}</MonoCell> },
+    { key: 'on', label: 'On', flex: 1, render: (a) => <MonoCell muted>{a.entityId ? `${entityWords(a.entityType)} ${a.entityId.slice(0, 8)}` : entityWords(a.entityType)}</MonoCell> },
     { key: 'ip', label: 'From', width: 140, render: (a) => <MonoCell muted>{a.ip ?? ''}</MonoCell> },
   ];
 
   return (
     <Page gap={22}>
-      <PageHeader title="Activity log" subtitle="Sign ins, imports, reviews, closes and changes to people. Kept for audits of the audit." />
+      <PageHeader title="Activity log" subtitle="Sign ins, imports, reviews, closes and changes to people. Kept as the record of who did what." />
       <FilterPills<Kind>
         label="Filter by kind"
         value={kind}
@@ -65,7 +68,7 @@ function ActivityPage() {
           { id: 'all', label: 'Everything' },
           { id: 'section', label: 'Sections' },
           { id: 'user', label: 'People and sign ins' },
-          { id: 'audit', label: 'Audits' },
+          { id: 'audit', label: 'Yard plans' },
           { id: 'import', label: 'Imports' },
           { id: 'scan', label: 'Reviews' },
           { id: 'service_account', label: 'Keys' },

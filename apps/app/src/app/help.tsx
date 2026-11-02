@@ -15,7 +15,7 @@ type Filter = 'all' | Exclude<Audience, 'everyone'>;
 
 const filters: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'crew', label: 'Yard crew' },
+  { id: 'crew', label: 'Clerks' },
   { id: 'supervisors', label: 'Supervisors' },
   { id: 'admins', label: 'Admins' },
 ];
@@ -54,7 +54,7 @@ export default function Help() {
           How to use Cymis
         </Txt>
         <Txt variant="body" tone="muted">
-          Short answers for crew, supervisors and admins. Type to find what you need.
+          Short answers for clerks, supervisors and admins. Type to find what you need.
         </Txt>
       </View>
 

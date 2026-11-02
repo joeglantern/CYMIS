@@ -72,7 +72,7 @@ export function AuditWizard({ auditId }: { auditId?: string }) {
   // Once it has started there is nothing left to set up. Go to the live page.
   const status = audit.data?.status;
   useEffect(() => {
-    if (auditId && status && status !== 'DRAFT') router.replace(`/dashboard/audits/${auditId}` as never);
+    if (auditId && status && status !== 'DRAFT') router.replace(`/dashboard/yard-plans/${auditId}` as never);
   }, [auditId, status]);
 
   const at = order.indexOf(step);
@@ -84,17 +84,17 @@ export function AuditWizard({ auditId }: { auditId?: string }) {
   return (
     <Page gap={20} maxWidth={860}>
       <PageHeader
-        title={audit.data?.name ?? 'New audit'}
-        crumbs={[{ label: 'Audits', href: '/dashboard/audits' }, { label: auditId ? 'Set up' : 'New' }]}
-        subtitle="Pick the section, bring in the terminal list, give it to the crew, then start."
+        title={audit.data?.name ?? 'New yard plan'}
+        crumbs={[{ label: 'Yard planning', href: '/dashboard/yard-plans' }, { label: auditId ? 'Set up' : 'New' }]}
+        subtitle="Pick the section, bring in the terminal list, give it to the clerks, then start."
         actions={
           auditId ? (
             <Button
               label="Finish later"
               variant="quiet"
               onPress={() => {
-                toast({ text: 'Saved as a draft. Open it from Audits to carry on.' });
-                router.replace('/dashboard/audits' as never);
+                toast({ text: 'Saved as a draft. Open it from Yard planning to carry on.' });
+                router.replace('/dashboard/yard-plans' as never);
               }}
             />
           ) : undefined
@@ -117,12 +117,12 @@ export function AuditWizard({ auditId }: { auditId?: string }) {
         n={4}
         title="Check the rows"
         state={at > 3 ? 'done' : at === 3 ? 'now' : 'later'}
-        summary={audit.data?.counts.expected ? `${fmt(audit.data.counts.expected)} containers on the list` : undefined}
+        summary={audit.data?.counts.expected ? `${count(audit.data.counts.expected, 'container')} on the list` : undefined}
       >
         {imp && step === 'check' ? <CheckStep imp={imp} onDone={refresh} onRemap={() => setEditMap(true)} /> : null}
       </Step>
 
-      <Step n={5} title="Crew" state={at > 4 ? 'done' : at === 4 ? 'now' : 'later'} summary={audit.data ? crewSummary(audit.data.assignees.map((a) => a.fullName)) : undefined}>
+      <Step n={5} title="Clerks" state={at > 4 ? 'done' : at === 4 ? 'now' : 'later'} summary={audit.data ? crewSummary(audit.data.assignees.map((a) => a.fullName)) : undefined}>
         {auditId && step === 'crew' ? <CrewStep auditId={auditId} current={audit.data?.assignees.map((a) => a.id) ?? []} onDone={() => setCrewDone(true)} /> : null}
       </Step>
 
@@ -137,6 +137,9 @@ function latest(list: ImportDto[] | undefined): ImportDto | undefined {
   if (!list?.length) return undefined;
   return [...list].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
 }
+
+/** "1 container", "3 containers". */
+const count = (n: number, word: string) => `${fmt(n)} ${word}${n === 1 ? '' : 's'}`;
 
 function crewSummary(names: string[]) {
   if (!names.length) return 'Nobody yet';
@@ -222,7 +225,7 @@ function WhereStep() {
     mutationFn: () => endpoints.createAudit({ sectionId: sectionId!, name: name.trim(), ...(notes.trim() ? { notes: notes.trim() } : {}) }),
     onSuccess: (a) => {
       feedback.success();
-      router.replace(`/dashboard/audits/${a.id}/setup` as never);
+      router.replace(`/dashboard/yard-plans/${a.id}/setup` as never);
     },
     onError: (e) => toast({ text: (e as Error).message, tone: 'error' }),
   });
@@ -234,8 +237,8 @@ function WhereStep() {
       <EmptyState
         icon="buildings"
         title="No sections yet"
-        body="An admin needs to add the yard sections first, under Admin, Sections."
-        action={<Button label="Go to sections" variant="secondary" onPress={() => router.push('/dashboard/admin/sections' as never)} />}
+        body="An admin needs to add the yard sections first, under Yard management."
+        action={<Button label="Go to Yard management" variant="secondary" onPress={() => router.push('/dashboard/admin/sections' as never)} />}
       />
     );
 
@@ -277,8 +280,8 @@ function WhereStep() {
           })}
         </View>
       </View>
-      <TextField label="Audit name" value={name} onChangeText={setName} placeholder="Block A morning count" maxLength={120} />
-      <TextField label="Notes for the crew" hint="Optional. Shown on their phones." value={notes} onChangeText={setNotes} maxLength={2000} />
+      <TextField label="Yard plan name" value={name} onChangeText={setName} placeholder="Block A morning count" maxLength={120} />
+      <TextField label="Notes for the clerks" hint="Optional. Shown on their phones." value={notes} onChangeText={setNotes} maxLength={2000} />
       <Button label="Continue" iconRight="arrow-right" size="lg" disabled={!sectionId || name.trim().length < 2} loading={create.isPending} onPress={() => create.mutate()} />
     </View>
   );
@@ -325,7 +328,7 @@ function UploadStep({ auditId, imp, onDone }: { auditId: string; imp: ImportDto 
   return (
     <View style={{ gap: 14 }}>
       <Txt variant="body" tone="ink2">
-        Export the containers for this section from the terminal system as Excel or CSV, then add the file here. The original file is kept with the audit.
+        Export the containers for this section from the terminal system as Excel or CSV, then add the file here. The original file is kept with the yard plan.
       </Txt>
       {imp?.status === 'FAILED' ? <Banner tone="warning">{imp.failureReason ?? 'That file could not be read. Try exporting it again.'}</Banner> : null}
       {error ? <Banner tone="warning">{error}</Banner> : null}
@@ -395,7 +398,7 @@ function MapStep({ imp, onDone }: { imp: ImportDto; onDone: () => void }) {
   return (
     <View style={{ gap: 18 }}>
       <Txt variant="body" tone="ink2">
-        {`Found ${fmt(imp.rowCount)} rows in ${imp.sheetName ? `the sheet "${imp.sheetName}"` : 'the file'}. Tell us which column holds what. Only the container number is needed; everything else in the row is kept anyway.`}
+        {`Found ${count(imp.rowCount, 'row')} in ${imp.sheetName ? `the sheet "${imp.sheetName}"` : 'the file'}. Tell us which column holds what. Only the container number is needed; everything else in the row is kept anyway.`}
       </Txt>
       {imp.suggestedMapping ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -425,7 +428,7 @@ function MapStep({ imp, onDone }: { imp: ImportDto; onDone: () => void }) {
       <SamplePreview imp={imp} map={map} />
 
       <View style={{ gap: 8 }}>
-        <Txt variant="bodySmStrong">If this audit already has a list</Txt>
+        <Txt variant="bodySmStrong">If this yard plan already has a list</Txt>
         <FilterPills<ImportMode>
           label="Add or replace"
           value={mode}
@@ -493,7 +496,7 @@ function CheckStep({ imp, onDone, onRemap }: { imp: ImportDto; onDone: () => voi
     mutationFn: () => endpoints.commitImport(imp.id),
     onSuccess: () => {
       feedback.success();
-      toast({ text: `${fmt(imp.validCount)} containers added to the list.`, tone: 'success' });
+      toast({ text: `${count(imp.validCount, 'container')} added to the list.`, tone: 'success' });
       onDone();
     },
     onError: (e) => toast({ text: (e as Error).message, tone: 'error' }),
@@ -572,7 +575,7 @@ function CheckStep({ imp, onDone, onRemap }: { imp: ImportDto; onDone: () => voi
       )}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Button
-          label={imp.validCount ? `Add ${fmt(imp.validCount)} containers` : 'Nothing to add'}
+          label={imp.validCount ? `Add ${count(imp.validCount, 'container')}` : 'Nothing to add'}
           size="lg"
           disabled={!imp.validCount}
           loading={commit.isPending}
@@ -606,13 +609,13 @@ function CrewStep({ auditId, current, onDone }: { auditId: string; current: stri
   return (
     <View style={{ gap: 14 }}>
       <Txt variant="body" tone="ink2">
-        The people you pick get this audit on their phones, with the list ready to scan offline.
+        The people you pick get this yard plan on their phones, with the list ready to scan offline.
       </Txt>
       <TextField label="Find someone" value={q} onChangeText={setQ} placeholder="Name or staff ID" />
       {users.isPending ? (
         <Skeleton height={140} />
       ) : list.length === 0 ? (
-        <EmptyState icon="users" title="No yard crew found" body="Add crew under People first. Their role must be Yard crew." />
+        <EmptyState icon="users" title="No clerks found" body="Add clerks under People first. Their role must be Clerk." />
       ) : (
         <View style={{ gap: 2 }}>
           {list.map((u) => (
@@ -639,31 +642,33 @@ function StartStep({ auditId, expected, crew, onBack }: { auditId: string; expec
   const qc = useQueryClient();
   const start = useMutation({
     mutationFn: () => endpoints.startAudit(auditId),
-    onSuccess: () => {
+    onSuccess: (a) => {
       feedback.success();
+      // The live page reads this. Without it the old draft sends people back here.
+      qc.setQueryData(keys.audit(auditId), a);
       void qc.invalidateQueries({ queryKey: ['audits'] });
-      toast({ text: 'Audit started. The crew can scan now.', tone: 'success' });
-      router.replace(`/dashboard/audits/${auditId}` as never);
+      toast({ text: 'Yard plan started. The clerks can scan now.', tone: 'success' });
+      router.replace(`/dashboard/yard-plans/${auditId}` as never);
     },
-    onError: (e) => toast({ text: e instanceof ApiError ? e.message : 'Could not start the audit.', tone: 'error' }),
+    onError: (e) => toast({ text: e instanceof ApiError ? e.message : 'Could not start the yard plan.', tone: 'error' }),
   });
   return (
     <View style={{ gap: 14 }}>
       <Txt variant="body" tone="ink2">
-        {`${fmt(expected)} containers on the list and ${crew} ${crew === 1 ? 'person' : 'people'} ready. When you start, their phones download the list and the dashboard goes live.`}
+        {`${count(expected, 'container')} on the list and ${crew} ${crew === 1 ? 'person' : 'people'} ready. When you start, their phones download the list and the dashboard goes live.`}
       </Txt>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         <Button
-          label="Start audit"
+          label="Start plan"
           icon="broadcast"
           size="lg"
           loading={start.isPending}
           onPress={async () => {
-            const ok = await confirm({ title: 'Start the audit now?', body: 'The crew can start scanning straight away.', confirmLabel: 'Start audit' });
+            const ok = await confirm({ title: 'Start the yard plan now?', body: 'The clerks can start scanning straight away.', confirmLabel: 'Start plan' });
             if (ok) start.mutate();
           }}
         />
-        <Button label="Change the crew" variant="secondary" size="lg" onPress={onBack} />
+        <Button label="Change the clerks" variant="secondary" size="lg" onPress={onBack} />
       </View>
     </View>
   );

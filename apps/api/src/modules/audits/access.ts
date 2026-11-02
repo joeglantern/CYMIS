@@ -21,7 +21,7 @@ export async function loadAuditFor<T extends Prisma.AuditInclude | undefined = u
     where: { id: auditId },
     ...(options.include ? { include: options.include } : {}),
   });
-  if (!audit) throw new NotFoundError('Audit');
+  if (!audit) throw new NotFoundError('Yard plan');
 
   if (principal.kind === 'service') {
     const allowed = options.scopes ?? [];
@@ -34,7 +34,7 @@ export async function loadAuditFor<T extends Prisma.AuditInclude | undefined = u
       where: { auditId_userId: { auditId, userId: principal.user.id } },
       select: { auditId: true },
     });
-    if (!assigned) throw new NotFoundError('Audit');
+    if (!assigned) throw new NotFoundError('Yard plan');
   }
   return audit as Prisma.AuditGetPayload<{ include: T }>;
 }

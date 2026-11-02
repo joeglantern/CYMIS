@@ -17,7 +17,7 @@ import { useSettings, type ThemePreference } from '@/state/settings';
 import { useLayout, useTheme } from '@/theme/theme';
 import { Avatar, Button, Divider, FilterPills, NavRow, SectionTitle, ToggleRow, Txt, useConfirm } from '@/ui';
 
-const roleWords = { AUDITOR: 'Yard crew', SUPERVISOR: 'Supervisor', ADMIN: 'Admin' } as const;
+const roleWords = { AUDITOR: 'Clerk', SUPERVISOR: 'Supervisor', ADMIN: 'Admin' } as const;
 
 export default function Settings() {
   const { c } = useTheme();

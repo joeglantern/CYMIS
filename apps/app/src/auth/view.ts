@@ -14,7 +14,7 @@ const ladder: Record<Role, Role[]> = {
   AUDITOR: [],
 };
 
-export const viewWords: Record<Role, string> = { ADMIN: 'Admin', SUPERVISOR: 'Supervisor', AUDITOR: 'Crew' };
+export const viewWords: Record<Role, string> = { ADMIN: 'Admin', SUPERVISOR: 'Supervisor', AUDITOR: 'Clerk' };
 
 export function defaultView(role: Role): Role {
   // Phones and tablets are scanning tools first. Browsers are for the dashboard.

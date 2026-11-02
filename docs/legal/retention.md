@@ -10,8 +10,8 @@ We keep data only as long as there is a reason to. When a period ends, the data 
 
 | Data | Kept for | Reason |
 | --- | --- | --- |
-| Audit results and scans | [7 years] after the audit closes | Operational and audit evidence, possible legal claims |
-| Container door photos | [2 years] after the audit closes | Evidence for disputes about a container. Longer only if a case is open |
+| Yard plan results and scans | [7 years] after the yard plan closes | Operational and audit evidence, possible legal claims |
+| Container door photos | [2 years] after the yard plan closes | Evidence for disputes about a container. Longer only if a case is open |
 | Photos that never finished uploading | 7 days | They are incomplete and cannot be used |
 | Original terminal export files | 90 days after the list is loaded | The rows are already saved. Kept briefly in case a load needs checking |
 | Activity log (who did what) | [2 years] | Security and investigating mistakes |
@@ -20,6 +20,6 @@ We keep data only as long as there is a reason to. When a period ends, the data 
 | Database backups | 30 days, rolling | Recovery after a failure |
 | Scans waiting on a phone | Until sent, or until the person signs out | So nothing is lost in a dead zone |
 
-> When an account is closed, its scans are kept with the audit because the audit record must stay complete. The name shown on them stays until the audit records themselves are deleted.
+> When an account is closed, its scans are kept with the yard plan because the count record must stay complete. The name shown on them stays until the count records themselves are deleted.
 
 A legal hold pauses deletion for the data it covers, for example during an investigation or a dispute about a container. The system owner records each hold and lifts it when it ends.

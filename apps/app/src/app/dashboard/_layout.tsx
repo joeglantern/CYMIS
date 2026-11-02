@@ -126,7 +126,7 @@ function TopBar() {
           </View>
         ) : null}
       </View>
-      <Button label={narrow ? 'New' : 'New audit'} icon="plus" onPress={() => router.push('/dashboard/audits/new' as never)} />
+      <Button label={narrow ? 'New' : 'New yard plan'} icon="plus" onPress={() => router.push('/dashboard/yard-plans/new' as never)} />
     </View>
   );
 }

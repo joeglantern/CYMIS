@@ -1,10 +1,10 @@
 # Cymis
 
-Container audits for port yards. A supervisor imports the terminal system's container list, the crew scan boxes with their phones or tablets, and every container ends up found, missing, unexpected or flagged for review, live on a dashboard.
+Yard planning and container counts for port yards. A supervisor imports the terminal system's container list, the clerks scan boxes with their phones or tablets, and every container ends up found, missing, unexpected or flagged for review, live on a dashboard.
 
 ## Status
 
-- **Crew app and supervisor dashboard:** built. One Expo app in `apps/app` runs on phones, tablets and the web.
+- **Clerk app and supervisor dashboard:** built. One Expo app in `apps/app` runs on phones, tablets and the web.
 - **API and database:** built and tested.
 - **Test server:** running on a VPS in Docker, see `infra/staging`.
 - **Photo checking service, production setup:** in progress. See `docs/backend-handoff.md`.
@@ -31,7 +31,7 @@ pnpm --filter @cymis/api db:seed
 pnpm dev
 ```
 
-The API listens on `http://localhost:4000`. To fill it with a supervisor, three crew and a live audit:
+The API listens on `http://localhost:4000`. To fill it with a supervisor, three clerks and a live yard plan:
 
 ```
 node scripts/demo-data.mjs

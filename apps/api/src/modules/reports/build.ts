@@ -21,7 +21,7 @@ export function reportFileName(auditName: string, format: 'XLSX' | 'CSV' | 'PDF'
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 60);
-  return `cymis-audit-${slug || 'report'}.${format.toLowerCase()}`;
+  return `cymis-yard-plan-${slug || 'report'}.${format.toLowerCase()}`;
 }
 
 /**
@@ -107,7 +107,7 @@ const ROW_HEADER = ['Result', 'Container', 'Location', 'Colour', 'Scanned at (UT
 
 function summaryRows(d: ReportData): string[][] {
   return [
-    ['Audit', safeCell(d.audit.name)],
+    ['Yard plan', safeCell(d.audit.name)],
     ['Facility', safeCell(d.audit.facility)],
     ['Section', safeCell(d.audit.section)],
     ['Status', d.audit.status],
@@ -170,7 +170,7 @@ export async function buildPdf(ctx: AppContext, d: ReportData): Promise<Buffer> 
     }),
   );
 
-  const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: `Audit report: ${d.audit.name}`, Author: 'Cymis' } });
+  const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: `Yard plan report: ${d.audit.name}`, Author: 'Cymis' } });
   const chunks: Buffer[] = [];
   doc.on('data', (c: Buffer) => chunks.push(c));
   const done = new Promise<Buffer>((resolve, reject) => {
@@ -182,7 +182,7 @@ export async function buildPdf(ctx: AppContext, d: ReportData): Promise<Buffer> 
   const muted = '#6b6a66';
   const rule = '#d4d2cc';
 
-  doc.fillColor(muted).fontSize(9).text('CONTAINER AUDIT REPORT', { characterSpacing: 1.2 });
+  doc.fillColor(muted).fontSize(9).text('YARD PLAN REPORT', { characterSpacing: 1.2 });
   doc.moveDown(0.3).fillColor(ink).fontSize(20).text(d.audit.name);
   doc.moveDown(0.2).fillColor(muted).fontSize(10).text(`${d.audit.facility}  /  ${d.audit.section}`);
   doc.moveDown(1);

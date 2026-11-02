@@ -146,7 +146,8 @@ export function StatTile({
             }}
           />
         ) : null}
-        <Txt variant="label" tone="muted" caps numberOfLines={1}>
+        {/* Longer labels wrap instead of cutting off on narrow tiles. */}
+        <Txt variant="label" tone="muted" caps numberOfLines={2} style={{ flexShrink: 1 }}>
           {label}
         </Txt>
       </View>

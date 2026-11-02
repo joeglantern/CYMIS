@@ -14,7 +14,7 @@ export function AuditStatus({ status }: { status: AuditDto['status'] }) {
 }
 
 export function openAudit(a: AuditDto) {
-  router.push((a.status === 'DRAFT' ? `/dashboard/audits/${a.id}/setup` : `/dashboard/audits/${a.id}`) as never);
+  router.push((a.status === 'DRAFT' ? `/dashboard/yard-plans/${a.id}/setup` : `/dashboard/yard-plans/${a.id}`) as never);
 }
 
 /** One row in the Active audits list on the overview. */

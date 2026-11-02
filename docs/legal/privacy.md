@@ -18,7 +18,7 @@ This notice follows the Kenya Data Protection Act, 2019 and its regulations.
 | --- | --- | --- |
 | Full name, staff ID and role | Your admin, when your account is made | To sign you in and show who did each scan |
 | Password | You | To sign you in. Stored only as a one way hash, never readable |
-| Scans: container number, time, method | The app, when you scan | The audit itself |
+| Scans: container number, time, method | The app, when you scan | The yard plan count itself |
 | Photo of the container door | The phone camera, when you scan | Proof the box was seen, and a second check of the number and colour |
 | Location at the moment of a scan | The phone, if you allow location | To show where each box was found on the yard map |
 | Device id and device name | The app | To tell phones apart and to sign out a lost phone |
@@ -36,10 +36,10 @@ Container photos are meant to show the door and the number. If a person or a veh
 
 ## Who can see it
 
-- Crew see their own audits and scans.
-- Supervisors see the audits they run, including scans, photos and locations.
+- Clerks see their own yard plans and scans.
+- Supervisors see all yard plans, including scans, photos and locations.
 - Admins manage accounts and can see the activity log.
-- Systems your organisation connects through official integrations can read audit results, never passwords.
+- Systems your organisation connects through official integrations can read yard plan results, never passwords.
 - Our hosting provider stores the data for us under a written agreement and may not use it for anything else.
 
 We do not sell personal data or use it for advertising.
@@ -63,7 +63,7 @@ Under the Act you have the right to:
 - object to processing based on legitimate interests
 - withdraw consent where we rely on it, without affecting what was done before
 
-Some audit records cannot be deleted while they are needed for legal or operational reasons. If we cannot do what you ask, we will tell you why. We reply within the time the Act allows.
+Some count records cannot be deleted while they are needed for legal or operational reasons. If we cannot do what you ask, we will tell you why. We reply within the time the Act allows.
 
 To use any of these rights, contact the data protection officer at [email].
 

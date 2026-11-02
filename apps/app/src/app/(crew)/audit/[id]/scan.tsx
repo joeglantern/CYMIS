@@ -52,7 +52,7 @@ export default function ScannerScreen() {
 function Scanner() {
   const { id: auditId } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { tablet, wide, landscape } = useLayout();
+  const { tablet, wide, landscape, height } = useLayout();
   const toast = useToast();
   const keepAwake = useSettings((s) => s.keepAwake);
   const queueVersion = useQueue((s) => s.version);
@@ -70,6 +70,9 @@ function Scanner() {
   const [keypad, setKeypad] = useState<{ initial: string; from: 'type' | 'fix' } | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState<string | null>(null);
+  // The real height of the bars, so the frame fills exactly what is left.
+  const [topBarH, setTopBarH] = useState(0);
+  const [panelH, setPanelH] = useState(0);
 
   const busy = useRef(false);
   const lastRead = useRef<{ value: string; hits: number } | null>(null);
@@ -276,10 +279,13 @@ function Scanner() {
     );
   }
 
-  const rail = wide && landscape;
+  // A phone on its side is too short to stack, so it takes the side rail too, packed tighter.
+  const shortScreen = height < 560;
+  const rail = landscape && (wide || shortScreen);
+  const railW = shortScreen ? 200 : 240;
   const sectionName = audit.data?.audit.section.name ?? 'Scanner';
   const leftText = expectedTotal ? `${leftCount.toLocaleString('en-GB')} left` : ' ';
-  const topBar = insets.top + 76;
+  const topBar = topBarH || insets.top + 76;
 
   return (
     <View style={{ flex: 1, backgroundColor: brand.camera }}>
@@ -297,6 +303,7 @@ function Scanner() {
       />
 
       <View
+        onLayout={(e) => setTopBarH(e.nativeEvent.layout.height)}
         style={{
           position: 'absolute',
           left: 0,
@@ -325,11 +332,8 @@ function Scanner() {
       </View>
 
       {!captured ? (
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', left: 0, right: rail ? 240 : 0, top: topBar, bottom: rail ? 0 : tablet ? 220 : 190, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <GuideBox state={closed ? 'searching' : guide} hint={closed ? 'Audit closed' : hints[guide]} number={lockedNumber} />
+        <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: rail ? railW : 0, top: topBar, bottom: rail ? 0 : panelH || (tablet ? 220 : 190) }}>
+          <GuideBox state={closed ? 'searching' : guide} hint={closed ? 'Plan closed' : hints[guide]} number={lockedNumber} />
         </View>
       ) : null}
 
@@ -360,9 +364,10 @@ function Scanner() {
 
       {!captured ? (
         <View
+          onLayout={(e) => setPanelH(e.nativeEvent.layout.height)}
           style={
             rail
-              ? { position: 'absolute', right: 0, top: topBar, bottom: 0, width: 240, justifyContent: 'center', gap: 28, padding: 24, backgroundColor: brand.camera }
+              ? { position: 'absolute', right: 0, top: topBar, bottom: 0, width: railW, justifyContent: 'center', gap: shortScreen ? 10 : 28, padding: shortScreen ? 12 : 24, backgroundColor: brand.camera }
               : {
                   position: 'absolute',
                   left: 0,
@@ -378,12 +383,12 @@ function Scanner() {
         >
           <Txt variant="bodySm" color={brand.cameraMuted} align="center">
             {closed
-              ? 'This audit is closed. Scans are no longer taken.'
+              ? 'This yard plan is closed. Scans are no longer taken.'
               : !readerReady
                 ? 'Getting the reader ready. You can take the photo and type the number meanwhile.'
-                : 'Point at the number on the door. It scans by itself.'}
+                : 'It scans by itself.'}
           </Txt>
-          <View style={rail ? { alignItems: 'center', gap: 28 } : { flexDirection: 'row', alignItems: 'center', justifyContent: tablet ? 'center' : 'space-between', gap: tablet ? 80 : 0 }}>
+          <View style={rail ? { alignItems: 'center', gap: shortScreen ? 10 : 28 } : { flexDirection: 'row', alignItems: 'center', justifyContent: tablet ? 'center' : 'space-between', gap: tablet ? 80 : 0 }}>
             <RoundAction icon="keyboard" label="Type it" onPress={() => setKeypad({ initial: '', from: 'type' })} disabled={closed} />
             <Pressable
               accessibilityRole="button"

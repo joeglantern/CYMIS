@@ -44,7 +44,7 @@ export default function AuditHome() {
   return (
     <View style={{ flex: 1, backgroundColor: c.paper }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, paddingTop: insets.top + (tablet ? 18 : 14), paddingBottom: tablet ? 12 : 10, paddingLeft: tablet ? 20 : 8, paddingRight: tablet ? 28 : 12 }}>
-        <IconButton icon="caret-left" label="Back to your audits" onPress={back} />
+        <IconButton icon="caret-left" label="Back to your yard plans" onPress={back} />
         <SyncButton />
       </View>
 
@@ -57,7 +57,7 @@ export default function AuditHome() {
           {`${sync.queued} scans were not accepted. Open the queue to fix them.`}
         </Banner>
       ) : closed ? (
-        <Banner tone="closed">This audit is closed. You can still look through it.</Banner>
+        <Banner tone="closed">This yard plan is closed. You can still look through it.</Banner>
       ) : null}
 
       <ScrollView
@@ -71,7 +71,7 @@ export default function AuditHome() {
             <Skeleton height={110} radius={12} />
           </View>
         ) : !a ? (
-          <EmptyState icon="wifi-slash" image={emptyImages.noSignal} title="This audit is not on your phone yet" body="Open it once with signal so the list downloads. After that it works offline." />
+          <EmptyState icon="wifi-slash" image={emptyImages.noSignal} title="This yard plan is not on your phone yet" body="Open it once with signal so the list downloads. After that it works offline." />
         ) : (
           <>
             <View style={{ gap: 4 }}>
@@ -94,7 +94,7 @@ export default function AuditHome() {
                 <View style={{ flex: 1, gap: 2 }}>
                   <Txt variant="bodyStrong">Everything on the list is found</Txt>
                   <Txt variant="bodySm" tone="muted">
-                    Your supervisor can close the audit. Keep scanning if you spot boxes that are not on the list.
+                    Your supervisor can close the yard plan. Keep scanning if you spot boxes that are not on the list.
                   </Txt>
                 </View>
               </Animated.View>
@@ -133,7 +133,7 @@ export default function AuditHome() {
                 {(recent.data ?? []).length === 0 ? (
                   <View style={{ paddingVertical: 18 }}>
                     <Txt variant="bodySm" tone="muted">
-                      {draft ? 'The list downloads when your supervisor starts the audit.' : 'Nothing scanned on this phone yet. Tap the button below to start.'}
+                      {draft ? 'The list downloads when your supervisor starts the yard plan.' : 'Nothing scanned on this phone yet. Tap the button below to start.'}
                     </Txt>
                   </View>
                 ) : (

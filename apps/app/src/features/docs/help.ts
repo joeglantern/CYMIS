@@ -1,7 +1,7 @@
 import type { Audience, HelpSection } from './types';
 
 export const audienceLabel: Record<Audience, string> = {
-  crew: 'Yard crew',
+  crew: 'Clerks',
   supervisors: 'Supervisors',
   admins: 'Admins',
   everyone: 'Everyone',
@@ -45,10 +45,10 @@ export const helpSections: HelpSection[] = [
         t: 'list',
         ordered: true,
         items: [
-          'Open your audit and tap **Scan containers**.',
-          'Point the camera at the number painted on the container door. Hold steady.',
+          'Open your yard plan and tap **Scan containers**.',
+          'Point the camera at the door so the painted number is inside the yellow corners. Hold steady.',
           'When the yellow corners close in and the phone buzzes, the number is locked. There is nothing to press.',
-          'Check the number on the sheet, pick the box colour if it is not already picked, then tap **Save and scan next**.',
+          'Check the number on the sheet, pick the box colour if it is not already picked, then tap **Scan next**. That saves the box and goes back to the camera.',
         ],
       },
       {
@@ -112,7 +112,7 @@ export const helpSections: HelpSection[] = [
     blocks: [
       {
         t: 'p',
-        text: 'Keep scanning. Every scan is saved on the phone first and sent when there is signal again. The list for your audit is already on the phone, so found and unexpected still show straight away.',
+        text: 'Keep scanning. Every scan is saved on the phone first and sent when there is signal again. The list for your yard plan is already on the phone, so found and unexpected still show straight away.',
       },
       {
         t: 'p',
@@ -156,38 +156,38 @@ export const helpSections: HelpSection[] = [
   },
   {
     id: 'setup',
-    title: 'Setting up an audit',
+    title: 'Setting up a yard plan',
     audience: 'supervisors',
     blocks: [
       {
         t: 'list',
         ordered: true,
         items: [
-          'In the dashboard, click **New audit**, pick the yard section and give it a name crews will recognise.',
+          'In the dashboard, click **New yard plan**, pick the yard section and give it a name clerks will recognise.',
           'Upload the export from your terminal system. Excel and CSV files work. The original file is kept for checking.',
           'Match the columns. Only the container number is required. Cymis remembers the matching for the next file with the same columns.',
           'Check the rows. Numbers with a wrong check digit, duplicates and boxes outside the section are listed so you can decide before loading.',
-          'Pick the crew, then click **Start**. Their phones download the list straight away.',
+          'Pick the clerks, then click **Start plan**. Their phones download the list straight away.',
         ],
       },
       {
         t: 'note',
-        text: 'Loading a new file into a running audit adds to the list or replaces it. Phones pick up only the changes.',
+        text: 'Loading a new file into a running yard plan adds to the list or replaces it. Phones pick up only the changes.',
       },
     ],
   },
   {
     id: 'live',
-    title: 'Watching an audit live',
+    title: 'Watching a yard plan live',
     audience: 'supervisors',
     blocks: [
       {
         t: 'p',
-        text: 'The live page updates as crews scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.',
+        text: 'The live page updates as clerks scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.',
       },
       {
         t: 'p',
-        text: 'A crew member shown as offline is still working. Their scans arrive when their phone finds signal.',
+        text: 'A clerk shown as offline is still working. Their scans arrive when their phone finds signal.',
       },
     ],
   },
@@ -204,7 +204,7 @@ export const helpSections: HelpSection[] = [
         t: 'defs',
         items: [
           { term: 'Correct', text: 'Use the right number or colour. The scan moves to the right bucket.' },
-          { term: 'Keep as read', text: 'The crew had it right.' },
+          { term: 'Keep as read', text: 'The clerk had it right.' },
           { term: 'Reject', text: 'The scan is wrong and should not count. A note is required.' },
         ],
       },
@@ -230,7 +230,7 @@ export const helpSections: HelpSection[] = [
       {
         t: 'list',
         items: [
-          'Click **Close audit** when the count is done. Scans made before the close still arrive from phones that were offline.',
+          'Click **Close plan** when the count is done. Scans made before the close still arrive from phones that were offline.',
           'Reports come as Excel, CSV or PDF. They are made in the background and appear in **Reports** when ready.',
           'Clear the review queue first so the report is final.',
         ],
@@ -248,7 +248,7 @@ export const helpSections: HelpSection[] = [
           'Add a person with their staff ID, name and role, and a temporary password you give them by hand. They set their own on first sign in.',
           'Reset a password if someone forgets it or loses a phone. This signs out every device they used.',
           'Unlock an account that hit five wrong passwords, or wait 15 minutes.',
-          'Deactivate people who leave. Their scans stay with the audits.',
+          'Deactivate people who leave. Their scans stay with the yard plans.',
         ],
       },
     ],
@@ -260,7 +260,7 @@ export const helpSections: HelpSection[] = [
     blocks: [
       {
         t: 'p',
-        text: 'A section is a part of the facility that gets audited, like a yard block or a verification bay. Give each one the location code prefixes your terminal system uses for it, for example `A01` to `A06`.',
+        text: 'A section is a part of the facility that gets counted, like a yard block or a verification bay. Give each one the location code prefixes your terminal system uses for it, for example `A01` to `A06`.',
       },
       { t: 'p', text: 'When a file is loaded, rows whose location does not match the section are flagged so they can be checked.' },
     ],
@@ -272,7 +272,7 @@ export const helpSections: HelpSection[] = [
     blocks: [
       {
         t: 'p',
-        text: 'Other systems, such as a terminal operating system, can read audit results or send expected lists through the API. Each one gets its own key with only the permissions it needs.',
+        text: 'Other systems, such as a terminal operating system, can read yard plan results or send expected lists through the API. Each one gets its own key with only the permissions it needs.',
       },
       {
         t: 'list',
@@ -343,7 +343,7 @@ export const helpSections: HelpSection[] = [
           { term: 'Check digit', text: 'The last digit. It is worked out from the other ten, so a misread character almost always shows up.' },
           { term: 'Expected list', text: 'The containers the terminal system says are in the section. It comes from the uploaded export.' },
           { term: 'Bucket', text: 'Where a container ends up: found, missing, unexpected or needs review.' },
-          { term: 'Audit', text: 'One count of one section, from start to close.' },
+          { term: 'Yard plan', text: 'One count of one section, from start to close.' },
           { term: 'Send queue', text: 'Scans saved on the phone that have not reached the server yet.' },
         ],
       },

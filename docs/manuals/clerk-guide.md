@@ -1,8 +1,8 @@
 <!-- Same words as the in app pages. The source is apps/app/src/features/docs. Keep both in step when either changes. -->
 
-# Crew guide
+# Clerk guide
 
-For yard crew using Cymis on a phone or tablet.
+For clerks using Cymis on a phone or tablet.
 
 ## Signing in and unlocking
 
@@ -18,10 +18,10 @@ Cymis locks itself after 10 minutes in the background. Unlocking again takes one
 
 ## Scanning a container
 
-1. Open your audit and tap **Scan containers**.
-2. Point the camera at the number painted on the container door. Hold steady.
+1. Open your yard plan and tap **Scan containers**.
+2. Point the camera at the door so the painted number is inside the yellow corners. Hold steady.
 3. When the yellow corners close in and the phone buzzes, the number is locked. There is nothing to press.
-4. Check the number on the sheet, pick the box colour if it is not already picked, then tap **Save and scan next**.
+4. Check the number on the sheet, pick the box colour if it is not already picked, then tap **Scan next**. That saves the box and goes back to the camera.
 
 The last digit sits in a small box. That is the check digit. Yellow means the number passed the check. Red means one of the characters was misread, so look again or fix it.
 
@@ -53,7 +53,7 @@ Sounds follow the phone's silent switch. You can turn sounds or vibration off in
 
 ## Working with no signal
 
-Keep scanning. Every scan is saved on the phone first and sent when there is signal again. The list for your audit is already on the phone, so found and unexpected still show straight away.
+Keep scanning. Every scan is saved on the phone first and sent when there is signal again. The list for your yard plan is already on the phone, so found and unexpected still show straight away.
 
 The chip at the top right tells you where your work is:
 
@@ -75,10 +75,10 @@ Tap the chip at any time to open the send queue.
 Every container ends up in one of these. Each chip always has an icon and a word, so colour is never the only clue.
 
 - **Found (green):** On the list and scanned.
-- **Missing (red):** On the list, not scanned yet. When the audit closes, these are the boxes nobody found.
+- **Missing (red):** On the list, not scanned yet. When the yard plan closes, these are the boxes nobody found.
 - **Unexpected (yellow):** Scanned, but not on the list. It may be in the wrong section, or the list may be out of date.
 - **Needs review (blue):** The phone and the server read something different, or the check digit failed. A supervisor decides.
-- **Scanned twice (grey):** Already scanned in this audit. The first scan counts.
+- **Scanned twice (grey):** Already scanned in this yard plan. The first scan counts.
 
 ## Troubleshooting
 
@@ -109,5 +109,5 @@ Set it up in the phone settings first. Until then, unlock with your password, wh
 - **Check digit:** The last digit. It is worked out from the other ten, so a misread character almost always shows up.
 - **Expected list:** The containers the terminal system says are in the section. It comes from the uploaded export.
 - **Bucket:** Where a container ends up: found, missing, unexpected or needs review.
-- **Audit:** One count of one section, from start to close.
+- **Yard plan:** One count of one section, from start to close.
 - **Send queue:** Scans saved on the phone that have not reached the server yet.

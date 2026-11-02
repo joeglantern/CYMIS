@@ -47,14 +47,14 @@ export async function commitExpected(ctx: AppContext, input: CommitInput): Promi
     `);
     const version = bumped[0]?.listVersion;
     if (version === undefined) {
-      throw new ConflictError('This audit is finished, so its list cannot change', 'audit_finished');
+      throw new ConflictError('This yard plan is finished, so its list cannot change', 'audit_finished');
     }
 
     let removed = 0;
     if (input.mode === 'replace') {
       const scans = await tx.scan.count({ where: { auditId } });
       if (scans > 0) {
-        throw new ConflictError('Scans already exist for this audit. Use append instead of replace.', 'replace_after_scans');
+        throw new ConflictError('Scans already exist for this yard plan. Use append instead of replace.', 'replace_after_scans');
       }
       const keep = JSON.stringify(input.rows.map((r) => r.containerNumber));
       removed = await tx.$executeRaw(Prisma.sql`

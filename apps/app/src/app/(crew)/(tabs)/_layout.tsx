@@ -10,7 +10,7 @@ import { brand, fonts } from '@/theme/tokens';
 import { Frost, Icon, Txt, type IconName } from '@/ui';
 
 const items: { name: string; label: string; icon: IconName }[] = [
-  { name: 'audits', label: 'Audits', icon: 'list-checks' },
+  { name: 'audits', label: 'Yard plans', icon: 'list-checks' },
   { name: 'history', label: 'History', icon: 'clock-counter-clockwise' },
   { name: 'settings', label: 'Settings', icon: 'gear-six' },
 ];

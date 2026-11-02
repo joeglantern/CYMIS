@@ -1,5 +1,7 @@
-import { AuditWizard } from '@/features/dash/AuditWizard';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 
-export default function NewAudit() {
-  return <AuditWizard />;
+/** Old address. Kept so saved links and bookmarks still work. */
+export default function OldNewYardPlan() {
+  const params = useLocalSearchParams();
+  return <Redirect href={{ pathname: '/dashboard/yard-plans/new', params } as never} />;
 }

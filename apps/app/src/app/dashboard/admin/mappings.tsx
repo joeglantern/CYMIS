@@ -39,7 +39,7 @@ function MappingsPage() {
       ) : q.isError ? (
         <EmptyState icon="warning-circle" title="Could not load mappings" body={(q.error as Error).message} />
       ) : !q.data.length ? (
-        <EmptyState icon="columns" title="None saved yet" body="When you set up an audit, give your column choices a name and they show up here." />
+        <EmptyState icon="columns" title="None saved yet" body="When you set up a yard plan, give your column choices a name and they show up here." />
       ) : (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
           {q.data.map((m) => (

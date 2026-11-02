@@ -16,11 +16,11 @@ export const legalDocs: LegalDoc[] = [
       { t: 'h', text: 'Who these terms are for' },
       {
         t: 'p',
-        text: 'Cymis is a container audit tool run by [organisation name] ("your organisation", "we"). These terms apply to everyone who signs in to it: yard crew, supervisors and admins. By signing in you agree to them.',
+        text: 'Cymis is a container count tool run by [organisation name] ("your organisation", "we"). These terms apply to everyone who signs in to it: clerks, supervisors and admins. By signing in you agree to them.',
       },
       {
         t: 'p',
-        text: 'Cymis is an internal work tool. It is not open to the public and it is only for audit work your organisation has given you.',
+        text: 'Cymis is an internal work tool. It is not open to the public and it is only for the container count work your organisation has given you.',
       },
       { t: 'h', text: 'Your account is yours alone' },
       {
@@ -36,11 +36,11 @@ export const legalDocs: LegalDoc[] = [
       {
         t: 'list',
         items: [
-          'Only scan containers that are part of an audit you were given.',
-          'Take photos of container doors and numbers only. Avoid people, faces, vehicle number plates and anything unrelated to the audit. See the photo guidance page.',
+          'Only scan containers that are part of a yard plan you were given.',
+          'Take photos of container doors and numbers only. Avoid people, faces, vehicle number plates and anything unrelated to the yard plan. See the photo guidance page.',
           'Do not change, delete or hide scans to make a count look better. Report problems to your supervisor instead.',
           'Keep the phone locked when you are not using it. Cymis locks itself after 10 minutes in the background.',
-          'Do not copy, export or share audit data outside your organisation unless your manager has approved it.',
+          'Do not copy, export or share data from Cymis outside your organisation unless your manager has approved it.',
         ],
       },
       { t: 'h', text: 'What is not allowed' },
@@ -50,13 +50,13 @@ export const legalDocs: LegalDoc[] = [
           'Trying to get into accounts, data or parts of the system you were not given.',
           'Testing the system for weaknesses without written permission from your organisation.',
           'Using automated tools to send scans or read data, other than the official integrations an admin sets up.',
-          'Uploading anything other than photos taken for an audit.',
+          'Uploading anything other than photos taken for a yard plan.',
         ],
       },
       { t: 'h', text: 'Suspension' },
       {
         t: 'p',
-        text: 'An admin can pause or close an account at any time to protect the audit, the data or other staff, for example after repeated wrong passwords, a suspected leak, or misuse. Misuse may also be handled under your organisation\'s staff rules.',
+        text: 'An admin can pause or close an account at any time to protect the count, the data or other staff, for example after repeated wrong passwords, a suspected leak, or misuse. Misuse may also be handled under your organisation\'s staff rules.',
       },
       { t: 'h', text: 'Availability and limits' },
       {
@@ -65,7 +65,7 @@ export const legalDocs: LegalDoc[] = [
       },
       {
         t: 'p',
-        text: 'Audit results are a record of what was scanned. They support, and do not replace, your organisation\'s own procedures for releasing, moving or investigating containers.',
+        text: 'Yard plan results are a record of what was scanned. They support, and do not replace, your organisation\'s own procedures for releasing, moving or investigating containers.',
       },
       { t: 'h', text: 'Changes to these terms' },
       {
@@ -98,7 +98,7 @@ export const legalDocs: LegalDoc[] = [
         rows: [
           ['Full name, staff ID and role', 'Your admin, when your account is made', 'To sign you in and show who did each scan'],
           ['Password', 'You', 'To sign you in. Stored only as a one way hash, never readable'],
-          ['Scans: container number, time, method', 'The app, when you scan', 'The audit itself'],
+          ['Scans: container number, time, method', 'The app, when you scan', 'The yard plan count itself'],
           ['Photo of the container door', 'The phone camera, when you scan', 'Proof the box was seen, and a second check of the number and colour'],
           ['Location at the moment of a scan', 'The phone, if you allow location', 'To show where each box was found on the yard map'],
           ['Device id and device name', 'The app', 'To tell phones apart and to sign out a lost phone'],
@@ -126,10 +126,10 @@ export const legalDocs: LegalDoc[] = [
       {
         t: 'list',
         items: [
-          'Crew see their own audits and scans.',
-          'Supervisors see the audits they run, including scans, photos and locations.',
+          'Clerks see their own yard plans and scans.',
+          'Supervisors see all yard plans, including scans, photos and locations.',
           'Admins manage accounts and can see the activity log.',
-          'Systems your organisation connects through official integrations can read audit results, never passwords.',
+          'Systems your organisation connects through official integrations can read yard plan results, never passwords.',
           'Our hosting provider stores the data for us under a written agreement and may not use it for anything else.',
         ],
       },
@@ -159,7 +159,7 @@ export const legalDocs: LegalDoc[] = [
       },
       {
         t: 'p',
-        text: 'Some audit records cannot be deleted while they are needed for legal or operational reasons. If we cannot do what you ask, we will tell you why. We reply within the time the Act allows.',
+        text: 'Some count records cannot be deleted while they are needed for legal or operational reasons. If we cannot do what you ask, we will tell you why. We reply within the time the Act allows.',
       },
       {
         t: 'p',
@@ -188,8 +188,8 @@ export const legalDocs: LegalDoc[] = [
         t: 'table',
         head: ['Data', 'Kept for', 'Reason'],
         rows: [
-          ['Audit results and scans', '[7 years] after the audit closes', 'Operational and audit evidence, possible legal claims'],
-          ['Container door photos', '[2 years] after the audit closes', 'Evidence for disputes about a container. Longer only if a case is open'],
+          ['Yard plan results and scans', '[7 years] after the yard plan closes', 'Operational and audit evidence, possible legal claims'],
+          ['Container door photos', '[2 years] after the yard plan closes', 'Evidence for disputes about a container. Longer only if a case is open'],
           ['Photos that never finished uploading', '7 days', 'They are incomplete and cannot be used'],
           ['Original terminal export files', '90 days after the list is loaded', 'The rows are already saved. Kept briefly in case a load needs checking'],
           ['Activity log (who did what)', '[2 years]', 'Security and investigating mistakes'],
@@ -201,7 +201,7 @@ export const legalDocs: LegalDoc[] = [
       },
       {
         t: 'note',
-        text: 'When an account is closed, its scans are kept with the audit because the audit record must stay complete. The name shown on them stays until the audit records themselves are deleted.',
+        text: 'When an account is closed, its scans are kept with the yard plan because the count record must stay complete. The name shown on them stays until the count records themselves are deleted.',
       },
       {
         t: 'p',
@@ -255,7 +255,7 @@ export const legalDocs: LegalDoc[] = [
         head: ['Role', 'Responsibility'],
         rows: [
           ['Everyone', 'Report anything suspicious at once. Do not try to investigate alone.'],
-          ['Supervisor', 'Make sure the report reaches the system owner. Pause affected audits if needed.'],
+          ['Supervisor', 'Make sure the report reaches the system owner. Close affected yard plans if needed.'],
           ['System owner', 'Lead the response, contain the problem, keep a written record.'],
           ['Data protection officer', 'Decide whether personal data was affected, notify the ODPC and people affected when required.'],
           ['Technical team', 'Close the hole, restore from backup if needed, rotate keys and secrets.'],
@@ -300,7 +300,7 @@ export const legalDocs: LegalDoc[] = [
           'People and faces. Wait a moment or move so they are out of shot.',
           'Vehicle number plates and truck cabs.',
           'Paperwork, screens, or anything with personal details on it.',
-          'Photos for anything other than the audit.',
+          'Photos for anything other than the yard plan count.',
         ],
       },
       {

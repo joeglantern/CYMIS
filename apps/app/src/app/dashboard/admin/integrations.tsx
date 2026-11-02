@@ -14,9 +14,9 @@ import { CheckRow } from '@/features/dash/Select';
 import { Button, Pill, Sheet, TextField, Txt, useConfirm, useToast } from '@/ui';
 
 const scopes: { id: ApiScope; label: string; detail: string }[] = [
-  { id: 'audits:read', label: 'Read audits', detail: 'See audits, their status and counts' },
+  { id: 'audits:read', label: 'Read yard plans', detail: 'See yard plans, their status and counts' },
   { id: 'results:read', label: 'Read results', detail: 'Found, missing, unexpected and review lists' },
-  { id: 'expected:write', label: 'Send expected lists', detail: 'Push the container list into an audit' },
+  { id: 'expected:write', label: 'Send expected lists', detail: 'Push the container list into a yard plan' },
 ];
 
 export default function Integrations() {

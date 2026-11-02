@@ -38,8 +38,8 @@ function SectionsPage() {
   return (
     <Page gap={28} maxWidth={980}>
       <PageHeader
-        title="Facilities and sections"
-        subtitle="Sections are the parts of the yard you audit. Location codes tell the importer which rows belong to a section."
+        title="Yard management"
+        subtitle="Sections are the parts of the yard you count. Location codes tell the importer which rows belong to a section."
         actions={<Button label="Add facility" icon="plus" variant="secondary" onPress={() => setAddFacility(true)} />}
       />
       {facilities.isPending ? (
@@ -256,7 +256,7 @@ function SectionForm({ facility, section, onClose }: { facility: FacilityDto | n
             if (section.isActive) {
               const ok = await confirm({
                 title: `Turn off ${section.name}?`,
-                body: 'It stops showing up when people set up new audits. Past audits are kept.',
+                body: 'It stops showing up when people set up new yard plans. Past yard plans are kept.',
                 confirmLabel: 'Turn off',
                 danger: true,
               });

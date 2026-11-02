@@ -9,17 +9,17 @@ For admins looking after people, sections and integrations.
 - Add a person with their staff ID, name and role, and a temporary password you give them by hand. They set their own on first sign in.
 - Reset a password if someone forgets it or loses a phone. This signs out every device they used.
 - Unlock an account that hit five wrong passwords, or wait 15 minutes.
-- Deactivate people who leave. Their scans stay with the audits.
+- Deactivate people who leave. Their scans stay with the yard plans.
 
 ## Sections and location codes
 
-A section is a part of the facility that gets audited, like a yard block or a verification bay. Give each one the location code prefixes your terminal system uses for it, for example `A01` to `A06`.
+A section is a part of the facility that gets counted, like a yard block or a verification bay. Give each one the location code prefixes your terminal system uses for it, for example `A01` to `A06`.
 
 When a file is loaded, rows whose location does not match the section are flagged so they can be checked.
 
 ## Integrations and API keys
 
-Other systems, such as a terminal operating system, can read audit results or send expected lists through the API. Each one gets its own key with only the permissions it needs.
+Other systems, such as a terminal operating system, can read yard plan results or send expected lists through the API. Each one gets its own key with only the permissions it needs.
 
 - The key is shown once when it is made. Copy it into the other system straight away.
 - Revoke a key the moment it is no longer needed or may have leaked.

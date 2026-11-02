@@ -39,13 +39,16 @@ export function ViewSwitcher({ label = true, iconless }: { label?: boolean; icon
                 setView(r);
               }}
               style={(s) => ({
-                flex: 1,
+                // Short labels give up room to long ones, so "Supervisor" fits a narrow sidebar.
+                flexGrow: 1,
+                flexShrink: iconless ? 0 : 1,
+                flexBasis: iconless ? 'auto' : 0,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
                 height: 32,
-                paddingHorizontal: 8,
+                paddingHorizontal: iconless ? 6 : 8,
                 borderRadius: radius.sm,
                 backgroundColor: on ? c.raised : (s as { hovered?: boolean }).hovered ? c.hover : 'transparent',
                 boxShadow: on ? `0px 1px 2px rgba(14,14,14,0.12)` : undefined,

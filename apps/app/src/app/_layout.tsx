@@ -82,9 +82,13 @@ export default function RootLayout() {
           <ThemeProvider>
             <ToastProvider>
               <ConfirmProvider>
-                <Root ready={ready} />
+                <View style={{ flex: 1 }}>
+                  {ready ? <EnvRibbon /> : null}
+                  <View style={{ flex: 1 }}>
+                    <Root ready={ready} />
+                  </View>
+                </View>
                 {ready ? <UpdateGate /> : null}
-                {ready ? <EnvRibbon /> : null}
                 <IdleGuard />
                 <LastVisitNotice />
                 {ready && !filmDone ? <SplashFilm onDone={endFilm} /> : null}

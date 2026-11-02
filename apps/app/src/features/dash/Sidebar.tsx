@@ -1,6 +1,6 @@
-import { router, usePathname } from 'expo-router';
+import { Link, router, usePathname, type Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, View, type ScrollViewInstance } from 'react-native';
+import { Platform, Pressable, ScrollView, View, type NativeScrollEvent, type ScrollViewInstance, type ViewInstance } from 'react-native';
 import Animated, { Easing, Extrapolation, FadeIn, interpolate, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useAudits } from '@/api/queries';
 import { session, useSession } from '@/auth/session';
@@ -11,89 +11,68 @@ import { feedback } from '@/feedback';
 import { useSettings } from '@/state/settings';
 import { useTheme } from '@/theme/theme';
 import { brand, fonts, radius } from '@/theme/tokens';
-import { Avatar, Button, Icon, Sheet, Txt, useConfirm, type IconName } from '@/ui';
+import { Avatar, Button, Icon, Sheet, Txt, useConfirm } from '@/ui';
 import { roleWords } from './format';
+import { isActive, navFor, type NavGroups, type NavItem } from './nav';
 import { Mark } from './Page';
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: IconName;
-  badge?: number;
-  /** Other paths that should light this item up. */
-  match?: string[];
-}
+// Tells screen readers which link is this page.
+const CURRENT_PAGE = { 'aria-current': 'page' } as object;
 
-function useNav(): { main: NavItem[]; admin: NavItem[] } {
+function useNav(): NavGroups {
   const { view } = useView();
   const active = useAudits({ status: 'ACTIVE' });
   const pending = (active.data?.items ?? []).reduce((n, a) => n + a.counts.pendingReview, 0);
-  const main: NavItem[] = [
-    { href: '/dashboard', label: 'Overview', icon: 'squares-four' },
-    { href: '/dashboard/audits', label: 'Audits', icon: 'list-checks' },
-    { href: '/dashboard/review', label: 'Review queue', icon: 'warning-circle', badge: pending },
-    { href: '/dashboard/containers', label: 'Containers', icon: 'shipping-container' },
-    { href: '/dashboard/reports', label: 'Reports', icon: 'file-pdf' },
-    { href: '/dashboard/people', label: 'People', icon: 'users' },
-  ];
-  const admin: NavItem[] =
-    view === 'ADMIN'
-      ? [
-          { href: '/dashboard/admin/sections', label: 'Sections', icon: 'buildings' },
-          { href: '/dashboard/admin/mappings', label: 'Column mappings', icon: 'columns' },
-          { href: '/dashboard/admin/integrations', label: 'Integrations', icon: 'key' },
-          { href: '/dashboard/admin/activity', label: 'Activity log', icon: 'scroll' },
-        ]
-      : [];
-  return { main, admin };
-}
-
-function isActive(path: string, href: string) {
-  if (href === '/dashboard') return path === '/dashboard' || path === '/dashboard/';
-  return path === href || path.startsWith(`${href}/`);
+  return navFor(view === 'ADMIN' ? 'ADMIN' : 'SUPERVISOR', pending);
 }
 
 function NavLink({ item, compact, onActiveLayout }: { item: NavItem; compact?: boolean; onActiveLayout?: (x: number) => void }) {
   const { c } = useTheme();
   const path = usePathname();
-  const on = isActive(path, item.href);
+  const [hover, setHover] = useState(false);
+  const on = isActive(path, item);
   return (
-    <Pressable
-      onLayout={on && onActiveLayout ? (e) => onActiveLayout(e.nativeEvent.layout.x) : undefined}
-      accessibilityRole="link"
-      accessibilityState={{ selected: on }}
-      accessibilityLabel={item.badge ? `${item.label}, ${item.badge} waiting` : item.label}
-      onPress={() => {
-        if (!on) feedback.select();
-        router.push(item.href as never);
-      }}
-      style={(state) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        height: 40,
-        paddingHorizontal: 10,
-        borderRadius: radius.sm,
-        backgroundColor: on ? c.raised : (state as { hovered?: boolean }).hovered ? c.hover : 'transparent',
-        boxShadow: on ? `inset 0px 0px 0px 1px ${c.rule}` : undefined,
-      })}
-    >
-      <Icon name={item.icon} size={20} weight={on ? 'fill' : 'regular'} color={on ? c.ink : c.ink2} />
-      <Txt
-        numberOfLines={1}
-        color={on ? c.ink : c.ink2}
-        style={{ fontFamily: on ? fonts.semibold : fonts.medium, fontSize: 14, lineHeight: 18, flex: compact ? undefined : 1 }}
+    <Link href={item.href as Href} asChild>
+      {/* Link asChild drops a function style, so hover lives in state here. */}
+      <Pressable
+        onLayout={on && onActiveLayout ? (e) => onActiveLayout(e.nativeEvent.layout.x) : undefined}
+        accessibilityRole="link"
+        accessibilityState={{ selected: on }}
+        accessibilityLabel={item.badge ? `${item.label}, ${item.badge} waiting` : item.label}
+        {...(on ? CURRENT_PAGE : null)}
+        onPress={() => {
+          if (!on) feedback.select();
+        }}
+        onHoverIn={() => setHover(true)}
+        onHoverOut={() => setHover(false)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          height: 40,
+          paddingHorizontal: 10,
+          borderRadius: radius.sm,
+          backgroundColor: on ? c.raised : hover ? c.hover : 'transparent',
+          boxShadow: on ? `inset 0px 0px 0px 1px ${c.rule}` : undefined,
+        }}
       >
-        {item.label}
-      </Txt>
-      {item.badge ? (
-        <View style={{ minWidth: 22, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: brand.royal, alignItems: 'center', justifyContent: 'center' }}>
-          <Txt color="#ffffff" style={{ fontFamily: fonts.mono, fontSize: 12, lineHeight: 16 }}>
-            {item.badge > 99 ? '99+' : item.badge}
-          </Txt>
-        </View>
-      ) : null}
-    </Pressable>
+        <Icon name={item.icon} size={20} weight={on ? 'fill' : 'regular'} color={on ? c.ink : c.ink2} />
+        <Txt
+          numberOfLines={1}
+          color={on ? c.ink : c.ink2}
+          style={{ fontFamily: on ? fonts.semibold : fonts.medium, fontSize: 14, lineHeight: 18, flex: compact ? undefined : 1 }}
+        >
+          {item.label}
+        </Txt>
+        {item.badge ? (
+          <View style={{ minWidth: 22, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: brand.royal, alignItems: 'center', justifyContent: 'center' }}>
+            <Txt color="#ffffff" style={{ fontFamily: fonts.mono, fontSize: 12, lineHeight: 16 }}>
+              {item.badge > 99 ? '99+' : item.badge}
+            </Txt>
+          </View>
+        ) : null}
+      </Pressable>
+    </Link>
   );
 }
 
@@ -127,7 +106,7 @@ function useLabelFade(p: Progress) {
 }
 
 /** A name card that floats beside a rail icon on hover, with the shortcut if there is one. */
-function RailTip({ label, hint }: { label: string; hint?: string }) {
+function RailTip({ label, hint, top = '50%' }: { label: string; hint?: string; top?: number | `${number}%` }) {
   const { c } = useTheme();
   return (
     <Animated.View
@@ -136,7 +115,7 @@ function RailTip({ label, hint }: { label: string; hint?: string }) {
       style={{
         position: 'absolute',
         left: RAIL_W - 6,
-        top: '50%',
+        top,
         transform: [{ translateY: -15 }],
         zIndex: 30,
         flexDirection: 'row',
@@ -160,78 +139,72 @@ function RailTip({ label, hint }: { label: string; hint?: string }) {
   );
 }
 
-function RailRow({
-  icon,
-  label,
-  p,
-  collapsed,
-  on,
-  badge,
-  muted,
-  height = 40,
-  onPress,
-  role = 'link',
-}: {
-  icon: IconName;
-  label: string;
-  p: Progress;
-  collapsed: boolean;
-  on?: boolean;
-  badge?: number;
-  muted?: boolean;
-  height?: number;
-  onPress: () => void;
-  role?: 'link' | 'button';
-}) {
+function RailRow({ item, p, on, onHover }: { item: NavItem; p: Progress; on: boolean; onHover: (label: string | null, node: ViewInstance | null) => void }) {
   const { c } = useTheme();
   const [hover, setHover] = useState(false);
   const fade = useLabelFade(p);
   const dot = useAnimatedStyle(() => ({ opacity: interpolate(p.value, [0.55, 1], [0, 1], Extrapolation.CLAMP) }));
+  const row = useRef<ViewInstance>(null);
+  const { label, badge, icon } = item;
+
+  // On a short screen the current page can sit below the fold. Keep it in view.
+  useEffect(() => {
+    if (on && Platform.OS === 'web') (row.current as unknown as HTMLElement | null)?.scrollIntoView?.({ block: 'nearest' });
+  }, [on]);
+
   return (
-    <Pressable
-      accessibilityRole={role}
-      accessibilityState={{ selected: !!on }}
-      accessibilityLabel={badge ? `${label}, ${badge} waiting` : label}
-      onPress={onPress}
-      onHoverIn={() => setHover(true)}
-      onHoverOut={() => setHover(false)}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        height,
-        paddingHorizontal: 12,
-        borderRadius: radius.sm,
-        backgroundColor: on ? c.raised : hover ? c.hover : 'transparent',
-        boxShadow: on ? `inset 0px 0px 0px 1px ${c.rule}` : undefined,
-      }}
-    >
-      <View>
-        <Icon name={icon} size={muted ? 18 : 20} weight={on ? 'fill' : 'regular'} color={on ? c.ink : muted ? c.muted : c.ink2} />
-        {badge ? (
-          <Animated.View
-            style={[{ position: 'absolute', top: -2, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: brand.royal, borderWidth: 1.5, borderColor: c.paper2 }, dot]}
-          />
-        ) : null}
-      </View>
-      <Animated.View style={[{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }, fade]}>
-        <Txt
-          numberOfLines={1}
-          color={on ? c.ink : muted ? c.muted : c.ink2}
-          style={{ flex: 1, fontFamily: on ? fonts.semibold : fonts.medium, fontSize: muted ? 13 : 14, lineHeight: 18 }}
-        >
-          {label}
-        </Txt>
-        {badge ? (
-          <View style={{ minWidth: 22, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: brand.royal, alignItems: 'center', justifyContent: 'center' }}>
-            <Txt color="#ffffff" style={{ fontFamily: fonts.mono, fontSize: 12, lineHeight: 16 }}>
-              {badge > 99 ? '99+' : badge}
-            </Txt>
-          </View>
-        ) : null}
-      </Animated.View>
-      {collapsed && hover ? <RailTip label={badge ? `${label} (${badge})` : label} /> : null}
-    </Pressable>
+    <Link href={item.href as Href} asChild>
+      {/* Link asChild drops a function style, so hover lives in state here. */}
+      <Pressable
+        ref={row}
+        accessibilityRole="link"
+        accessibilityState={{ selected: on }}
+        accessibilityLabel={badge ? `${label}, ${badge} waiting` : label}
+        {...(on ? CURRENT_PAGE : null)}
+        onPress={() => {
+          if (!on) feedback.select();
+        }}
+        onHoverIn={() => {
+          setHover(true);
+          onHover(badge ? `${label} (${badge})` : label, row.current);
+        }}
+        onHoverOut={() => {
+          setHover(false);
+          onHover(null, null);
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          height: 40,
+          paddingHorizontal: 12,
+          borderRadius: radius.sm,
+          backgroundColor: on ? c.raised : hover ? c.hover : 'transparent',
+          boxShadow: on ? `inset 0px 0px 0px 1px ${c.rule}` : undefined,
+        }}
+      >
+        <View>
+          <Icon name={icon} size={20} weight={on ? 'fill' : 'regular'} color={on ? c.ink : c.ink2} />
+          {badge ? (
+            <Animated.View
+              style={[{ position: 'absolute', top: -2, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: brand.royal, borderWidth: 1.5, borderColor: c.paper2 }, dot]}
+            />
+          ) : null}
+        </View>
+        <Animated.View style={[{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }, fade]}>
+          <Txt numberOfLines={1} color={on ? c.ink : c.ink2} style={{ flex: 1, fontFamily: on ? fonts.semibold : fonts.medium, fontSize: 14, lineHeight: 18 }}>
+            {label}
+          </Txt>
+          {badge ? (
+            <View style={{ minWidth: 22, height: 20, paddingHorizontal: 6, borderRadius: 10, backgroundColor: brand.royal, alignItems: 'center', justifyContent: 'center' }}>
+              <Txt color="#ffffff" style={{ fontFamily: fonts.mono, fontSize: 12, lineHeight: 16 }}>
+                {badge > 99 ? '99+' : badge}
+              </Txt>
+            </View>
+          ) : null}
+        </Animated.View>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -244,9 +217,8 @@ export function Sidebar() {
   const { c } = useTheme();
   const path = usePathname();
   const user = useSession((s) => s.user);
-  const { main, admin } = useNav();
+  const { main, more } = useNav();
   const signOut = useSignOut();
-  const [devices, setDevices] = useState(false);
   const collapsed = useSettings((s) => s.sidebarCollapsed);
   const reduce = useReducedMotion();
   const p = useSharedValue(collapsed ? 1 : 0);
@@ -281,11 +253,45 @@ export function Sidebar() {
   const width = useAnimatedStyle(() => ({ width: interpolate(p.value, [0, 1], [OPEN_W, RAIL_W]) }));
   const fade = useLabelFade(p);
   const toggleFade = useAnimatedStyle(() => ({ opacity: interpolate(p.value, [0, 0.35], [1, 0], Extrapolation.CLAMP) }));
-  const rule = useAnimatedStyle(() => ({ opacity: interpolate(p.value, [0.5, 1], [0, 1], Extrapolation.CLAMP) }));
-  const go = (href: string) => {
-    if (!isActive(path, href)) feedback.select();
-    router.push(href as never);
+  const goHome = () => {
+    if (!isActive(path, { href: '/dashboard' })) feedback.select();
+    router.push('/dashboard');
   };
+
+  // The nav list scrolls and so clips what it holds. The folded name card sits
+  // outside it, placed against the hovered row, so it can reach past the rail.
+  const navBox = useRef<ViewInstance>(null);
+  const hovered = useRef<string | null>(null);
+  const [tip, setTip] = useState<{ label: string; top: number } | null>(null);
+  const onRowHover = useCallback((label: string | null, node: ViewInstance | null) => {
+    hovered.current = label;
+    if (!label || !node) return setTip(null);
+    node.measureInWindow((_x, y, _w, h) => {
+      navBox.current?.measureInWindow((_bx, boxY) => {
+        if (hovered.current === label) setTip({ label, top: y - boxY + h / 2 });
+      });
+    });
+  }, []);
+
+  // A hairline shows there is more to scroll to, since the scrollbar stays hidden.
+  const scroll = useRef({ y: 0, view: 0, content: 0 });
+  const [edges, setEdges] = useState({ above: false, below: false });
+  const syncEdges = useCallback(() => {
+    const { y, view, content } = scroll.current;
+    const above = y > 1;
+    const below = y + view < content - 1;
+    setEdges((e) => (e.above === above && e.below === below ? e : { above, below }));
+  }, []);
+  const onNavScroll = useCallback(
+    (e: { nativeEvent: NativeScrollEvent }) => {
+      scroll.current.y = e.nativeEvent.contentOffset.y;
+      syncEdges();
+      // The rows moved, so the card no longer lines up with one.
+      hovered.current = null;
+      setTip(null);
+    },
+    [syncEdges],
+  );
 
   return (
     <Animated.View
@@ -298,7 +304,7 @@ export function Sidebar() {
           accessibilityRole="button"
           accessibilityLabel={collapsed ? 'Expand sidebar' : 'Cymis overview'}
           accessibilityState={{ expanded: !collapsed }}
-          onPress={collapsed ? toggle : () => go('/dashboard')}
+          onPress={collapsed ? toggle : goHome}
           onHoverIn={() => setLogoHover(true)}
           onHoverOut={() => setLogoHover(false)}
           style={{
@@ -344,27 +350,34 @@ export function Sidebar() {
         </Animated.View>
       </View>
 
-      <ScrollView style={{ flex: 1, overflow: 'visible' }} contentContainerStyle={{ gap: 2 }} showsVerticalScrollIndicator={false}>
-        {main.map((i) => (
-          <RailRow key={i.href} icon={i.icon} label={i.label} badge={i.badge} p={p} collapsed={collapsed} on={isActive(path, i.href)} onPress={() => go(i.href)} />
-        ))}
-        {admin.length ? (
-          <>
-            <View style={{ height: 34, justifyContent: 'flex-end', paddingBottom: 6, paddingHorizontal: 12 }}>
-              <Animated.View style={fade}>
-                <Txt variant="label" tone="muted" caps numberOfLines={1}>
-                  Admin
-                </Txt>
-              </Animated.View>
-              {/* Folded, a short rule stands in for the heading. */}
-              <Animated.View style={[{ position: 'absolute', left: 14, bottom: 12, width: 20, height: 1, backgroundColor: c.ruleStrong }, rule]} />
-            </View>
-            {admin.map((i) => (
-              <RailRow key={i.href} icon={i.icon} label={i.label} p={p} collapsed={collapsed} on={isActive(path, i.href)} onPress={() => go(i.href)} />
-            ))}
-          </>
-        ) : null}
-      </ScrollView>
+      <View ref={navBox} style={{ flex: 1, minHeight: 0, zIndex: 1 }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ gap: 2 }}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={onNavScroll}
+          onLayout={(e) => {
+            scroll.current.view = e.nativeEvent.layout.height;
+            syncEdges();
+          }}
+          onContentSizeChange={(_w, h) => {
+            scroll.current.content = h;
+            syncEdges();
+          }}
+        >
+          {main.map((i) => (
+            <RailRow key={i.href} item={i} p={p} on={isActive(path, i)} onHover={onRowHover} />
+          ))}
+          <View style={{ height: 18 }} />
+          {more.map((i) => (
+            <RailRow key={i.href} item={i} p={p} on={isActive(path, i)} onHover={onRowHover} />
+          ))}
+        </ScrollView>
+        {edges.above ? <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, backgroundColor: c.rule }} /> : null}
+        {edges.below ? <View pointerEvents="none" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, backgroundColor: c.rule }} /> : null}
+        {collapsed && tip ? <RailTip label={tip.label} top={tip.top} /> : null}
+      </View>
 
       <View style={{ gap: 2 }}>
         {collapsed ? null : (
@@ -372,10 +385,7 @@ export function Sidebar() {
             <ViewSwitcher iconless />
           </Animated.View>
         )}
-        <RailRow icon="question" label="Help and guides" muted height={36} p={p} collapsed={collapsed} onPress={() => router.push('/help')} />
-        <RailRow icon="device-mobile" label="Signed in devices" muted height={36} role="button" p={p} collapsed={collapsed} onPress={() => setDevices(true)} />
-        <DevicesSheet open={devices} onClose={() => setDevices(false)} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, paddingTop: 12, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: c.rule }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 12, paddingHorizontal: 8, borderTopWidth: 1, borderTopColor: c.rule }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={collapsed ? `${user?.fullName ?? 'Account'}, expand sidebar` : (user?.fullName ?? 'Account')}
@@ -420,7 +430,7 @@ export function Sidebar() {
 export function TopNav() {
   const { c } = useTheme();
   const user = useSession((s) => s.user);
-  const { main, admin } = useNav();
+  const { main, more } = useNav();
   const signOut = useSignOut();
   const [open, setOpen] = useState(false);
   const [devices, setDevices] = useState(false);
@@ -434,7 +444,7 @@ export function TopNav() {
         <Mark size={22} />
       </Pressable>
       <ScrollView ref={bar} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 4, alignItems: 'center' }} style={{ flex: 1 }}>
-        {[...main, ...admin].map((i) => (
+        {[...main, ...more].map((i) => (
           <NavLink key={i.href} item={i} compact onActiveLayout={(x) => bar.current?.scrollTo({ x: Math.max(0, x - 40), animated: true })} />
         ))}
       </ScrollView>

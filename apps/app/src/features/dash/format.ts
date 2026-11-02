@@ -35,7 +35,7 @@ export function minutesAgo(iso: string): string {
   return day(iso);
 }
 
-export const roleWords: Record<Role, string> = { ADMIN: 'Admin', SUPERVISOR: 'Supervisor', AUDITOR: 'Yard crew' };
+export const roleWords: Record<Role, string> = { ADMIN: 'Admin', SUPERVISOR: 'Supervisor', AUDITOR: 'Clerk' };
 
 export const statusWords: Record<AuditDto['status'], string> = {
   DRAFT: 'Draft',
@@ -55,7 +55,7 @@ export const sectionKindWords: Record<SectionKind, string> = {
 
 export const eventWords: Record<ContainerEventType, string> = {
   IMPORTED: 'Put on an expected list',
-  AUDITED: 'Scanned in an audit',
+  AUDITED: 'Scanned in a yard plan',
   DISCHARGED: 'Discharged from the ship',
   IN_YARD: 'In the yard',
   MOVED_TO_CFS: 'Moved to a freight station',

@@ -39,7 +39,7 @@ export default function MyAudits() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.paper2 }}>
-      <GlassBar y={y} title="Your audits" right={<SyncButton compact />} />
+      <GlassBar y={y} title="Your yard plans" right={<SyncButton compact />} />
       <Animated.ScrollView
         ref={scroll}
         onScroll={onScroll}
@@ -47,10 +47,10 @@ export default function MyAudits() {
         contentContainerStyle={{ paddingBottom: tabSpace }}
         refreshControl={<RefreshControl refreshing={q.isRefetching} onRefresh={() => void q.refetch()} tintColor={c.muted} progressViewOffset={80} />}
       >
-        <LargeTitle eyebrow={greeting(user?.fullName.split(' ')[0] ?? 'there')} title="Your audits" />
+        <LargeTitle eyebrow={greeting(user?.fullName.split(' ')[0] ?? 'there')} title="Your yard plans" />
         {q.data?.fromCache ? (
           <View style={{ marginHorizontal: tablet ? gutter : 16, marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}>
-            <Banner tone="offline">No signal. Showing the audits saved on this phone.</Banner>
+            <Banner tone="offline">No signal. Showing the yard plans saved on this phone.</Banner>
           </View>
         ) : null}
         <View style={{ paddingHorizontal: tablet ? gutter : 16, gap: tablet ? 14 : 12 }}>
@@ -60,13 +60,13 @@ export default function MyAudits() {
             <Skeleton height={110} radius={14} />
           </View>
         ) : q.isError ? (
-          <EmptyState icon="warning-circle" title="Could not load your audits" body={(q.error as Error).message} />
+          <EmptyState icon="warning-circle" title="Could not load your yard plans" body={(q.error as Error).message} />
         ) : audits.length === 0 ? (
           <EmptyState
             icon="list-checks"
             image={emptyImages.noAudits}
-            title="No audits yet"
-            body="When your supervisor gives you an audit it shows up here. Pull down to check again."
+            title="No yard plans yet"
+            body="When your supervisor gives you a yard plan it shows up here. Pull down to check again."
           />
         ) : (
           <>
@@ -198,10 +198,10 @@ function Crew({ names, others, assigned }: { names: string[]; others: number; as
       </View>
       <Txt variant="caption" tone="muted">
         {!assigned
-          ? `${others} ${others === 1 ? 'person' : 'people'} on this audit`
+          ? `${others} ${others === 1 ? 'person' : 'people'} on this yard plan`
           : others === 0
             ? 'Just you on this one'
-            : `You and ${others} ${others === 1 ? 'other' : 'others'} on this audit`}
+            : `You and ${others} ${others === 1 ? 'other' : 'others'} on this yard plan`}
       </Txt>
     </View>
   );

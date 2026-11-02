@@ -69,11 +69,11 @@ function statusProblem(audit: Audit, capturedAt: Date): { code: string; reason: 
     case 'CLOSED':
       // Scans made before the close still count, even if the phone was offline until now.
       if (audit.closedAt && capturedAt <= audit.closedAt) return null;
-      return { code: 'audit_closed', reason: 'This audit was closed before the scan was made' };
+      return { code: 'audit_closed', reason: 'This yard plan was closed before the scan was made' };
     case 'DRAFT':
-      return { code: 'audit_not_started', reason: 'This audit has not been started yet' };
+      return { code: 'audit_not_started', reason: 'This yard plan has not been started yet' };
     case 'CANCELLED':
-      return { code: 'audit_cancelled', reason: 'This audit was cancelled' };
+      return { code: 'audit_cancelled', reason: 'This yard plan was cancelled' };
   }
 }
 
@@ -93,7 +93,7 @@ async function syncOne(
     created: false,
   });
 
-  if (!check.audit || !check.allowed) return reject('audit_not_found', 'This audit is not available to you');
+  if (!check.audit || !check.allowed) return reject('audit_not_found', 'This yard plan is not available to you');
   const capturedAt = new Date(item.capturedAt);
   if (capturedAt.getTime() - Date.now() > MAX_FUTURE_MS) {
     return reject('bad_clock', 'The phone clock is wrong. Fix the date and time, then sync again');
@@ -284,7 +284,7 @@ export async function reviewScan(
 ): Promise<ScanDto> {
   const scan = await ctx.db.scan.findUnique({ where: { id: scanId }, include: { audit: true } });
   if (!scan) throw new NotFoundError('Scan');
-  if (scan.audit.status === 'CANCELLED') throw new ConflictError('This audit was cancelled', 'audit_cancelled');
+  if (scan.audit.status === 'CANCELLED') throw new ConflictError('This yard plan was cancelled', 'audit_cancelled');
 
   const changed: string[] = [scanId];
   const now = new Date();

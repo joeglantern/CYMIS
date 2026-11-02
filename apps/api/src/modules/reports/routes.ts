@@ -32,7 +32,7 @@ export const reportRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (a
     async (request, reply) => {
       const user = requireUser(request);
       const audit = await ctx.db.audit.findUnique({ where: { id: request.params.id }, select: { id: true } });
-      if (!audit) throw new NotFoundError('Audit');
+      if (!audit) throw new NotFoundError('Yard plan');
       const report = await ctx.db.report.create({
         data: { auditId: audit.id, format: request.body.format, createdById: user.id },
         include: { audit: { select: { name: true } } },
