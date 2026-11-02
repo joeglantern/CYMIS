@@ -5,6 +5,7 @@ import { logActivity } from '../../lib/activity.js';
 import { toUserSummary, userSummarySelect } from '../../lib/dto.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../../lib/errors.js';
 import { iso } from '../../lib/time.js';
+import { recordAccessEnded } from '../audits/access.js';
 
 interface Actor {
   id: string;
@@ -92,7 +93,10 @@ async function releasePlan(tx: Prisma.TransactionClient, auditId: string, ids: s
     select: { userId: true },
   });
   const dropped = drop.map((d) => d.userId);
-  if (dropped.length) await tx.auditAssignment.deleteMany({ where: { auditId, userId: { in: dropped } } });
+  if (dropped.length) {
+    await recordAccessEnded(tx, auditId, dropped);
+    await tx.auditAssignment.deleteMany({ where: { auditId, userId: { in: dropped } } });
+  }
   return dropped;
 }
 

@@ -154,6 +154,7 @@ model User {
 
   refreshTokens   RefreshToken[]
   assignments     AuditAssignment[]
+  accessEnded      AuditAccessEnded[]
   shiftsCreated    Shift[]
   shiftAssignments ShiftAssignment[]
   auditsCreated   Audit[]           @relation("AuditCreatedBy")
@@ -268,6 +269,7 @@ model Audit {
   createdBy   User                @relation("AuditCreatedBy", fields: [createdById], references: [id])
   closedBy    User?               @relation("AuditClosedBy", fields: [closedById], references: [id])
   assignments AuditAssignment[]
+  accessEnded AuditAccessEnded[]
   shifts      Shift[]
   imports     ImportBatch[]
   expected    ExpectedContainer[]
@@ -293,6 +295,21 @@ model AuditAssignment {
   @@id([auditId, userId])
   @@index([userId])
   @@map("audit_assignments")
+}
+
+/// When someone's plan assignment last ended. It gives no access to anything: only the scan sync reads it,
+/// so work captured before that moment can still arrive from a phone that was offline.
+model AuditAccessEnded {
+  auditId String   @db.Uuid
+  userId  String   @db.Uuid
+  endedAt DateTime @db.Timestamptz(3)
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([auditId, userId])
+  @@index([userId])
+  @@map("audit_access_ended")
 }
 
 /// Planning and display only. Access to a plan comes from AuditAssignment, and times never block a scan.

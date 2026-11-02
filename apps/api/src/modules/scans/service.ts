@@ -60,6 +60,8 @@ async function classify(
 interface AuditCheck {
   audit: Audit | null;
   allowed: boolean;
+  /** When this person last lost the plan, if they have and have not been given it back. */
+  accessEndedAt: Date | null;
 }
 
 function statusProblem(audit: Audit, capturedAt: Date): { code: string; reason: string } | null {
@@ -93,8 +95,10 @@ async function syncOne(
     created: false,
   });
 
-  if (!check.audit || !check.allowed) return reject('audit_not_found', 'This yard plan is not available to you');
   const capturedAt = new Date(item.capturedAt);
+  // Work done before someone lost the plan still arrives, however late the phone finds signal.
+  const doneBeforeLosingIt = check.accessEndedAt !== null && capturedAt <= check.accessEndedAt;
+  if (!check.audit || (!check.allowed && !doneBeforeLosingIt)) return reject('audit_not_found', 'This yard plan is not available to you');
   if (capturedAt.getTime() - Date.now() > MAX_FUTURE_MS) {
     return reject('bad_clock', 'The phone clock is wrong. Fix the date and time, then sync again');
   }
@@ -178,7 +182,10 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
   const principal: Principal = { kind: 'user', user };
   for (const auditId of new Set(items.map((i) => i.auditId))) {
     const audit = await ctx.db.audit.findUnique({ where: { id: auditId } });
-    checks.set(auditId, { audit, allowed: audit ? await canSeeAudit(ctx, auditId, principal) : false });
+    const allowed = audit ? await canSeeAudit(ctx, auditId, principal) : false;
+    const ended =
+      audit && !allowed ? await ctx.db.auditAccessEnded.findUnique({ where: { auditId_userId: { auditId, userId: user.id } }, select: { endedAt: true } }) : null;
+    checks.set(auditId, { audit, allowed, accessEndedAt: ended?.endedAt ?? null });
   }
 
   const results: SyncResultItem[] = [];

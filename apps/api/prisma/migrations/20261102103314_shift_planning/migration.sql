@@ -2,6 +2,15 @@
 ALTER TABLE "audit_assignments" ADD COLUMN     "viaShiftAt" TIMESTAMPTZ(3);
 
 -- CreateTable
+CREATE TABLE "audit_access_ended" (
+    "auditId" UUID NOT NULL,
+    "userId" UUID NOT NULL,
+    "endedAt" TIMESTAMPTZ(3) NOT NULL,
+
+    CONSTRAINT "audit_access_ended_pkey" PRIMARY KEY ("auditId","userId")
+);
+
+-- CreateTable
 CREATE TABLE "shifts" (
     "id" UUID NOT NULL,
     "auditId" UUID NOT NULL,
@@ -24,6 +33,9 @@ CREATE TABLE "shift_assignments" (
 );
 
 -- CreateIndex
+CREATE INDEX "audit_access_ended_userId_idx" ON "audit_access_ended"("userId");
+
+-- CreateIndex
 CREATE INDEX "shifts_auditId_startsAt_idx" ON "shifts"("auditId", "startsAt");
 
 -- CreateIndex
@@ -31,6 +43,12 @@ CREATE INDEX "shifts_endsAt_idx" ON "shifts"("endsAt");
 
 -- CreateIndex
 CREATE INDEX "shift_assignments_userId_idx" ON "shift_assignments"("userId");
+
+-- AddForeignKey
+ALTER TABLE "audit_access_ended" ADD CONSTRAINT "audit_access_ended_auditId_fkey" FOREIGN KEY ("auditId") REFERENCES "audits"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "audit_access_ended" ADD CONSTRAINT "audit_access_ended_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "shifts" ADD CONSTRAINT "shifts_auditId_fkey" FOREIGN KEY ("auditId") REFERENCES "audits"("id") ON DELETE CASCADE ON UPDATE CASCADE;

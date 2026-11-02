@@ -2,6 +2,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sha256Hex } from '../src/lib/crypto.js';
+import { newId } from '../src/lib/ids.js';
 import { VALID, makeApp, makeAudit, resetData, scanItem, userWithToken, type TestApp } from './helpers.js';
 
 let t: TestApp;
@@ -224,6 +225,134 @@ describe('times and finished plans', () => {
     expect(await get(`endsBefore=${encodeURIComponent('2026-11-03T12:00:00.000Z')}`)).toEqual(['Day']);
     const one = (await t.app.inject({ method: 'GET', url: `/api/v1/shifts?auditId=${auditId}&order=asc`, headers: sup.headers })).json().items[0];
     expect(one.startsAt).toBe(DAY.startsAt);
+  });
+});
+
+describe('work done before someone lost the plan', () => {
+  const MIN = 60_000;
+  const before = () => new Date(Date.now() - 5 * MIN).toISOString();
+  const after = () => new Date(Date.now() + 2000).toISOString();
+  const sync = (who: typeof clerk, scans: unknown[]) => t.app.inject({ method: 'POST', url: '/api/v1/sync/scans', headers: who.headers, payload: { scans } });
+  const first = async (who: typeof clerk, scan: unknown) => (await sync(who, [scan])).json().results[0];
+
+  it('after a shift takes the plan away: captured before is accepted, captured after is refused', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a, VALID.b]);
+    const shift = await addShift(auditId, [clerk.user.id]);
+    await setClerks(shift.id, []);
+    expect(await planRow(auditId, clerk.user.id)).toBeNull();
+
+    const ok = await first(clerk, scanItem(auditId, VALID.a, { capturedAt: before() }));
+    expect(ok.status).toBe('created');
+    expect(ok.scan.result).toBe('MATCHED');
+
+    const late = await first(clerk, scanItem(auditId, VALID.b, { capturedAt: after() }));
+    expect(late).toMatchObject({ status: 'rejected', code: 'audit_not_found' });
+  });
+
+  it('after a deleted shift takes the plan away, the same holds', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a]);
+    const shift = await addShift(auditId, [clerk.user.id]);
+    await t.app.inject({ method: 'DELETE', url: `/api/v1/shifts/${shift.id}`, headers: sup.headers });
+    expect((await first(clerk, scanItem(auditId, VALID.a, { capturedAt: before() }))).status).toBe('created');
+  });
+
+  it('after an untick in the Clerks step, the same holds, for a clerk who never had a shift', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a, VALID.b]);
+    await setDirect(auditId, [clerk.user.id]);
+    await setDirect(auditId, []);
+    expect((await first(clerk, scanItem(auditId, VALID.a, { capturedAt: before() }))).status).toBe('created');
+    expect((await first(clerk, scanItem(auditId, VALID.b, { capturedAt: after() }))).status).toBe('rejected');
+  });
+
+  it('decides each scan in one batch by its own capture time', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a, VALID.b]);
+    await setDirect(auditId, [clerk.user.id]);
+    await setDirect(auditId, []);
+    const res = await sync(clerk, [scanItem(auditId, VALID.a, { capturedAt: before() }), scanItem(auditId, VALID.b, { capturedAt: after() })]);
+    expect(res.json().results.map((r: { status: string }) => r.status)).toEqual(['created', 'rejected']);
+  });
+
+  it('the removed clerk still cannot read the plan, its list or its results', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a]);
+    await setDirect(auditId, [clerk.user.id]);
+    await setDirect(auditId, []);
+    await first(clerk, scanItem(auditId, VALID.a, { capturedAt: before() }));
+
+    for (const url of [`/api/v1/audits/${auditId}`, `/api/v1/audits/${auditId}/expected`, `/api/v1/audits/${auditId}/progress`]) {
+      expect((await t.app.inject({ method: 'GET', url, headers: clerk.headers })).statusCode, url).toBe(404);
+    }
+    const mine = (await t.app.inject({ method: 'GET', url: '/api/v1/audits?mine=true&limit=100', headers: clerk.headers })).json();
+    expect(mine.items.map((a: { id: string }) => a.id)).not.toContain(auditId);
+  });
+
+  it('someone who never had the plan stays refused', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a]);
+    const stranger = await userWithToken(t, 'AUDITOR');
+    expect(await first(stranger, scanItem(auditId, VALID.a, { capturedAt: before() }))).toMatchObject({ status: 'rejected', code: 'audit_not_found' });
+  });
+
+  it('a clerk given the plan back works normally, and a second removal moves the cut off', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a, VALID.b, VALID.c]);
+    await setDirect(auditId, [clerk.user.id]);
+    await setDirect(auditId, []);
+    const firstEnd = await t.ctx.db.auditAccessEnded.findUnique({ where: { auditId_userId: { auditId, userId: clerk.user.id } } });
+
+    await setDirect(auditId, [clerk.user.id]);
+    expect((await t.app.inject({ method: 'GET', url: `/api/v1/audits/${auditId}`, headers: clerk.headers })).statusCode).toBe(200);
+    expect((await first(clerk, scanItem(auditId, VALID.a, { capturedAt: after() }))).status).toBe('created');
+
+    await new Promise((r) => setTimeout(r, 20));
+    await setDirect(auditId, []);
+    const secondEnd = await t.ctx.db.auditAccessEnded.findUnique({ where: { auditId_userId: { auditId, userId: clerk.user.id } } });
+    expect(secondEnd!.endedAt.getTime()).toBeGreaterThan(firstEnd!.endedAt.getTime());
+    expect((await first(clerk, scanItem(auditId, VALID.b, { capturedAt: before() }))).status).toBe('created');
+  });
+
+  it('every other check still runs: closed plan, cancelled plan, clock, and a safe retry', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a, VALID.b]);
+    await setDirect(auditId, [clerk.user.id]);
+    await setDirect(auditId, []);
+
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    expect((await first(clerk, scanItem(auditId, VALID.a, { capturedAt: future }))).status).toBe('rejected');
+
+    const scan = scanItem(auditId, VALID.a, { capturedAt: before() });
+    expect((await first(clerk, scan)).status).toBe('created');
+    expect((await first(clerk, scan)).status).toBe('unchanged');
+
+    // The plan closed before this scan was made, even though the clerk lost it later still.
+    const closedAt = new Date(Date.now() - 10 * MIN);
+    await t.ctx.db.audit.update({ where: { id: auditId }, data: { status: 'CLOSED', closedAt } });
+    expect(await first(clerk, scanItem(auditId, VALID.b, { capturedAt: before() }))).toMatchObject({ status: 'rejected', code: 'audit_closed' });
+
+    await t.ctx.db.audit.update({ where: { id: auditId }, data: { status: 'CANCELLED' } });
+    expect(await first(clerk, scanItem(auditId, VALID.b, { capturedAt: before() }))).toMatchObject({ status: 'rejected', code: 'audit_cancelled' });
+  });
+
+  it('a photo for an accepted scan can still arrive, but not from someone else', async () => {
+    const auditId = await newPlan('ACTIVE', [VALID.a]);
+    await setDirect(auditId, [clerk.user.id]);
+    await setDirect(auditId, []);
+    const accepted = await first(clerk, scanItem(auditId, VALID.a, { capturedAt: before() }));
+    expect(accepted.status).toBe('created');
+
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(60)]);
+    const photoId = newId();
+    const body = { photoId, scanId: accepted.id, contentType: 'image/jpeg', sizeBytes: jpeg.length };
+
+    const wrong = await t.app.inject({ method: 'POST', url: '/api/v1/photos/presign', headers: other.headers, payload: body });
+    expect(wrong.statusCode).toBe(403);
+
+    const pre = await t.app.inject({ method: 'POST', url: '/api/v1/photos/presign', headers: clerk.headers, payload: body });
+    expect(pre.statusCode, pre.body).toBe(200);
+    const { uploadUrl, headers } = pre.json();
+    const put = await fetch(uploadUrl, { method: 'PUT', headers, body: jpeg });
+    expect(put.ok).toBe(true);
+
+    const done = await t.app.inject({ method: 'POST', url: `/api/v1/photos/${photoId}/complete`, headers: clerk.headers });
+    expect(done.statusCode, done.body).toBe(200);
+    const stored = await t.ctx.db.photo.findUnique({ where: { id: photoId } });
+    expect(stored!.status).toBe('UPLOADED');
   });
 });
 

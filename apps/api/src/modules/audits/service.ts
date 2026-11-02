@@ -16,7 +16,7 @@ import { BadRequestError, ConflictError, NotFoundError } from '../../lib/errors.
 import { decodeCursor, pageOf } from '../../lib/pagination.js';
 import { iso } from '../../lib/time.js';
 import type { Principal } from '../../plugins/auth.js';
-import { loadAuditFor } from './access.js';
+import { loadAuditFor, recordAccessEnded } from './access.js';
 
 interface Actor {
   id: string;
@@ -170,6 +170,8 @@ export async function setAssignees(ctx: AppContext, auditId: string, input: SetA
   await ctx.db.$transaction(async (tx) => {
     // Off the plan means off its shifts too, or a shift would list someone with no access.
     const offShifts = await tx.shiftAssignment.deleteMany({ where: { userId: { notIn: ids }, shift: { auditId } } });
+    const leaving = await tx.auditAssignment.findMany({ where: { auditId, userId: { notIn: ids } }, select: { userId: true } });
+    await recordAccessEnded(tx, auditId, leaving.map((l) => l.userId));
     await tx.auditAssignment.deleteMany({ where: { auditId, userId: { notIn: ids } } });
     // skipDuplicates keeps viaShiftAt on existing rows, so saving this step does not make shift clerks direct.
     await tx.auditAssignment.createMany({ data: ids.map((userId) => ({ auditId, userId })), skipDuplicates: true });

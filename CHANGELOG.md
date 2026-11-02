@@ -23,3 +23,4 @@ Contract changes (anything in `packages/schemas`) must be listed here.
 - `AuditDto.shifts`: the shifts on a yard plan, soonest first. A clerk gets only their own, with only their own id in `clerkIds`.
 - `AuditDto.viaShiftIds`: assignees who are on the plan only through a shift. Empty for clerks.
 - Both are new fields. No existing field changed meaning, so old phones and integrations keep working by ignoring them.
+- `POST /sync/scans`: a scan from someone who has lost a yard plan is accepted if it was captured at or before the moment they lost it. No schema change. Reads stay refused.

@@ -199,8 +199,8 @@ export const helpSections: HelpSection[] = [
         t: 'list',
         items: [
           'Adding a clerk to a shift also gives them the yard plan.',
-          'Taking a clerk off their last shift also takes the plan away, unless you gave it to them directly in the **Clerks** step. Any of their scans not yet sent will then be turned down, so do this once they have synced.',
-          'To move a clerk, tick them on the new shift and choose **Move**. They keep the plan the whole way through.',
+          'Taking a clerk off their last shift also takes the plan away, unless you gave it to them directly in the **Clerks** step. Scans they already took still arrive, even from a phone that was offline. Scans taken after that are turned down.',
+          'To move a clerk, tick them on the new shift, save and choose **Move**. They keep the plan the whole way through.',
           'Unticking someone in the **Clerks** step also takes them off that plan\'s shifts. Cymis names the shifts and asks first.',
           'In the **Clerks** step, "From Day shift" beside a name means they are on the plan because of that shift.',
         ],
