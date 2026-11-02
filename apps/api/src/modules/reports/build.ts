@@ -120,6 +120,7 @@ function summaryRows(d: ReportData): string[][] {
     ['Missing', String(d.counts.missing)],
     ['Unexpected', String(d.counts.unexpected)],
     ['Needs review', String(d.counts.mismatched)],
+    ['Of those, not on the list', String(d.counts.offListReview)],
     ['Duplicate scans', String(d.counts.duplicates)],
   ];
 }

@@ -10,6 +10,8 @@ export const AuditCounts = z.object({
   missing: z.number().int(),
   unexpected: z.number().int(),
   mismatched: z.number().int(),
+  /** The part of mismatched that is not on the list. So expected = found + missing + (mismatched - offListReview). */
+  offListReview: z.number().int(),
   duplicates: z.number().int(),
   scans: z.number().int(),
   pendingReview: z.number().int(),

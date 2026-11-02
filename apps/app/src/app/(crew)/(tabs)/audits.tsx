@@ -127,7 +127,8 @@ function YourShift({ audit, userId }: { audit: AuditDto; userId: string | undefi
 function AuditCard({ audit }: { audit: AuditDto }) {
   const user = useSession((s) => s.user);
   const k = audit.counts;
-  const left = Math.max(0, k.expected - k.found);
+  // What is left to scan. Boxes waiting for review are not, so this is not expected minus found.
+  const left = k.missing;
   const assigned = audit.assignees.some((p) => p.id === user?.id);
   const others = audit.assignees.filter((p) => p.id !== user?.id);
   const sub = `${audit.section.name}, ${audit.section.facility.name}`;
