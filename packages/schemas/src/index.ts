@@ -4,6 +4,7 @@ export * from './auth.js';
 export * from './users.js';
 export * from './facilities.js';
 export * from './imports.js';
+export * from './shifts.js';
 export * from './audits.js';
 export * from './scans.js';
 export * from './misc.js';

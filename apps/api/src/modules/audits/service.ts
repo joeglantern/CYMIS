@@ -29,6 +29,17 @@ async function dto(ctx: AppContext, auditId: string): Promise<AuditDto> {
   return toAuditDto(audit, await ctx.progress.get(auditId));
 }
 
+/** Clerks already see who is on a plan. Who is on which shift stays with staff: a clerk gets only their own shifts. */
+function forViewer(a: AuditDto, principal: Principal): AuditDto {
+  if (principal.kind !== 'user' || principal.user.role !== 'AUDITOR') return a;
+  const me = principal.user.id;
+  return {
+    ...a,
+    viaShiftIds: [],
+    shifts: a.shifts.filter((s) => s.clerkIds.includes(me)).map((s) => ({ ...s, clerkIds: [me] })),
+  };
+}
+
 export async function listAudits(ctx: AppContext, principal: Principal, q: AuditListQuery) {
   const cursor = decodeCursor(q.cursor);
   const onlyMine = principal.kind === 'user' && (principal.user.role === 'AUDITOR' || q.mine === true);
@@ -47,14 +58,14 @@ export async function listAudits(ctx: AppContext, principal: Principal, q: Audit
   const page = pageOf(rows, q.limit);
   const counts = await ctx.progress.getMany(page.items.map((a) => a.id));
   return {
-    items: page.items.map((a) => toAuditDto(a, counts.get(a.id)!)),
+    items: page.items.map((a) => forViewer(toAuditDto(a, counts.get(a.id)!), principal)),
     nextCursor: page.nextCursor,
   };
 }
 
 export async function getAudit(ctx: AppContext, principal: Principal, auditId: string): Promise<AuditDto> {
   await loadAuditFor(ctx, auditId, principal, { scopes: ['audits:read', 'results:read'] });
-  return dto(ctx, auditId);
+  return forViewer(await dto(ctx, auditId), principal);
 }
 
 export async function createAudit(ctx: AppContext, input: CreateAuditBody, actor: Actor): Promise<AuditDto> {
@@ -157,7 +168,10 @@ export async function setAssignees(ctx: AppContext, auditId: string, input: SetA
   }
 
   await ctx.db.$transaction(async (tx) => {
+    // Off the plan means off its shifts too, or a shift would list someone with no access.
+    const offShifts = await tx.shiftAssignment.deleteMany({ where: { userId: { notIn: ids }, shift: { auditId } } });
     await tx.auditAssignment.deleteMany({ where: { auditId, userId: { notIn: ids } } });
+    // skipDuplicates keeps viaShiftAt on existing rows, so saving this step does not make shift clerks direct.
     await tx.auditAssignment.createMany({ data: ids.map((userId) => ({ auditId, userId })), skipDuplicates: true });
     await logActivity(tx, {
       actorId: actor.id,
@@ -165,7 +179,7 @@ export async function setAssignees(ctx: AppContext, auditId: string, input: SetA
       entityType: 'audit',
       entityId: auditId,
       ip: actor.ip,
-      data: { userIds: ids },
+      data: { userIds: ids, shiftPlacesRemoved: offShifts.count },
     });
   });
   return dto(ctx, auditId);

@@ -154,6 +154,8 @@ model User {
 
   refreshTokens   RefreshToken[]
   assignments     AuditAssignment[]
+  shiftsCreated    Shift[]
+  shiftAssignments ShiftAssignment[]
   auditsCreated   Audit[]           @relation("AuditCreatedBy")
   auditsClosed    Audit[]           @relation("AuditClosedBy")
   scans           Scan[]            @relation("ScanAuditor")
@@ -266,6 +268,7 @@ model Audit {
   createdBy   User                @relation("AuditCreatedBy", fields: [createdById], references: [id])
   closedBy    User?               @relation("AuditClosedBy", fields: [closedById], references: [id])
   assignments AuditAssignment[]
+  shifts      Shift[]
   imports     ImportBatch[]
   expected    ExpectedContainer[]
   scans       Scan[]
@@ -281,6 +284,8 @@ model AuditAssignment {
   auditId   String   @db.Uuid
   userId    String   @db.Uuid
   createdAt DateTime @default(now()) @db.Timestamptz(3)
+  /// Null: assigned directly. Set: this row exists only because a shift added the person.
+  viaShiftAt DateTime? @db.Timestamptz(3)
 
   audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -288,6 +293,38 @@ model AuditAssignment {
   @@id([auditId, userId])
   @@index([userId])
   @@map("audit_assignments")
+}
+
+/// Planning and display only. Access to a plan comes from AuditAssignment, and times never block a scan.
+model Shift {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  auditId     String   @db.Uuid
+  name        String
+  startsAt    DateTime @db.Timestamptz(3)
+  endsAt      DateTime @db.Timestamptz(3)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  audit       Audit             @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  assignments ShiftAssignment[]
+
+  @@index([auditId, startsAt])
+  @@index([endsAt])
+  @@map("shifts")
+}
+
+model ShiftAssignment {
+  shiftId String @db.Uuid
+  userId  String @db.Uuid
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([shiftId, userId])
+  @@index([userId])
+  @@map("shift_assignments")
 }
 
 model ColumnMapping {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CursorQuery, Id, IsoDateTime } from './common.js';
 import { AuditStatus, Bucket, FacilityType, SectionKind } from './enums.js';
+import { ShiftBrief } from './shifts.js';
 import { UserSummary } from './users.js';
 
 export const AuditCounts = z.object({
@@ -31,6 +32,10 @@ export const AuditDto = z.object({
   createdBy: UserSummary,
   closedBy: UserSummary.nullable(),
   assignees: z.array(UserSummary),
+  /** Assignees who are on the plan only through a shift. Empty for clerks. */
+  viaShiftIds: z.array(Id),
+  /** Soonest first. A clerk gets only their own. */
+  shifts: z.array(ShiftBrief),
   counts: AuditCounts,
   startedAt: IsoDateTime.nullable(),
   closedAt: IsoDateTime.nullable(),

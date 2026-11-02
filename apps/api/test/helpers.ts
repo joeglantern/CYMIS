@@ -48,6 +48,8 @@ const TABLES = [
   'import_batches',
   'column_mappings',
   'reports',
+  'shift_assignments',
+  'shifts',
   'audit_assignments',
   'audits',
   'sections',

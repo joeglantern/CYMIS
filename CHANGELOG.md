@@ -16,3 +16,10 @@ Contract changes (anything in `packages/schemas`) must be listed here.
 - `ErrorResponse.error.requestId`: a reference for support, also sent as the `x-request-id` header.
 - `AuthResponse.previousSignIn`: on sign in, when the account was last used, on what, and wrong passwords since.
 - `AppConfigResponse.environment`: production, staging or development.
+
+## 0.3.0 (2026-11-02)
+
+- `ShiftDto`, `ShiftBrief`, `CreateShiftBody`, `UpdateShiftBody`, `ShiftListQuery` and `ShiftListResponse`: shift planning, for `GET /shifts`, `POST /shifts`, `PATCH /shifts/:id` and `DELETE /shifts/:id`. Admins and supervisors only.
+- `AuditDto.shifts`: the shifts on a yard plan, soonest first. A clerk gets only their own, with only their own id in `clerkIds`.
+- `AuditDto.viaShiftIds`: assignees who are on the plan only through a shift. Empty for clerks.
+- Both are new fields. No existing field changed meaning, so old phones and integrations keep working by ignoring them.
