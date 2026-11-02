@@ -44,6 +44,11 @@ export const statusWords: Record<AuditDto['status'], string> = {
   CANCELLED: 'Cancelled',
 };
 
+/** A whole yard is an area of no particular kind, with no location codes, so every row is kept. */
+export function isWholeYard(s: { kind: SectionKind; locationCodes: string[] }) {
+  return s.kind === 'OTHER' && s.locationCodes.length === 0;
+}
+
 export const sectionKindWords: Record<SectionKind, string> = {
   YARD_BLOCK: 'Yard block',
   VERIFICATION_BAY: 'Verification bay',
@@ -70,6 +75,11 @@ export const flagWords: Record<string, string> = {
   COLOUR_MISMATCH: 'Colour differs',
   CHECK_DIGIT_FAILED: 'Check digit fails',
 };
+
+/** What an area is, in the words people use. */
+export function areaWords(s: { kind: SectionKind; locationCodes: string[] }) {
+  return isWholeYard(s) ? 'Whole yard' : sectionKindWords[s.kind];
+}
 
 /** Bucket counts for the bar, from audit counts. Missing is what is left of the expected list. */
 export function barCounts(k: AuditDto['counts']) {

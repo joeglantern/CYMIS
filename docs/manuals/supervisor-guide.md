@@ -10,16 +10,16 @@ Every container ends up in one of these. Each chip always has an icon and a word
 
 - **Found (green):** On the list and scanned.
 - **Missing (red):** On the list, not scanned yet. When the yard plan closes, these are the boxes nobody found.
-- **Unexpected (yellow):** Scanned, but not on the list. It may be in the wrong section, or the list may be out of date.
+- **Unexpected (yellow):** Scanned, but not on the list. It may be in the wrong area, or the list may be out of date.
 - **Needs review (blue):** The phone and the server read something different, or the check digit failed. A supervisor decides.
 - **Scanned twice (grey):** Already scanned in this yard plan. The first scan counts.
 
 ## Setting up a yard plan
 
-1. In the dashboard, click **New yard plan**, pick the yard section and give it a name clerks will recognise.
+1. In the dashboard, click **New yard plan**, pick the area and give it a name clerks will recognise.
 2. Upload the export from your terminal system. Excel and CSV files work. The original file is kept for checking.
 3. Match the columns. Only the container number is required. Cymis remembers the matching for the next file with the same columns.
-4. Check the rows. Numbers with a wrong check digit, duplicates and boxes outside the section are listed so you can decide before loading.
+4. Check the rows. Numbers with a wrong check digit, duplicates and boxes outside the area are listed so you can decide before loading.
 5. Pick the clerks, then click **Start plan**. Their phones download the list straight away.
 
 > Loading a new file into a running yard plan adds to the list or replaces it. Phones pick up only the changes.
@@ -99,7 +99,7 @@ Set it up in the phone settings first. Until then, unlock with your password, wh
 
 - **ISO 6346:** The world standard for container numbers: 4 letters, 6 digits and a check digit, like `CSQU 305438 3`.
 - **Check digit:** The last digit. It is worked out from the other ten, so a misread character almost always shows up.
-- **Expected list:** The containers the terminal system says are in the section. It comes from the uploaded export.
+- **Expected list:** The containers the terminal system says are in the area. It comes from the uploaded export.
 - **Bucket:** Where a container ends up: found, missing, unexpected or needs review.
-- **Yard plan:** One count of one section, from start to close.
+- **Yard plan:** One count of one area, from start to close.
 - **Send queue:** Scans saved on the phone that have not reached the server yet.

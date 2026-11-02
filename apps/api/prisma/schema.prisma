@@ -224,8 +224,26 @@ model Facility {
   updatedAt DateTime     @updatedAt @db.Timestamptz(3)
 
   sections Section[]
+  yards    Yard[]
 
   @@map("facilities")
+}
+
+/// A yard inside a facility. Blocks (sections) can belong to one.
+model Yard {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  facilityId String   @db.Uuid
+  code       String
+  name       String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  facility Facility  @relation(fields: [facilityId], references: [id])
+  sections Section[]
+
+  @@unique([facilityId, code])
+  @@map("yards")
 }
 
 model Section {
@@ -237,14 +255,20 @@ model Section {
   /// Location code prefixes in the terminal system export that belong here.
   locationCodes String[]
   isActive      Boolean     @default(true)
+  /// Null: not in a yard yet.
+  yardId        String?     @db.Uuid
+  /// The block's shape on the map: [{ lat, lng }, ...]. See Boundary in packages/schemas.
+  boundary      Json?
   createdAt     DateTime    @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime    @updatedAt @db.Timestamptz(3)
 
   facility Facility         @relation(fields: [facilityId], references: [id])
+  yard     Yard?            @relation(fields: [yardId], references: [id])
   audits   Audit[]
   events   ContainerEvent[]
 
   @@unique([facilityId, code])
+  @@index([yardId])
   @@map("sections")
 }
 

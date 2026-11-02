@@ -84,6 +84,11 @@ export function useResults(auditId: string | undefined, bucket: Bucket) {
   });
 }
 
+/** For Yard management: includes what is turned off, so it can be turned back on. */
+export function useAllFacilities() {
+  return useQuery({ queryKey: [...keys.facilities(), 'all'], queryFn: endpoints.facilitiesAll });
+}
+
 export function useFacilities() {
   return useQuery({ queryKey: keys.facilities(), queryFn: endpoints.facilities, staleTime: 5 * 60_000 });
 }

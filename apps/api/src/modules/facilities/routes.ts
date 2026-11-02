@@ -1,17 +1,20 @@
 import {
   CreateFacilityBody,
   CreateSectionBody,
+  CreateYardBody,
   FacilityDto,
   IdParams,
   SectionDto,
   UpdateFacilityBody,
   UpdateSectionBody,
+  UpdateYardBody,
+  YardDto,
 } from '@cymis/schemas';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../../context.js';
 import { requireUser } from '../../plugins/auth.js';
-import { createFacility, createSection, listFacilities, updateFacility, updateSection } from './service.js';
+import { createFacility, createSection, createYard, listFacilities, updateFacility, updateSection, updateYard } from './service.js';
 
 export const facilityRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app, { ctx }) => {
   const adminOnly = app.guard({ roles: ['ADMIN'] });
@@ -51,6 +54,21 @@ export const facilityRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async 
       preHandler: adminOnly,
     },
     async (request) => updateFacility(ctx, request.params.id, request.body, actor(request)),
+  );
+
+  app.post(
+    '/yards',
+    { schema: { tags: ['facilities'], body: CreateYardBody, response: { 201: YardDto } }, preHandler: adminOnly },
+    async (request, reply) => {
+      reply.status(201);
+      return createYard(ctx, request.body, actor(request));
+    },
+  );
+
+  app.patch(
+    '/yards/:id',
+    { schema: { tags: ['facilities'], params: IdParams, body: UpdateYardBody, response: { 200: YardDto } }, preHandler: adminOnly },
+    async (request) => updateYard(ctx, request.params.id, request.body, actor(request)),
   );
 
   app.post(

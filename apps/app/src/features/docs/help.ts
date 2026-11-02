@@ -163,10 +163,10 @@ export const helpSections: HelpSection[] = [
         t: 'list',
         ordered: true,
         items: [
-          'In the dashboard, click **New yard plan**, pick the yard section and give it a name clerks will recognise.',
+          'In the dashboard, click **New yard plan**, pick the area and give it a name clerks will recognise.',
           'Upload the export from your terminal system. Excel and CSV files work. The original file is kept for checking.',
           'Match the columns. Only the container number is required. Cymis remembers the matching for the next file with the same columns.',
-          'Check the rows. Numbers with a wrong check digit, duplicates and boxes outside the section are listed so you can decide before loading.',
+          'Check the rows. Numbers with a wrong check digit, duplicates and boxes outside the area are listed so you can decide before loading.',
           'Pick the clerks, then click **Start plan**. Their phones download the list straight away.',
         ],
       },
@@ -290,14 +290,16 @@ export const helpSections: HelpSection[] = [
   },
   {
     id: 'sections',
-    title: 'Sections and location codes',
+    title: 'Yards, blocks and location codes',
     audience: 'admins',
     blocks: [
       {
         t: 'p',
-        text: 'A section is a part of the facility that gets counted, like a yard block or a verification bay. Give each one the location code prefixes your terminal system uses for it, for example `A01` to `A06`.',
+        text: 'A site is the port or depot. Inside it are its yards, and inside a yard are its blocks. Under Yard management, add the yard, then its blocks. Give each block the location code prefixes your terminal system uses for it, for example `A01` to `A06`.',
       },
-      { t: 'p', text: 'When a file is loaded, rows whose location does not match the section are flagged so they can be checked.' },
+      { t: 'p', text: 'When a file is loaded, rows with a location outside the block\'s codes are left off the list, and you see how many before loading. Rows with no location are kept.' },
+      { t: 'p', text: 'To count a whole yard in one yard plan, add an area and choose **The whole yard**. It has no location codes, so every row in the upload is kept.' },
+      { t: 'p', text: 'To put a block on the map, click **Choose coordinates**, then click its corners in order on a computer. Drag a corner to move it, and save. Other blocks in the yard show faintly so you can line them up.' },
     ],
   },
   {
@@ -376,9 +378,9 @@ export const helpSections: HelpSection[] = [
         items: [
           { term: 'ISO 6346', text: 'The world standard for container numbers: 4 letters, 6 digits and a check digit, like `CSQU 305438 3`.' },
           { term: 'Check digit', text: 'The last digit. It is worked out from the other ten, so a misread character almost always shows up.' },
-          { term: 'Expected list', text: 'The containers the terminal system says are in the section. It comes from the uploaded export.' },
+          { term: 'Expected list', text: 'The containers the terminal system says are in the area. It comes from the uploaded export.' },
           { term: 'Bucket', text: 'Where a container ends up: found, missing, unexpected or needs review.' },
-          { term: 'Yard plan', text: 'One count of one section, from start to close.' },
+          { term: 'Yard plan', text: 'One count of one area, from start to close.' },
           { term: 'Send queue', text: 'Scans saved on the phone that have not reached the server yet.' },
         ],
       },

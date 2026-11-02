@@ -11,7 +11,7 @@ import { feedback } from '@/feedback';
 import { useTheme } from '@/theme/theme';
 import { fonts, radius } from '@/theme/tokens';
 import { Banner, Button, EmptyState, FilterPills, Icon, Skeleton, StatusChip, TextField, Txt, fmt, useConfirm, useToast } from '@/ui';
-import { sectionKindWords } from './format';
+import { areaWords } from './format';
 import { Page, PageHeader } from './Page';
 import { fromShiftWords, shiftLosses } from './shiftPlan';
 import { CheckRow, Select } from './Select';
@@ -87,7 +87,7 @@ export function AuditWizard({ auditId }: { auditId?: string }) {
       <PageHeader
         title={audit.data?.name ?? 'New yard plan'}
         crumbs={[{ label: 'Yard planning', href: '/dashboard/yard-plans' }, { label: auditId ? 'Set up' : 'New' }]}
-        subtitle="Pick the section, bring in the terminal list, give it to the clerks, then start."
+        subtitle="Pick the area, bring in the terminal list, give it to the clerks, then start."
         actions={
           auditId ? (
             <Button
@@ -102,7 +102,7 @@ export function AuditWizard({ auditId }: { auditId?: string }) {
         }
       />
 
-      <Step n={1} title="Section and name" state={at > 0 ? 'done' : 'now'} summary={audit.data ? `${audit.data.section.name}, ${audit.data.name}` : undefined}>
+      <Step n={1} title="Area and name" state={at > 0 ? 'done' : 'now'} summary={audit.data ? `${audit.data.section.name}, ${audit.data.name}` : undefined}>
         <WhereStep />
       </Step>
 
@@ -232,13 +232,13 @@ function WhereStep() {
   });
 
   if (facilities.isPending) return <Skeleton height={120} />;
-  if (facilities.isError) return <EmptyState icon="warning-circle" title="Could not load sections" body={(facilities.error as Error).message} />;
+  if (facilities.isError) return <EmptyState icon="warning-circle" title="Could not load the areas" body={(facilities.error as Error).message} />;
   if (!sections.length)
     return (
       <EmptyState
         icon="buildings"
-        title="No sections yet"
-        body="An admin needs to add the yard sections first, under Yard management."
+        title="No areas yet"
+        body="An admin needs to add a block or a whole yard first, under Yard management."
         action={<Button label="Go to Yard management" variant="secondary" onPress={() => router.push('/dashboard/admin/sections' as never)} />}
       />
     );
@@ -246,7 +246,7 @@ function WhereStep() {
   return (
     <View style={{ gap: 16 }}>
       <View style={{ gap: 8 }}>
-        <Txt variant="bodySmStrong">Which section?</Txt>
+        <Txt variant="bodySmStrong">Which area?</Txt>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {sections.map((s) => {
             const on = s.id === sectionId;
@@ -275,7 +275,7 @@ function WhereStep() {
                 <Txt variant="bodyStrong" style={{ fontSize: 15 }}>
                   {s.name}
                 </Txt>
-                <Txt variant="caption" tone="muted">{`${sectionKindWords[s.kind]}, ${s.facility.name}`}</Txt>
+                <Txt variant="caption" tone="muted">{`${areaWords(s)}, ${s.facility.yards.find((y) => y.id === s.yardId)?.name ?? s.facility.name}`}</Txt>
               </Pressable>
             );
           })}
@@ -329,7 +329,7 @@ function UploadStep({ auditId, imp, onDone }: { auditId: string; imp: ImportDto 
   return (
     <View style={{ gap: 14 }}>
       <Txt variant="body" tone="ink2">
-        Export the containers for this section from the terminal system as Excel or CSV, then add the file here. The original file is kept with the yard plan.
+        Export the containers for this area from the terminal system as Excel or CSV, then add the file here. The original file is kept with the yard plan.
       </Txt>
       {imp?.status === 'FAILED' ? <Banner tone="warning">{imp.failureReason ?? 'That file could not be read. Try exporting it again.'}</Banner> : null}
       {error ? <Banner tone="warning">{error}</Banner> : null}
@@ -528,7 +528,7 @@ function CheckStep({ imp, onDone, onRemap }: { imp: ImportDto; onDone: () => voi
     { n: imp.validCount, label: 'Good rows' },
     { n: imp.invalidCount, label: 'Bad numbers', tone: 'bad' },
     { n: imp.duplicateCount, label: 'Listed twice' },
-    { n: imp.outOfSectionCount, label: 'Outside this section' },
+    { n: imp.outOfSectionCount, label: 'Outside this area' },
   ];
 
   return (
@@ -547,7 +547,7 @@ function CheckStep({ imp, onDone, onRemap }: { imp: ImportDto; onDone: () => voi
       </View>
       {imp.outOfSectionCount > 0 ? (
         <Txt variant="bodySm" tone="muted">
-          Rows outside this section have a location that does not start with one of the section codes. They are left off the list.
+          Rows outside this area have a location that does not start with one of its codes. They are left off the list.
         </Txt>
       ) : null}
       {imp.errors.length ? (

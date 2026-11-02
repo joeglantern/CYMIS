@@ -2,7 +2,7 @@
 
 # Admin guide
 
-For admins looking after people, sections and integrations.
+For admins looking after people, yards and integrations.
 
 ## People
 
@@ -11,11 +11,15 @@ For admins looking after people, sections and integrations.
 - Unlock an account that hit five wrong passwords, or wait 15 minutes.
 - Deactivate people who leave. Their scans stay with the yard plans.
 
-## Sections and location codes
+## Yards, blocks and location codes
 
-A section is a part of the facility that gets counted, like a yard block or a verification bay. Give each one the location code prefixes your terminal system uses for it, for example `A01` to `A06`.
+A site is the port or depot. Inside it are its yards, and inside a yard are its blocks. Under Yard management, add the yard, then its blocks. Give each block the location code prefixes your terminal system uses for it, for example `A01` to `A06`.
 
-When a file is loaded, rows whose location does not match the section are flagged so they can be checked.
+When a file is loaded, rows with a location outside the block's codes are left off the list, and you see how many before loading. Rows with no location are kept.
+
+To count a whole yard in one yard plan, add an area and choose **The whole yard**. It has no location codes, so every row in the upload is kept.
+
+To put a block on the map, click **Choose coordinates**, then click its corners in order on a computer. Drag a corner to move it, and save. Other blocks in the yard show faintly so you can line them up.
 
 ## Integrations and API keys
 

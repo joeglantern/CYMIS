@@ -108,8 +108,8 @@ const ROW_HEADER = ['Result', 'Container', 'Location', 'Colour', 'Scanned at (UT
 function summaryRows(d: ReportData): string[][] {
   return [
     ['Yard plan', safeCell(d.audit.name)],
-    ['Facility', safeCell(d.audit.facility)],
-    ['Section', safeCell(d.audit.section)],
+    ['Site', safeCell(d.audit.facility)],
+    ['Area', safeCell(d.audit.section)],
     ['Status', d.audit.status],
     ['Started', fmt(d.audit.startedAt)],
     ['Closed', fmt(d.audit.closedAt)],

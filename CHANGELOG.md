@@ -24,3 +24,15 @@ Contract changes (anything in `packages/schemas`) must be listed here.
 - `AuditDto.viaShiftIds`: assignees who are on the plan only through a shift. Empty for clerks.
 - Both are new fields. No existing field changed meaning, so old phones and integrations keep working by ignoring them.
 - `POST /sync/scans`: a scan from someone who has lost a yard plan is accepted if it was captured at or before the moment they lost it. No schema change. Reads stay refused.
+
+### Yards and block shapes
+
+Additive. Old clients keep working.
+
+- `YardDto`, `CreateYardBody`, `UpdateYardBody`: yards inside a facility, for the new `POST /yards` and `PATCH /yards/:id` (admin only).
+- `FacilityDto.yards`: the facility's yards.
+- `SectionDto.yardId` and `SectionDto.boundary`: both nullable. Null means not in a yard, and no shape.
+- `CreateSectionBody` and `UpdateSectionBody` accept optional `yardId` and `boundary`. Sending null clears them.
+- `LatLng`, `Boundary`, `boundaryProblem`, `BOUNDARY_MIN_POINTS`, `BOUNDARY_MAX_POINTS`: a block's shape, 3 to 50 points with no repeats and no crossing edges.
+- New error codes: `yard_has_active_sections`, `yard_turned_off`, `yard_other_facility`.
+- Migration `20261102120000_yards_and_block_shapes`.

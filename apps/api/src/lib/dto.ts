@@ -15,6 +15,7 @@ import type {
   RowError,
   ScanDto,
   SectionDto,
+  YardDto,
   ServiceAccountDto,
   UserDto,
   UserSummary,
@@ -43,6 +44,10 @@ export function toUserDto(u: Prisma.UserGetPayload<object>): UserDto {
   };
 }
 
+export function toYardDto(y: Prisma.YardGetPayload<object>): YardDto {
+  return { id: y.id, facilityId: y.facilityId, code: y.code, name: y.name, isActive: y.isActive, createdAt: iso(y.createdAt) };
+}
+
 export function toSectionDto(s: Prisma.SectionGetPayload<object>): SectionDto {
   return {
     id: s.id,
@@ -53,10 +58,12 @@ export function toSectionDto(s: Prisma.SectionGetPayload<object>): SectionDto {
     locationCodes: s.locationCodes,
     isActive: s.isActive,
     createdAt: iso(s.createdAt),
+    yardId: s.yardId,
+    boundary: (s.boundary as SectionDto['boundary']) ?? null,
   };
 }
 
-export function toFacilityDto(f: Prisma.FacilityGetPayload<{ include: { sections: true } }>): FacilityDto {
+export function toFacilityDto(f: Prisma.FacilityGetPayload<{ include: { sections: true; yards: true } }>): FacilityDto {
   return {
     id: f.id,
     code: f.code,
@@ -65,6 +72,7 @@ export function toFacilityDto(f: Prisma.FacilityGetPayload<{ include: { sections
     isActive: f.isActive,
     createdAt: iso(f.createdAt),
     sections: f.sections.map(toSectionDto),
+    yards: f.yards.map(toYardDto),
   };
 }
 

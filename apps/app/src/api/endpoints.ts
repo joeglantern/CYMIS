@@ -15,6 +15,7 @@ import type {
   CreateShiftBody,
   CreateFacilityBody,
   CreateSectionBody,
+  CreateYardBody,
   CreateServiceAccountBody,
   CreateUserBody,
   ExpectedResponse,
@@ -40,6 +41,8 @@ import type {
   SyncScansResponse,
   UpdateAuditBody,
   UpdateSectionBody,
+  UpdateYardBody,
+  YardDto,
   UpdateUserBody,
   UserDto,
 } from '@cymis/schemas';
@@ -109,9 +112,12 @@ export const endpoints = {
   auditReports: (auditId: string) => api<ReportDto[]>(`/audits/${auditId}/reports`),
   report: (id: string) => api<ReportDto>(`/reports/${id}`),
 
-  // Facilities and sections
+  // Sites (facilities), yards and areas (sections)
   facilities: () => api<FacilityDto[]>('/facilities'),
   createFacility: (body: CreateFacilityBody) => api<FacilityDto>('/facilities', { method: 'POST', body }),
+  facilitiesAll: () => api<FacilityDto[]>('/facilities?includeInactive=true'),
+  createYard: (body: CreateYardBody) => api<YardDto>('/yards', { method: 'POST', body }),
+  updateYard: (id: string, body: UpdateYardBody) => api<YardDto>(`/yards/${id}`, { method: 'PATCH', body }),
   createSection: (body: CreateSectionBody) => api<SectionDto>('/sections', { method: 'POST', body }),
   updateSection: (id: string, body: UpdateSectionBody) => api<SectionDto>(`/sections/${id}`, { method: 'PATCH', body }),
 

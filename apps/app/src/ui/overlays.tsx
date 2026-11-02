@@ -7,6 +7,7 @@ import { useLayout, useTheme } from '@/theme/theme';
 import { floatShadow, radius } from '@/theme/tokens';
 import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
+import { ToastLayer } from './ToastLayer';
 import { Txt } from './Text';
 
 // Native alert, confirm and prompt are never used. Everything goes through
@@ -57,6 +58,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
+      <ToastLayer>
       <View
         pointerEvents="box-none"
         style={{
@@ -119,6 +121,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           );
         })}
       </View>
+      </ToastLayer>
     </ToastContext.Provider>
   );
 }
@@ -255,8 +258,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   return (
     <ConfirmContext.Provider value={value}>
       <ChoiceContext.Provider value={choose}>{children}</ChoiceContext.Provider>
-      <Sheet open={!!req} onClose={() => close(null)} label={req?.title ?? 'Confirm'} width={440}>
-        {req ? (
+      {/* Mounted only when asked: on the web the newest layer is on top, so a confirm opens above any sheet. */}
+      {req ? (
+      <Sheet open onClose={() => close(null)} label={req.title} width={440}>
           <>
             <Txt variant="heading">{req.title}</Txt>
             {req.body ? (
@@ -279,8 +283,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               )}
             </View>
           </>
-        ) : null}
       </Sheet>
+      ) : null}
     </ConfirmContext.Provider>
   );
 }

@@ -1,9 +1,10 @@
 // Text reading in the browser, so auto scan also works in the web app (on a
 // tablet or a phone's browser) with no app install. Uses Tesseract, loaded
 // only when the scanner first needs it. Slower than the phone's on-device
-// reader, so frames are cropped to the guide box area and cleaned up first.
+// reader, so the rim of each frame is trimmed (see readerCrop.ts) and it is cleaned up first.
 
 import type { Worker as TessWorker } from 'tesseract.js';
+import { READER_CROP } from './readerCrop';
 
 export const ocrAvailable = typeof window !== 'undefined' && typeof Worker !== 'undefined' && typeof document !== 'undefined';
 
@@ -37,12 +38,12 @@ function loadImage(uri: string): Promise<HTMLImageElement> {
   });
 }
 
-/** The middle band of the frame, where the guide box is, in grey with the contrast pushed up. */
+/** The frame without its rim, in grey with the contrast pushed up. */
 function prepare(img: HTMLImageElement, invert: boolean): HTMLCanvasElement {
-  const sx = img.width * 0.06;
-  const sy = img.height * 0.22;
-  const sw = img.width * 0.88;
-  const sh = img.height * 0.56;
+  const sw = img.width * READER_CROP.width;
+  const sh = img.height * READER_CROP.height;
+  const sx = (img.width - sw) / 2;
+  const sy = (img.height - sh) / 2;
   const scale = Math.min(1, 1400 / sw);
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(sw * scale);

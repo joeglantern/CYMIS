@@ -54,7 +54,7 @@ export default function Overview() {
       ) : (
         <StatGrid>
           <StatTile label="Active yard plans" value={audits.length} detail={scanning ? `${scanning} with clerks scanning` : 'None scanning yet'} />
-          <StatTile label="Scanned" value={sum((k) => k.scans)} detail={sections ? `Across ${sections} ${sections === 1 ? 'section' : 'sections'}` : 'In live yard plans'} />
+          <StatTile label="Scanned" value={sum((k) => k.scans)} detail={sections ? `Across ${sections} ${sections === 1 ? 'area' : 'areas'}` : 'In live yard plans'} />
           <StatTile label="Not found yet" value={sum((k) => k.missing)} detail="Still to scan in live yard plans" />
           <StatTile
             label="Needs review"
