@@ -224,6 +224,8 @@ export function FilterPills<T extends string>({
             key={o.id}
             accessibilityRole="radio"
             accessibilityState={{ checked: on }}
+            // The web build does not turn accessibilityState into this for a radio, so a screen reader could not tell which is on.
+            aria-checked={on}
             onPress={() => {
               feedback.select();
               onChange(o.id);
