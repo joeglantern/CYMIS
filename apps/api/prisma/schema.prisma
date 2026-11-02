@@ -87,6 +87,13 @@ enum ScanFlag {
   NUMBER_MISMATCH
   COLOUR_MISMATCH
   CHECK_DIGIT_FAILED
+  LOCATION_MISMATCH
+}
+
+/// What a supervisor decided about a box found somewhere other than the list says.
+enum LocationDecision {
+  LIST_UPDATED
+  MOVE_BACK
 }
 
 enum ReviewStatus {
@@ -418,6 +425,9 @@ model Scan {
   lng                 Float?
   accuracyM           Float?
   colourChosen        String?
+  /// Where the clerk says the box really is. Only ever what the clerk typed.
+  foundLocation       String?
+  locationDecision    LocationDecision?
   colourSuggested     String?
   colourHex           String?
   colourConfidence    Float?
@@ -447,6 +457,7 @@ model Scan {
   @@index([auditId, containerNumber])
   @@index([auditId, result])
   @@index([auditId, reviewStatus])
+  @@index([auditId, locationDecision])
   @@index([auditorId])
   @@index([expectedContainerId])
   @@map("scans")

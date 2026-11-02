@@ -30,7 +30,7 @@ export type ScanResult = z.infer<typeof ScanResult>;
 export const CvStatus = z.enum(['PENDING', 'DONE', 'FAILED', 'SKIPPED']);
 export type CvStatus = z.infer<typeof CvStatus>;
 
-export const ScanFlag = z.enum(['NUMBER_MISMATCH', 'COLOUR_MISMATCH', 'CHECK_DIGIT_FAILED']);
+export const ScanFlag = z.enum(['NUMBER_MISMATCH', 'COLOUR_MISMATCH', 'CHECK_DIGIT_FAILED', 'LOCATION_MISMATCH']);
 export type ScanFlag = z.infer<typeof ScanFlag>;
 
 export const ReviewStatus = z.enum(['NONE', 'PENDING', 'APPROVED', 'CORRECTED', 'REJECTED']);
@@ -77,6 +77,9 @@ export const ColourName = z.enum([
 export type ColourName = z.infer<typeof ColourName>;
 
 /** Scopes a service account API key can hold. */
+export const LocationDecision = z.enum(['LIST_UPDATED', 'MOVE_BACK']);
+export type LocationDecision = z.infer<typeof LocationDecision>;
+
 export const ApiScope = z.enum(['audits:read', 'results:read', 'expected:write']);
 export type ApiScope = z.infer<typeof ApiScope>;
 

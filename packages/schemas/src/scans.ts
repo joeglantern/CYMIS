@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ClientId, ContainerNumber, ContainerNumberLoose, CursorQuery, Id, IsoDateTime } from './common.js';
-import { ColourName, CvStatus, EntryMethod, PhotoStatus, ReviewStatus, ScanFlag, ScanResult } from './enums.js';
+import { ColourName, CvStatus, EntryMethod, LocationDecision, PhotoStatus, ReviewStatus, ScanFlag, ScanResult } from './enums.js';
 import { UserSummary } from './users.js';
 
 export const GeoPoint = z.object({
@@ -9,6 +9,23 @@ export const GeoPoint = z.object({
   accuracyM: z.number().min(0).max(100_000).optional(),
 });
 export type GeoPoint = z.infer<typeof GeoPoint>;
+
+/** A location as a clerk types it. Free text: we make no rule about its format. */
+export const FoundLocation = z
+  .string()
+  .trim()
+  .min(1)
+  .max(60)
+  .transform((s) => s.toUpperCase());
+
+/** Case and separators do not matter when comparing locations: a01 02-3 is A01-02-3. */
+export function normaliseLocation(location: string): string {
+  return location.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+export function sameLocation(a: string, b: string): boolean {
+  return normaliseLocation(a) === normaliseLocation(b);
+}
 
 export const SyncScanItem = z.object({
   id: ClientId,
@@ -20,6 +37,8 @@ export const SyncScanItem = z.object({
   capturedAt: IsoDateTime,
   location: GeoPoint.optional(),
   colourChosen: ColourName.optional(),
+  /** Sent only when the clerk says the box is somewhere other than the list says. */
+  foundLocation: FoundLocation.optional(),
   deviceId: z.string().trim().min(1).max(100),
 });
 export type SyncScanItem = z.infer<typeof SyncScanItem>;
@@ -57,6 +76,11 @@ export const ScanDto = z.object({
   receivedAt: IsoDateTime,
   auditor: UserSummary,
   reviewedBy: UserSummary.nullable(),
+  reviewedAt: IsoDateTime.nullable(),
+  foundLocation: z.string().nullable(),
+  locationDecision: LocationDecision.nullable(),
+  /** Where the list says this box is right now. */
+  listLocation: z.string().nullable(),
   photos: z.array(PhotoSummary),
 });
 export type ScanDto = z.infer<typeof ScanDto>;
@@ -86,6 +110,7 @@ export const ScanListQuery = CursorQuery.extend({
     .transform((v) => v === 'true')
     .optional(),
   reviewStatus: ReviewStatus.optional(),
+  locationDecision: LocationDecision.optional(),
   auditorId: Id.optional(),
   /** Start of a container number, for search. */
   q: z
@@ -97,7 +122,7 @@ export const ScanListQuery = CursorQuery.extend({
 });
 export type ScanListQuery = z.infer<typeof ScanListQuery>;
 
-export const ReviewAction = z.enum(['APPROVE', 'CORRECT', 'REJECT']);
+export const ReviewAction = z.enum(['APPROVE', 'CORRECT', 'REJECT', 'UPDATE_LIST', 'MOVE_BACK']);
 export type ReviewAction = z.infer<typeof ReviewAction>;
 
 export const ReviewScanBody = z
@@ -113,6 +138,10 @@ export const ReviewScanBody = z
   })
   .refine((b) => b.action !== 'REJECT' || (b.note && b.note.length > 0), {
     message: 'Say why the scan is rejected',
+    path: ['note'],
+  })
+  .refine((b) => b.action !== 'MOVE_BACK' || (b.note && b.note.length > 0), {
+    message: 'Say where the box must go back to, or why',
     path: ['note'],
   });
 export type ReviewScanBody = z.infer<typeof ReviewScanBody>;

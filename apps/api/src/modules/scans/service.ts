@@ -1,4 +1,5 @@
 import { isValidContainerNumber } from '@cymis/iso6346';
+import { sameLocation } from '@cymis/schemas';
 import type {
   ReviewScanBody,
   ScanDto,
@@ -55,6 +56,13 @@ async function classify(
   });
   if (primary) return { result: 'DUPLICATE', expectedContainerId: expected?.id ?? null, duplicateOfId: primary.id };
   return { result: expected ? 'MATCHED' : 'UNEXPECTED', expectedContainerId: expected?.id ?? null, duplicateOfId: null };
+}
+
+/** A clerk's location only raises a flag on a box matched to a list row that has a different location. */
+async function locationDiffers(tx: Tx, result: ScanResult, expectedContainerId: string | null, foundLocation: string | undefined): Promise<boolean> {
+  if (!foundLocation || result !== 'MATCHED' || !expectedContainerId) return false;
+  const row = await tx.expectedContainer.findUnique({ where: { id: expectedContainerId }, select: { location: true } });
+  return !!row?.location && !sameLocation(row.location, foundLocation);
 }
 
 interface AuditCheck {
@@ -119,6 +127,7 @@ async function syncOne(
       if (await tx.scan.findUnique({ where: { id: item.id }, select: { id: true } })) return false;
 
       const c = await classify(tx, audit.id, item.containerNumber);
+      const moved = await locationDiffers(tx, c.result, c.expectedContainerId, item.foundLocation);
       await tx.scan.create({
         data: {
           id: item.id,
@@ -138,8 +147,9 @@ async function syncOne(
           result: c.result,
           expectedContainerId: c.expectedContainerId,
           duplicateOfId: c.duplicateOfId,
-          flags: checkDigitValid ? [] : ['CHECK_DIGIT_FAILED'],
-          reviewStatus: checkDigitValid ? 'NONE' : 'PENDING',
+          foundLocation: item.foundLocation ?? null,
+          flags: [...(checkDigitValid ? [] : (['CHECK_DIGIT_FAILED'] as const)), ...(moved ? (['LOCATION_MISMATCH'] as const) : [])],
+          reviewStatus: checkDigitValid && !moved ? 'NONE' : 'PENDING',
         },
       });
       await tx.containerEvent.create({
@@ -215,6 +225,7 @@ export async function listScans(ctx: AppContext, principal: Principal, auditId: 
     ...(q.flagged === true ? { flags: { isEmpty: false } } : {}),
     ...(q.flagged === false ? { flags: { isEmpty: true } } : {}),
     ...(q.reviewStatus ? { reviewStatus: q.reviewStatus } : {}),
+    ...(q.locationDecision ? { locationDecision: q.locationDecision } : {}),
     ...(q.auditorId ? { auditorId: q.auditorId } : {}),
     ...(q.q ? { containerNumber: { startsWith: q.q } } : {}),
   };
@@ -275,6 +286,44 @@ async function promoteNextPrimary(tx: Tx, auditId: string, containerNumber: stri
   return next.id;
 }
 
+/**
+ * A supervisor's answer to "the list says here, the clerk found it there". The
+ * box really was found either way, so the scan stays the primary one and counts
+ * as found. Nothing here runs the promote path: that is only for scans that stop counting.
+ */
+async function decideLocation(
+  tx: Tx,
+  scan: Prisma.ScanGetPayload<object>,
+  action: 'UPDATE_LIST' | 'MOVE_BACK',
+  base: { reviewNote: string | null; reviewedById: string; reviewedAt: Date },
+): Promise<{ listVersion: number | null; listLocation: string | null; foundLocation: string }> {
+  if (!scan.foundLocation || !scan.flags.includes('LOCATION_MISMATCH') || scan.reviewStatus !== 'PENDING' || scan.locationDecision) {
+    throw new ConflictError('This scan has no location waiting for a decision', 'no_location_decision');
+  }
+  const row = scan.expectedContainerId
+    ? await tx.expectedContainer.findFirst({ where: { id: scan.expectedContainerId, removedAt: null }, select: { id: true, location: true } })
+    : null;
+
+  let listVersion: number | null = null;
+  if (action === 'UPDATE_LIST') {
+    if (!row) throw new ConflictError('That box is no longer on the list', 'not_on_list');
+    // The same order as an import: the audit row first, so the two take turns.
+    const bumped = await tx.$queryRaw<{ listVersion: number }[]>(Prisma.sql`
+      UPDATE audits SET "listVersion" = "listVersion" + 1, "updatedAt" = now()
+      WHERE id = ${scan.auditId}::uuid AND status = 'ACTIVE'
+      RETURNING "listVersion"
+    `);
+    listVersion = bumped[0]?.listVersion ?? null;
+    if (listVersion === null) throw new ConflictError('This yard plan is finished, so its list cannot change', 'audit_finished');
+    await tx.expectedContainer.update({ where: { id: row.id }, data: { location: scan.foundLocation, version: listVersion } });
+  }
+  await tx.scan.update({
+    where: { id: scan.id },
+    data: { ...base, reviewStatus: 'APPROVED', locationDecision: action === 'UPDATE_LIST' ? 'LIST_UPDATED' : 'MOVE_BACK' },
+  });
+  return { listVersion, listLocation: row?.location ?? null, foundLocation: scan.foundLocation };
+}
+
 export async function reviewScan(
   ctx: AppContext,
   user: SyncUser,
@@ -288,6 +337,7 @@ export async function reviewScan(
 
   const changed: string[] = [scanId];
   const now = new Date();
+  let newListVersion: number | null = null;
 
   await ctx.db.$transaction(async (tx) => {
     // Lock every container this review touches, always in the same order, so
@@ -303,8 +353,12 @@ export async function reviewScan(
     const wasPrimary = fresh.result !== 'DUPLICATE' && fresh.reviewStatus !== 'REJECTED';
 
     const base = { reviewNote: input.note ?? null, reviewedById: user.id, reviewedAt: now };
+    let decided: Awaited<ReturnType<typeof decideLocation>> | null = null;
 
-    if (input.action === 'APPROVE') {
+    if (input.action === 'UPDATE_LIST' || input.action === 'MOVE_BACK') {
+      decided = await decideLocation(tx, fresh, input.action, base);
+      newListVersion = decided.listVersion;
+    } else if (input.action === 'APPROVE') {
       await tx.scan.update({ where: { id: scanId }, data: { ...base, reviewStatus: 'APPROVED' } });
     } else if (input.action === 'REJECT') {
       await tx.scan.update({ where: { id: scanId }, data: { ...base, reviewStatus: 'REJECTED' } });
@@ -355,6 +409,7 @@ export async function reviewScan(
           action: input.action,
           ...(input.correctedNumber ? { from: scan.containerNumber, to: input.correctedNumber } : {}),
           ...(input.correctedColour ? { colour: input.correctedColour } : {}),
+          ...(decided ? { listLocation: decided.listLocation, foundLocation: decided.foundLocation } : {}),
         },
       },
     });
@@ -373,5 +428,6 @@ export async function reviewScan(
     if (dto) ctx.broadcaster.toAudit(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
   }
   ctx.progress.schedule(scan.auditId);
+  if (newListVersion !== null) ctx.broadcaster.toAudit(scan.auditId, 'expected:updated', { auditId: scan.auditId, listVersion: newListVersion });
   return (await loadScanDto(ctx, scanId))!;
 }

@@ -135,6 +135,7 @@ export const scanInclude = {
   auditor: { select: userSummarySelect },
   reviewedBy: { select: userSummarySelect },
   photos: { select: { id: true, status: true }, orderBy: { createdAt: 'asc' } },
+  expectedContainer: { select: { location: true } },
 } as const satisfies Prisma.ScanInclude;
 
 export type ScanWithRelations = Prisma.ScanGetPayload<{ include: typeof scanInclude }>;
@@ -169,6 +170,10 @@ export function toScanDto(s: ScanWithRelations): ScanDto {
     receivedAt: iso(s.receivedAt),
     auditor: toUserSummary(s.auditor),
     reviewedBy: s.reviewedBy ? toUserSummary(s.reviewedBy) : null,
+    reviewedAt: s.reviewedAt ? iso(s.reviewedAt) : null,
+    foundLocation: s.foundLocation,
+    locationDecision: s.locationDecision,
+    listLocation: s.expectedContainer?.location ?? null,
     photos: s.photos.map((p) => ({ id: p.id, status: p.status })),
   };
 }

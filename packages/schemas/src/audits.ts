@@ -112,6 +112,8 @@ export const ResultRow = z.object({
   expectedContainerId: Id.nullable(),
   scanId: Id.nullable(),
   location: z.string().nullable(),
+  /** Where the clerk says the box really is, if they said. */
+  foundLocation: z.string().nullable(),
   colour: z.string().nullable(),
   scannedAt: IsoDateTime.nullable(),
   scannedBy: z.string().nullable(),

@@ -100,10 +100,12 @@ function rowArray(r: ResultRow): string[] {
     r.scannedAt ? r.scannedAt.replace('T', ' ').slice(0, 16) : '',
     r.scannedBy ?? '',
     r.flags.join(', '),
+    r.foundLocation ?? '',
   ].map(safeCell);
 }
 
-const ROW_HEADER = ['Result', 'Container', 'Location', 'Colour', 'Scanned at (UTC)', 'Scanned by', 'Flags'];
+// New columns go at the end, so nothing that reads these files moves.
+const ROW_HEADER = ['Result', 'Container', 'Location', 'Colour', 'Scanned at (UTC)', 'Scanned by', 'Flags', 'Found location'];
 
 function summaryRows(d: ReportData): string[][] {
   return [
@@ -129,7 +131,7 @@ export function buildXlsx(d: ReportData): Buffer {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows(d)), 'Summary');
   for (const bucket of BUCKETS) {
     const sheet = XLSX.utils.aoa_to_sheet([ROW_HEADER, ...d.rows[bucket].map(rowArray)]);
-    sheet['!cols'] = [{ wch: 13 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 18 }, { wch: 22 }, { wch: 28 }];
+    sheet['!cols'] = [{ wch: 13 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 18 }, { wch: 22 }, { wch: 28 }, { wch: 16 }];
     XLSX.utils.book_append_sheet(wb, sheet, BUCKET_TITLES[bucket]);
   }
   XLSX.utils.book_append_sheet(
@@ -213,7 +215,7 @@ export async function buildPdf(ctx: AppContext, d: ReportData): Promise<Buffer> 
       doc.font('Helvetica').fillColor(muted);
       doc.text(r.location ?? '', 152, y, { width: 90 });
       doc.text(r.scannedBy ?? '', 246, y, { width: 130 });
-      doc.text(r.flags.join(', ').toLowerCase().replace(/_/g, ' '), 380, y, { width: 167 });
+      doc.text([r.flags.join(', ').toLowerCase().replace(/_/g, ' '), r.foundLocation ? `found at ${r.foundLocation}` : ''].filter(Boolean).join(', '), 380, y, { width: 167 });
       doc.moveDown(0.25);
     }
     if (rows.length > PDF_ROWS_PER_SECTION) {

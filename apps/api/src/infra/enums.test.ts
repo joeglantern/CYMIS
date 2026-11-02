@@ -16,6 +16,7 @@ const PAIRS = [
   'ScanResult',
   'CvStatus',
   'ScanFlag',
+  'LocationDecision',
   'ReviewStatus',
   'PhotoStatus',
   'ContainerEventType',

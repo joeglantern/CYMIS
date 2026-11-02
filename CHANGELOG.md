@@ -28,3 +28,17 @@ Additive. Old clients keep working.
 - `LatLng`, `Boundary`, `boundaryProblem`, `BOUNDARY_MIN_POINTS`, `BOUNDARY_MAX_POINTS`: a block's shape, 3 to 50 points with no repeats and no crossing edges.
 - New error codes: `yard_has_active_sections`, `yard_turned_off`, `yard_other_facility`.
 - Migration `20261102120000_yards_and_block_shapes`.
+
+## 0.4.0 (2026-11-03)
+
+Additive. Old phones send no `foundLocation` and behave exactly as before.
+
+- `SyncScanItem.foundLocation`: optional. Where the clerk says the box really is, trimmed and uppercased, up to 60 characters.
+- `ScanDto.foundLocation`, `ScanDto.locationDecision`, `ScanDto.listLocation` and `ScanDto.reviewedAt`: all nullable.
+- `ScanFlag` gains `LOCATION_MISMATCH`. The server sets it, with review `PENDING`, only when a scan matched a list row that has a location and `foundLocation` differs after ignoring case and separators.
+- `LocationDecision`: `LIST_UPDATED` or `MOVE_BACK`.
+- `ReviewAction` gains `UPDATE_LIST` and `MOVE_BACK`. `MOVE_BACK` needs a note. `APPROVE`, `CORRECT` and `REJECT` are unchanged. New error code `no_location_decision`, and `UPDATE_LIST` can also answer `not_on_list` or `audit_finished`.
+- `ScanListQuery.locationDecision`: filter scans by the decision.
+- `ResultRow.foundLocation`: nullable. Excel and CSV reports gain a `Found location` column at the end, so existing columns do not move.
+- `FoundLocation`, `normaliseLocation` and `sameLocation`: shared helpers.
+- Migration `20261103090000_found_location`.

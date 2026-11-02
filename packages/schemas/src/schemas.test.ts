@@ -3,10 +3,13 @@ import {
   ChangePasswordBody,
   ContainerNumber,
   ContainerNumberLoose,
+  FoundLocation,
   LoginBody,
   Password,
   ReviewScanBody,
   StaffId,
+  SyncScanItem,
+  sameLocation,
   SyncScansBody,
 } from './index.js';
 
@@ -79,5 +82,27 @@ describe('ReviewScanBody', () => {
   it('needs a note when rejecting', () => {
     expect(ReviewScanBody.safeParse({ action: 'REJECT' }).success).toBe(false);
     expect(ReviewScanBody.safeParse({ action: 'REJECT', note: 'Photo is of the wrong box' }).success).toBe(true);
+  });
+});
+
+describe('locations', () => {
+  it('ignores case and separators when comparing', () => {
+    expect(sameLocation('a01 02-3', 'A01-02-3')).toBe(true);
+    expect(sameLocation('A01/02/3', 'A01023')).toBe(true);
+    expect(sameLocation('A01-02-3', 'A01-02-4')).toBe(false);
+  });
+  it('a found location is trimmed, uppercased and limited', () => {
+    expect(FoundLocation.parse('  b4-1 ')).toBe('B4-1');
+    expect(FoundLocation.safeParse('   ').success).toBe(false);
+    expect(FoundLocation.safeParse('x'.repeat(61)).success).toBe(false);
+  });
+  it('an old phone payload has no found location and still parses', () => {
+    const item = SyncScanItem.parse({ id: '01a19b7f-4f1a-757d-91e9-35e132a653ee', auditId: '01a19b7f-4f1a-757d-91e9-35e132a653ee', containerNumber: 'CSQU3054383', entryMethod: 'OCR', capturedAt: '2026-11-03T08:00:00.000Z', deviceId: 'old-phone' });
+    expect(item.foundLocation).toBeUndefined();
+  });
+  it('moving a box back needs a note, updating the list does not', () => {
+    expect(ReviewScanBody.safeParse({ action: 'MOVE_BACK' }).success).toBe(false);
+    expect(ReviewScanBody.safeParse({ action: 'MOVE_BACK', note: 'Back to A01' }).success).toBe(true);
+    expect(ReviewScanBody.safeParse({ action: 'UPDATE_LIST' }).success).toBe(true);
   });
 });
