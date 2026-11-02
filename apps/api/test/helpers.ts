@@ -51,6 +51,7 @@ const TABLES = [
   'audit_assignments',
   'audits',
   'sections',
+  'yards',
   'facilities',
   'service_accounts',
   'refresh_tokens',
