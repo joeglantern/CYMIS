@@ -118,6 +118,7 @@ export function CheckRow({ label, detail, checked, onChange }: { label: string; 
   return (
     <Pressable
       accessibilityRole="checkbox"
+      {...({ dataSet: { focusInset: 'true' } } as object)}
       accessibilityState={{ checked }}
       accessibilityLabel={label}
       onPress={() => {

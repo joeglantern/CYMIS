@@ -22,10 +22,12 @@ export function WebStyles() {
       html, body { background: ${c.paper}; color-scheme: ${dark ? 'dark' : 'light'}; }
       body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
       * { -webkit-tap-highlight-color: transparent; }
-      [role="button"]:focus-visible, [role="link"]:focus-visible, [role="radio"]:focus-visible,
+      [role="button"]:focus-visible, [role="link"]:focus-visible, [role="radio"]:focus-visible, [role="checkbox"]:focus-visible,
       [role="switch"]:focus-visible, [role="tab"]:focus-visible, a:focus-visible, button:focus-visible {
         outline: 2px solid ${c.accent}; outline-offset: 2px; border-radius: 8px;
       }
+      /* Rows inside a clipping card or scroll area draw the ring on the inside, so it stays whole. */
+      [data-focus-inset="true"]:focus-visible { outline-offset: -2px; }
       input:focus-visible, textarea:focus-visible { outline: none; }
       ::selection { background: ${dark ? 'rgba(246,230,30,0.35)' : 'rgba(45,75,185,0.18)'}; }
       @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
