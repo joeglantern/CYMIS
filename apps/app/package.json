@@ -47,6 +47,7 @@
     "expo-system-ui": "~58.0.6",
     "expo-updates": "~58.0.19",
     "expo-video": "~58.0.12",
+    "leaflet": "1.9.4",
     "phosphor-react-native": "3.0.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -64,6 +65,7 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@types/leaflet": "1.9.21",
     "@types/react": "~19.3.0",
     "typescript": "~6.0.3"
   }
