@@ -76,7 +76,7 @@ Every container ends up in one of these. Each chip always has an icon and a word
 
 - **Found (green):** On the list and scanned.
 - **Missing (red):** On the list, not scanned yet. When the yard plan closes, these are the boxes nobody found.
-- **Unexpected (yellow):** Scanned, but not on the list. It may be in the wrong section, or the list may be out of date.
+- **Unexpected (yellow):** Scanned, but not on the list. It may be in the wrong area, or the list may be out of date.
 - **Needs review (blue):** The phone and the server read something different, or the check digit failed. A supervisor decides.
 - **Scanned twice (grey):** Already scanned in this yard plan. The first scan counts.
 
@@ -107,7 +107,7 @@ Set it up in the phone settings first. Until then, unlock with your password, wh
 
 - **ISO 6346:** The world standard for container numbers: 4 letters, 6 digits and a check digit, like `CSQU 305438 3`.
 - **Check digit:** The last digit. It is worked out from the other ten, so a misread character almost always shows up.
-- **Expected list:** The containers the terminal system says are in the section. It comes from the uploaded export.
+- **Expected list:** The containers the terminal system says are in the area. It comes from the uploaded export.
 - **Bucket:** Where a container ends up: found, missing, unexpected or needs review.
-- **Yard plan:** One count of one section, from start to close.
+- **Yard plan:** One count of one area, from start to close.
 - **Send queue:** Scans saved on the phone that have not reached the server yet.

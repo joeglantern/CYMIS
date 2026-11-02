@@ -10,16 +10,16 @@ import { dayTime } from '@/features/dash/format';
 import { Page, PageHeader } from '@/features/dash/Page';
 import { FilterPills } from '@/ui';
 
-type Kind = 'all' | 'section' | 'user' | 'audit' | 'import' | 'scan' | 'service_account';
+type Kind = 'all' | 'yard' | 'section' | 'user' | 'audit' | 'import' | 'scan' | 'service_account';
 
 /** "audit.closed" becomes "Yard plan closed". The stored code does not change. */
 function words(action: string) {
-  const s = action.replace(/[._]/g, ' ').replace(/\baudit\b/g, 'yard plan').trim();
+  const s = action.replace(/[._]/g, ' ').replace(/\baudit\b/g, 'yard plan').replace(/\bsection\b/g, 'area').replace(/\bfacility\b/g, 'site').trim();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /** The kind of record, in the words people use. */
-const entityWords = (type: string) => (type === 'audit' ? 'yard plan' : type.replace(/_/g, ' '));
+const entityWords = (type: string) => ({ audit: 'yard plan', section: 'area', facility: 'site' } as Record<string, string>)[type] ?? type.replace(/_/g, ' ');
 
 export default function Activity() {
   return (
@@ -66,7 +66,8 @@ function ActivityPage() {
         onChange={setKind}
         options={[
           { id: 'all', label: 'Everything' },
-          { id: 'section', label: 'Sections' },
+          { id: 'yard', label: 'Yards' },
+          { id: 'section', label: 'Areas' },
           { id: 'user', label: 'People and sign ins' },
           { id: 'audit', label: 'Yard plans' },
           { id: 'import', label: 'Imports' },

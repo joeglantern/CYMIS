@@ -35,7 +35,7 @@ export function Rich({ text, variant = 'body', tone = 'ink2' }: { text: string; 
 const chipRows: { bucket: BucketKey; text: string }[] = [
   { bucket: 'found', text: 'On the list and scanned.' },
   { bucket: 'missing', text: 'On the list, not scanned yet. When the yard plan closes, these are the boxes nobody found.' },
-  { bucket: 'unexpected', text: 'Scanned, but not on the list. It may be in the wrong section, or the list may be out of date.' },
+  { bucket: 'unexpected', text: 'Scanned, but not on the list. It may be in the wrong area, or the list may be out of date.' },
   { bucket: 'review', text: 'The phone and the server read something different, or the check digit failed. A supervisor decides.' },
   { bucket: 'duplicate', text: 'Already scanned in this yard plan. The first scan counts.' },
 ];

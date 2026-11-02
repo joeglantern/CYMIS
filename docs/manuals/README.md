@@ -6,7 +6,7 @@ The same help is in the app under Help, with search.
 
 - [Clerk guide](clerk-guide.md): For clerks using Cymis on a phone or tablet.
 - [Supervisor guide](supervisor-guide.md): For supervisors running yard plans from the dashboard.
-- [Admin guide](admin-guide.md): For admins looking after people, sections and integrations.
+- [Admin guide](admin-guide.md): For admins looking after people, yards and integrations.
 
 Sections by audience:
 
@@ -22,7 +22,7 @@ Sections by audience:
 - The review queue (Supervisors)
 - Closing and reports (Supervisors)
 - People (Admins)
-- Sections and location codes (Admins)
+- Yards, blocks and location codes (Admins)
 - Integrations and API keys (Admins)
 - Activity log (Admins)
 - Troubleshooting (Everyone)
