@@ -108,6 +108,13 @@ Still open:
 
 4. **Misplaced colour.** Kiptoo said he would confirm it (18:10). Cymis's existing status colours are used until then.
 
+## Known gaps
+
+- A turned-off account cannot sync. Confirmed by reading: `plugins/auth.ts` refuses any token for an inactive user, and refresh and sign in refuse them too. So scans still queued on that phone stay there and never arrive, unless the account is turned back on. The audit_access_ended rule does not help, because it applies after sign in.
+- A removed clerk's phone keeps the cached plan and its list until sign out. The server refuses reads, but the copy stays and shows when offline. Left on purpose, since clearing it needs a rule about unsent work.
+- `capturedAt` comes from the phone clock. A phone running behind, or a clock changed by hand, can land a scan inside the window after someone was removed.
+- `expo-env.d.ts` is generated and ignored, so `pnpm check` may fail typecheck on a fresh clone until Expo has run once.
+
 ## Not in the queue
 
 - Kiptoo's point about Jetson hardware at 04:27. It is already saved as an idea in the Brain Dump (Cymis Yard Eyes).
