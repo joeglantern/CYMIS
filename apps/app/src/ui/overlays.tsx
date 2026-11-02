@@ -128,6 +128,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 /* Sheet: bottom sheet on phones, centred card on tablets and desktop. */
 
+const openSheets: object[] = [];
+
 export function Sheet({
   open,
   onClose,
@@ -147,17 +149,35 @@ export function Sheet({
   const { tablet } = useLayout();
   const insets = useSafeAreaInsets();
 
+  // Escape closes the top sheet only, so cancelling a confirm leaves the sheet under it open.
+  const me = useRef({}).current;
+  useEffect(() => {
+    if (!open) return;
+    openSheets.push(me);
+    return () => {
+      openSheets.splice(openSheets.indexOf(me), 1);
+    };
+  }, [open, me]);
+
   useEffect(() => {
     if (!open || Platform.OS !== 'web' || !dismissable) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && openSheets[openSheets.length - 1] === me) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose, dismissable]);
+  }, [open, onClose, dismissable, me]);
 
   return (
-    <Modal visible={open} transparent animationType="none" onRequestClose={dismissable ? onClose : () => undefined} statusBarTranslucent>
+    <Modal
+      visible={open}
+      transparent
+      animationType="none"
+      // Android's back button lands here. On the web this also fires on Escape's keyup, after the key handler above
+      // has closed the top sheet, so it would close the next one down as well.
+      onRequestClose={dismissable && Platform.OS !== 'web' ? onClose : () => undefined}
+      statusBarTranslucent
+    >
       {open ? (
         <View style={{ flex: 1, justifyContent: tablet ? 'center' : 'flex-end', alignItems: 'center' }}>
           <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={{ position: 'absolute', inset: 0, backgroundColor: c.scrim }}>
