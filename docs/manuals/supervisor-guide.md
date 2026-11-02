@@ -24,6 +24,24 @@ Every container ends up in one of these. Each chip always has an icon and a word
 
 > Loading a new file into a running yard plan adds to the list or replaces it. Phones pick up only the changes.
 
+## Planning shifts
+
+A shift says which clerks work a yard plan and when. Open **Shift planning** to see every shift by day, with today first. All times are East Africa Time.
+
+1. Click **New shift** and pick the yard plan. Plans that are not started yet can have shifts too.
+2. Give it a name, the day and the times. An end time earlier than the start means the next morning, so 22:00 to 06:00 is a night shift.
+3. Tick the clerks, then click **Add shift**. Each clerk sees the plan and their shift times on their phone.
+
+### Who gets the yard plan
+
+- Adding a clerk to a shift also gives them the yard plan.
+- Taking a clerk off their last shift also takes the plan away, unless you gave it to them directly in the **Clerks** step. Any of their scans not yet sent will then be turned down, so do this once they have synced.
+- To move a clerk, tick them on the new shift and choose **Move**. They keep the plan the whole way through.
+- Unticking someone in the **Clerks** step also takes them off that plan's shifts. Cymis names the shifts and asks first.
+- In the **Clerks** step, "From Day shift" beside a name means they are on the plan because of that shift.
+
+> Shift times are for planning. They never stop a scan: a clerk working late or early still saves, and so does a phone with no signal.
+
 ## Watching a yard plan live
 
 The live page updates as clerks scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.

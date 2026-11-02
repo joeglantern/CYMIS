@@ -177,6 +177,41 @@ export const helpSections: HelpSection[] = [
     ],
   },
   {
+    id: 'shifts',
+    title: 'Planning shifts',
+    audience: 'supervisors',
+    blocks: [
+      {
+        t: 'p',
+        text: 'A shift says which clerks work a yard plan and when. Open **Shift planning** to see every shift by day, with today first. All times are East Africa Time.',
+      },
+      {
+        t: 'list',
+        ordered: true,
+        items: [
+          'Click **New shift** and pick the yard plan. Plans that are not started yet can have shifts too.',
+          'Give it a name, the day and the times. An end time earlier than the start means the next morning, so 22:00 to 06:00 is a night shift.',
+          'Tick the clerks, then click **Add shift**. Each clerk sees the plan and their shift times on their phone.',
+        ],
+      },
+      { t: 'h', text: 'Who gets the yard plan' },
+      {
+        t: 'list',
+        items: [
+          'Adding a clerk to a shift also gives them the yard plan.',
+          'Taking a clerk off their last shift also takes the plan away, unless you gave it to them directly in the **Clerks** step. Any of their scans not yet sent will then be turned down, so do this once they have synced.',
+          'To move a clerk, tick them on the new shift and choose **Move**. They keep the plan the whole way through.',
+          'Unticking someone in the **Clerks** step also takes them off that plan\'s shifts. Cymis names the shifts and asks first.',
+          'In the **Clerks** step, "From Day shift" beside a name means they are on the plan because of that shift.',
+        ],
+      },
+      {
+        t: 'note',
+        text: 'Shift times are for planning. They never stop a scan: a clerk working late or early still saves, and so does a phone with no signal.',
+      },
+    ],
+  },
+  {
     id: 'live',
     title: 'Watching a yard plan live',
     audience: 'supervisors',

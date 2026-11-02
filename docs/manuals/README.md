@@ -18,6 +18,7 @@ Sections by audience:
 - History and the send queue (Clerks)
 - Colours and chips (Everyone)
 - Setting up a yard plan (Supervisors)
+- Planning shifts (Supervisors)
 - Watching a yard plan live (Supervisors)
 - The review queue (Supervisors)
 - Closing and reports (Supervisors)
