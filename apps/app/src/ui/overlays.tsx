@@ -7,6 +7,7 @@ import { useLayout, useTheme } from '@/theme/theme';
 import { floatShadow, radius } from '@/theme/tokens';
 import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
+import { ToastLayer } from './ToastLayer';
 import { Txt } from './Text';
 
 // Native alert, confirm and prompt are never used. Everything goes through
@@ -57,6 +58,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
+      <ToastLayer>
       <View
         pointerEvents="box-none"
         style={{
@@ -119,6 +121,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           );
         })}
       </View>
+      </ToastLayer>
     </ToastContext.Provider>
   );
 }
