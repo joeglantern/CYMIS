@@ -1,15 +1,18 @@
 import { BOUNDARY_MAX_POINTS, BOUNDARY_MIN_POINTS, boundaryProblem, type FacilityDto, type LatLng, type SectionDto } from '@cymis/schemas';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Component, lazy, Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
+import { useSession } from '@/auth/session';
 import { keys, useAllFacilities } from '@/api/queries';
 import { feedback } from '@/feedback';
 import { AdminOnly } from '@/features/dash/AdminOnly';
 import type { BlockMapHandle, TileState } from '@/features/dash/map/types';
 import { useLeaveGuard } from '@/features/dash/map/useLeaveGuard';
+import { dayTime } from '@/features/dash/format';
 import { Page } from '@/features/dash/Page';
+import { kv } from '@/lib/kv';
 import { useLayout, useTheme } from '@/theme/theme';
 import { breakpoints, fonts, radius } from '@/theme/tokens';
 import { Banner, Button, EmptyState, Icon, Skeleton, Txt, useConfirm, useToast } from '@/ui';
@@ -72,8 +75,25 @@ function neighboursOf(facility: FacilityDto, section: SectionDto) {
   return facility.sections.filter((s) => s.id !== section.id && s.yardId === section.yardId && s.boundary?.length).map((s) => ({ name: s.name, points: s.boundary! }));
 }
 
+interface ShapeDraft {
+  corners: LatLng[];
+  at: string;
+}
+
+/** A shape someone drew but has not saved, in case the page reloads. Per person and per block. */
+function readDraft(key: string): ShapeDraft | null {
+  try {
+    const raw = kv.get(key);
+    const draft = raw ? (JSON.parse(raw) as ShapeDraft) : null;
+    return Array.isArray(draft?.corners) ? draft : null;
+  } catch {
+    return null;
+  }
+}
+
 function Editor({ facility, section }: { facility: FacilityDto; section: SectionDto }) {
   const { c } = useTheme();
+  const userId = useSession((s) => s.user?.id);
   const { width } = useLayout();
   const qc = useQueryClient();
   const toast = useToast();
@@ -97,22 +117,39 @@ function Editor({ facility, section }: { facility: FacilityDto; section: Section
     setCorners(next);
   }, [corners]);
 
-  const dirty = JSON.stringify(corners) !== JSON.stringify(saved);
-  const problem = corners.length ? boundaryProblem(corners) : null;
+  const savedJson = JSON.stringify(saved);
+  const dirty = JSON.stringify(corners) !== savedJson;
+  // Under 3 corners is only unfinished. Red is for a shape that is actually wrong.
+  const tooFew = corners.length > 0 && corners.length < BOUNDARY_MIN_POINTS;
+  const problem = corners.length >= BOUNDARY_MIN_POINTS ? boundaryProblem(corners) : null;
+
+  // The draft: offered when the page opens, and kept up to date after that.
+  const draftKey = `cymis.shape-draft.${userId ?? 'anyone'}.${section.id}`;
+  const [offer, setOffer] = useState<ShapeDraft | null>(() => {
+    const draft = readDraft(draftKey);
+    return draft && JSON.stringify(draft.corners) !== savedJson ? draft : null;
+  });
+  const discardDraft = useCallback(() => kv.remove(draftKey), [draftKey]);
+  useEffect(() => {
+    // While the offer is open, an older draft is not overwritten by new clicks.
+    if (offer) return;
+    if (dirty) kv.set(draftKey, JSON.stringify({ corners, at: new Date().toISOString() } satisfies ShapeDraft));
+    else kv.remove(draftKey);
+  }, [corners, dirty, draftKey, offer]);
   const full = corners.length >= BOUNDARY_MAX_POINTS;
   const yard = facility.yards.find((y) => y.id === section.yardId);
 
-  const askToLeave = useCallback(
-    () =>
-      confirm({
-        title: 'Leave without saving?',
-        body: 'The corners you changed on this map will be lost.',
-        confirmLabel: 'Leave without saving',
-        cancelLabel: 'Keep editing',
-        danger: true,
-      }),
-    [confirm],
-  );
+  const askToLeave = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Leave without saving?',
+      body: 'The corners you changed on this map will be lost.',
+      confirmLabel: 'Leave without saving',
+      cancelLabel: 'Keep editing',
+      danger: true,
+    });
+    if (ok) discardDraft();
+    return ok;
+  }, [confirm, discardDraft]);
   useLeaveGuard(dirty, askToLeave);
 
   const leave = async () => {
@@ -124,6 +161,7 @@ function Editor({ facility, section }: { facility: FacilityDto; section: Section
     mutationFn: () => endpoints.updateSection(section.id, { boundary: corners.length ? corners : null }),
     onSuccess: () => {
       feedback.success();
+      discardDraft();
       void qc.invalidateQueries({ queryKey: keys.facilities() });
       toast({ text: corners.length ? `Shape saved for ${section.name}.` : `Shape removed from ${section.name}.`, tone: 'success' });
       router.replace(LIST as never);
@@ -174,7 +212,9 @@ function Editor({ facility, section }: { facility: FacilityDto; section: Section
         ? saved.length
           ? 'No corners. Saving removes the shape.'
           : `Add at least ${BOUNDARY_MIN_POINTS} corners.`
-        : `${corners.length} corners. The shape looks good.`}
+        : tooFew
+          ? `Add ${BOUNDARY_MIN_POINTS - corners.length} more ${BOUNDARY_MIN_POINTS - corners.length === 1 ? 'corner' : 'corners'} to make a shape.`
+          : `${corners.length} corners. The shape looks good.`}
     </Txt>
   );
 
@@ -236,6 +276,33 @@ function Editor({ facility, section }: { facility: FacilityDto; section: Section
             </Txt>
           ) : null}
 
+          {offer ? (
+            <View accessibilityRole="alert" style={{ gap: 10, padding: 14, borderRadius: radius.md, borderWidth: 1, borderColor: c.ruleStrong, backgroundColor: c.raised }}>
+              <Txt variant="bodySm">{`You have an unsaved shape for this block, with ${offer.corners.length} ${offer.corners.length === 1 ? 'corner' : 'corners'}. Last changed: ${dayTime(offer.at)}.`}</Txt>
+              <View style={{ gap: 6 }}>
+                <Button
+                  label="Restore your unsaved shape"
+                  block
+                  onPress={() => {
+                    feedback.select();
+                    change(offer.corners);
+                    setSelected(null);
+                    setOffer(null);
+                  }}
+                />
+                <Button
+                  label="Discard it"
+                  variant="quiet"
+                  block
+                  onPress={() => {
+                    discardDraft();
+                    setOffer(null);
+                  }}
+                />
+              </View>
+            </View>
+          ) : null}
+
           {status}
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -279,7 +346,7 @@ function Editor({ facility, section }: { facility: FacilityDto; section: Section
             variant={corners.length === 0 && saved.length ? 'danger-quiet' : 'primary'}
             size="lg"
             block
-            disabled={!dirty || !!problem || (corners.length === 0 && !saved.length)}
+            disabled={!dirty || !!problem || tooFew || (corners.length === 0 && !saved.length)}
             loading={save.isPending}
             onPress={() => save.mutate()}
           />

@@ -4,10 +4,11 @@ import { Platform } from 'react-native';
 const CONTROLS = 'a,button,[role="button"],[role="link"],[role="radio"]';
 
 /**
- * While there are unsaved changes, a click on the sidebar or the top bar asks
- * first. If the person says yes, the same click goes through. Ctrl and middle
- * clicks open a new tab and lose nothing, so they pass. Browser back and reload
- * are not covered: the browser's own prompt would be a native dialog.
+ * While there are unsaved changes, a click on the sidebar or the top bar, or
+ * Enter in the top bar's search, asks first. If the person says yes, it goes
+ * through. Ctrl and middle clicks open a new tab and lose nothing, so they pass.
+ * Browser back and reload are not asked about, since the browser's own prompt
+ * would be a native dialog. The map page keeps a draft to cover those.
  */
 export function useLeaveGuard(dirty: boolean, ask: () => Promise<boolean>) {
   const askRef = useRef(ask);
@@ -37,7 +38,25 @@ export function useLeaveGuard(dirty: boolean, ask: () => Promise<boolean>) {
         letThrough = false;
       });
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (letThrough || e.key !== 'Enter') return;
+      const input = e.target as HTMLElement | null;
+      const main = document.getElementById('main');
+      if (input?.tagName !== 'INPUT' || !main?.parentElement?.contains(input) || main.contains(input)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void askRef.current().then((ok) => {
+        if (!ok) return;
+        letThrough = true;
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        letThrough = false;
+      });
+    };
     document.addEventListener('click', onClick, true);
-    return () => document.removeEventListener('click', onClick, true);
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('keydown', onKey, true);
+    };
   }, [dirty]);
 }
