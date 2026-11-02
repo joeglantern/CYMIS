@@ -238,8 +238,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   return (
     <ConfirmContext.Provider value={value}>
       {children}
-      <Sheet open={!!req} onClose={() => close(false)} label={req?.title ?? 'Confirm'} width={440}>
-        {req ? (
+      {/* Mounted only when asked: on the web the newest layer is on top, so a confirm opens above any sheet. */}
+      {req ? (
+      <Sheet open onClose={() => close(false)} label={req.title} width={440}>
           <>
             <Txt variant="heading">{req.title}</Txt>
             {req.body ? (
@@ -261,8 +262,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               )}
             </View>
           </>
-        ) : null}
       </Sheet>
+      ) : null}
     </ConfirmContext.Provider>
   );
 }
