@@ -45,7 +45,7 @@ export const helpSections: HelpSection[] = [
         t: 'list',
         ordered: true,
         items: [
-          'Open your yard plan and tap **Scan containers**.',
+          'Open your yard plan and tap **Scan containers**. If you have a shift, its day and times show on the plan card. Shift times never stop a scan.',
           'Point the camera at the door so the painted number is inside the yellow corners. Hold steady.',
           'When the yellow corners close in and the phone buzzes, the number is locked. There is nothing to press.',
           'Check the number on the sheet, pick the box colour if it is not already picked, then tap **Scan next**. That saves the box and goes back to the camera.',
