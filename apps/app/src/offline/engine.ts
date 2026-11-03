@@ -119,6 +119,8 @@ export interface SaveScanInput {
   ocrConfidence?: number;
   colour?: ColourName;
   location?: GeoPoint;
+  /** Where the clerk says the box really is. Queued inside the scan's item, like every other field. */
+  foundLocation?: string;
   photo?: { uri: string; width: number; height: number };
   capturedAt: Date;
 }
@@ -138,6 +140,7 @@ export async function saveScan(input: SaveScanInput): Promise<LocalScan> {
     ...(input.ocrConfidence !== undefined ? { ocrConfidence: input.ocrConfidence } : {}),
     ...(input.colour ? { colourChosen: input.colour } : {}),
     ...(input.location ? { location: input.location } : {}),
+    ...(input.foundLocation ? { foundLocation: input.foundLocation } : {}),
   };
 
   let photoUri: string | null = null;

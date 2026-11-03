@@ -38,6 +38,14 @@ Scans land here when the phone and the server disagree on the number or colour, 
 - **Keep as read:** The clerk had it right.
 - **Reject:** The scan is wrong and should not count. A note is required.
 
+### When a location differs
+
+A clerk can also say a box is somewhere other than the list says. The row then reads "List says A01-02-3, found at A05-01-1", under **Location differs**.
+
+- **Update the list:** The list was wrong. The location on the list changes, phones get it, and the box counts as found.
+- **Box must move back:** The list stays. The box counts as found, and shows under **Must move back** so someone can see the job. A note is required.
+- **Reject:** The scan itself was wrong and stops counting. A note is required.
+
 ### Keyboard shortcuts
 
 | Key | Does |
@@ -47,6 +55,8 @@ Scans land here when the phone and the server disagree on the number or colour, 
 | `A` | Keep as read |
 | `C` | Correct |
 | `R` | Reject |
+| `U` | Update the list, when a location differs |
+| `M` | Box must move back, when a location differs |
 
 ## Closing and reports
 

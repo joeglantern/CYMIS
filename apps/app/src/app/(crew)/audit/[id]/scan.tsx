@@ -12,7 +12,7 @@ import { feedback } from '@/feedback';
 import { SyncButton } from '@/features/crew/CrewHeader';
 import { cachedAudit, checkNumber, localProgress, matchByPrefix, saveScan, useQueue } from '@/offline/engine';
 import { usePresenceHeartbeat } from '@/realtime/socket';
-import { ConfirmPanel, type Captured } from '@/scanner/ConfirmPanel';
+import { ConfirmPanel, type Captured, type SaveExtra } from '@/scanner/ConfirmPanel';
 import { GuideBox, type GuideState } from '@/scanner/GuideBox';
 import { useLiveLocation } from '@/scanner/location';
 import { nativeOcr, ocrAvailable, readText } from '@/scanner/ocr';
@@ -219,7 +219,7 @@ function Scanner() {
     await lockOn(number, 'MANUAL', undefined, photo);
   };
 
-  const save = async (colour: ColourName | undefined) => {
+  const save = async (colour: ColourName | undefined, extra?: SaveExtra) => {
     if (!captured || !auditId) return;
     setSaving(true);
     try {
@@ -231,11 +231,13 @@ function Scanner() {
         ...(captured.ocrRaw ? { ocrRaw: captured.ocrRaw } : {}),
         ...(colour ? { colour } : {}),
         ...(captured.location ? { location: captured.location } : {}),
+        ...(extra?.foundLocation ? { foundLocation: extra.foundLocation } : {}),
         ...(captured.photo ? { photo: captured.photo } : {}),
       });
       cooldown.current = { number: captured.check.number, until: Date.now() + COOLDOWN_MS };
       const left = expectedTotal ? Math.max(0, leftNow - (captured.check.result === 'matched' ? 1 : 0)) : null;
-      setSavedFlash(left !== null ? `Saved. ${left.toLocaleString('en-GB')} left` : 'Saved');
+      const said = extra?.flash ?? 'Saved.';
+      setSavedFlash(left !== null ? `${said} ${left.toLocaleString('en-GB')} left` : said);
       setTimeout(() => setSavedFlash(null), 1600);
       reset();
     } catch {

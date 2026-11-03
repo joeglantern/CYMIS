@@ -137,10 +137,10 @@ export function DataTable<T>({
 }
 
 /** Mono text for times, ids and counts in a cell. */
-export function MonoCell({ children, muted }: { children: ReactNode; muted?: boolean }) {
+export function MonoCell({ children, muted, lines = 1 }: { children: ReactNode; muted?: boolean; lines?: number }) {
   const { c } = useTheme();
   return (
-    <Txt numberOfLines={1} style={{ fontFamily: fonts.mono, fontSize: 13, lineHeight: 18, color: muted ? c.muted : c.ink2 }}>
+    <Txt numberOfLines={lines} style={{ fontFamily: fonts.mono, fontSize: 13, lineHeight: 18, color: muted ? c.muted : c.ink2 }}>
       {children}
     </Txt>
   );

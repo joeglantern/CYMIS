@@ -25,6 +25,8 @@ Cymis locks itself after 10 minutes in the background. Unlocking again takes one
 
 The last digit sits in a small box. That is the check digit. Yellow means the number passed the check. Red means one of the characters was misread, so look again or fix it.
 
+If the box is on the list but really somewhere else, tap **It is somewhere else** on the confirm sheet, enter where it is, then tap **Send for approval**. Your supervisor decides. If what you enter matches the list, it saves as a normal scan and tells you so. When nothing is wrong, **Scan next** is still all you need.
+
 Every scan saves a photo of the door and, if you allow it, where you were standing. See the photo guidance page for what a good photo looks like.
 
 ## What the sounds and buzzes mean

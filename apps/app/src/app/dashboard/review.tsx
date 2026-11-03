@@ -9,14 +9,17 @@ import { endpoints } from '@/api/endpoints';
 import { useAudits } from '@/api/queries';
 import { feedback } from '@/feedback';
 import { DataTable } from '@/features/dash/DataTable';
-import { dayTime, flagWords } from '@/features/dash/format';
+import { dayTime, flagWords, locationWords } from '@/features/dash/format';
 import { scanColumns } from '@/features/dash/scanColumns';
 import { useLayout, useTheme } from '@/theme/theme';
 import { floatShadow, fonts, radius } from '@/theme/tokens';
 import { Button, ContainerNumber, FilterPills, IconButton, Skeleton, TextField, Txt, useToast } from '@/ui';
 
-type Reason = 'all' | 'number' | 'colour' | 'check';
-const reasonFlag: Record<Exclude<Reason, 'all'>, string> = { number: 'NUMBER_MISMATCH', colour: 'COLOUR_MISMATCH', check: 'CHECK_DIGIT_FAILED' };
+type Flagged = 'number' | 'colour' | 'check' | 'location';
+/** "moveback" is not waiting for a decision: it lists boxes someone has been told to move. */
+type Reason = 'all' | Flagged | 'moveback';
+const reasonFlag: Record<Flagged, string> = { number: 'NUMBER_MISMATCH', colour: 'COLOUR_MISMATCH', check: 'CHECK_DIGIT_FAILED', location: 'LOCATION_MISMATCH' };
+const decisionWords: Partial<Record<ReviewScanBody['action'], string>> = { APPROVE: 'Kept as read', CORRECT: 'Corrected', REJECT: 'Rejected', UPDATE_LIST: 'List updated', MOVE_BACK: 'To move back' };
 
 export default function Review() {
   const params = useLocalSearchParams<{ scan?: string }>();
@@ -33,6 +36,13 @@ export default function Review() {
       refetchInterval: 30_000,
     })),
   });
+  const moveBacks = useQueries({
+    queries: audits.map((a) => ({
+      queryKey: ['scans', a.id, { moveBack: true }],
+      queryFn: () => endpoints.scans(a.id, { locationDecision: 'MOVE_BACK', limit: 200 }),
+      refetchInterval: 30_000,
+    })),
+  });
   const loading = active.isPending || lists.some((l) => l.isPending);
   const all = useMemo(
     () => lists.flatMap((l) => l.data?.items ?? []).sort((a, b) => (a.capturedAt < b.capturedAt ? 1 : -1)),
@@ -40,9 +50,15 @@ export default function Review() {
     [lists.map((l) => l.dataUpdatedAt).join(',')],
   );
 
+  const toMove = useMemo(
+    () => moveBacks.flatMap((l) => l.data?.items ?? []).sort((a, b) => (a.capturedAt < b.capturedAt ? 1 : -1)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [moveBacks.map((l) => l.dataUpdatedAt).join(',')],
+  );
+
   const [reason, setReason] = useState<Reason>('all');
-  const rows = reason === 'all' ? all : all.filter((s) => s.flags.includes(reasonFlag[reason] as ScanDto['flags'][number]));
-  const count = (r: Exclude<Reason, 'all'>) => all.filter((s) => s.flags.includes(reasonFlag[r] as ScanDto['flags'][number])).length;
+  const rows = reason === 'moveback' ? toMove : reason === 'all' ? all : all.filter((s) => s.flags.includes(reasonFlag[reason] as ScanDto['flags'][number]));
+  const count = (r: Flagged) => all.filter((s) => s.flags.includes(reasonFlag[r] as ScanDto['flags'][number])).length;
 
   // '' means the panel was closed on purpose; null means pick the first row.
   const [selectedId, setSelectedId] = useState<string | null>(params.scan ?? null);
@@ -59,8 +75,7 @@ export default function Review() {
       setSelectedId(next?.id ?? null);
       void qc.invalidateQueries({ queryKey: ['scans', scan.auditId] });
       void qc.invalidateQueries({ queryKey: ['audits'] });
-      const words = body.action === 'APPROVE' ? 'Kept as read' : body.action === 'CORRECT' ? 'Corrected' : 'Rejected';
-      toast({ text: `${words}: ${pretty(body.correctedNumber ?? scan.containerNumber)}`, tone: 'success' });
+      toast({ text: `${decisionWords[body.action]}: ${pretty(body.correctedNumber ?? scan.containerNumber)}`, tone: 'success' });
     },
     onError: (e) => toast({ text: (e as Error).message, tone: 'error' }),
   });
@@ -86,6 +101,8 @@ export default function Review() {
           { id: 'number', label: 'Number differs', count: count('number') },
           { id: 'colour', label: 'Colour differs', count: count('colour') },
           { id: 'check', label: 'Check digit', count: count('check') },
+          { id: 'location', label: 'Location differs', count: count('location') },
+          { id: 'moveback', label: 'Must move back', count: toMove.length },
         ]}
       />
       <DataTable
@@ -100,11 +117,15 @@ export default function Review() {
         }}
         loading={loading}
         error={(active.error as Error | null) ?? null}
-        empty={{ icon: 'check-circle', title: 'All clear', body: 'Flagged scans from live yard plans show up here. Nothing needs you right now.' }}
+        empty={
+          reason === 'moveback'
+            ? { icon: 'check-circle', title: 'Nothing to move', body: 'Boxes you say must move back show up here, so someone can see the job.' }
+            : { icon: 'check-circle', title: 'All clear', body: 'Flagged scans from live yard plans show up here. Nothing needs you right now.' }
+        }
       />
       {Platform.OS === 'web' && width >= 1000 && rows.length ? (
         <Txt variant="caption" tone="muted">
-          Keys: J and K move, A keeps as read, C corrects, R rejects.
+          {selected?.locationDecision === 'MOVE_BACK' ? 'Keys: J and K move.' : selected?.flags.includes('LOCATION_MISMATCH') ? 'Keys: J and K move, U updates the list, M says it must move back, R rejects.' : 'Keys: J and K move, A keeps as read, C corrects, R rejects.'}
         </Txt>
       ) : null}
     </View>
@@ -185,7 +206,11 @@ function Detail({
   const secondOk = !!second && isValidContainerNumber(second);
   const canCorrect = secondOk && second !== scan.containerNumber;
   const colourFix = scan.flags.includes('COLOUR_MISMATCH') && scan.colourSuggested ? scan.colourSuggested : null;
-  const title = scan.flags.includes('NUMBER_MISMATCH') ? 'Number differs' : scan.flags.includes('CHECK_DIGIT_FAILED') ? 'Check digit fails' : scan.flags.includes('COLOUR_MISMATCH') ? 'Colour differs' : 'Needs a look';
+  // The three plain choices apply while a location waits. A decided one is only there to read.
+  const locationWaiting = scan.flags.includes('LOCATION_MISMATCH') && scan.reviewStatus === 'PENDING' && !scan.locationDecision;
+  const movingBack = scan.locationDecision === 'MOVE_BACK';
+  const onlyLocation = scan.flags.length === 1 && scan.flags[0] === 'LOCATION_MISMATCH';
+  const title = movingBack ? 'Box must move back' : locationWaiting ? 'Location differs' : scan.flags.includes('NUMBER_MISMATCH') ? 'Number differs' : scan.flags.includes('CHECK_DIGIT_FAILED') ? 'Check digit fails' : scan.flags.includes('COLOUR_MISMATCH') ? 'Colour differs' : 'Needs a look';
 
   const reject = () => {
     if (!note.trim()) {
@@ -199,10 +224,18 @@ function Detail({
     else if (colourFix) onDecide({ action: 'CORRECT', correctedColour: colourFix, ...(note.trim() ? { note: note.trim() } : {}) });
   };
   const approve = () => onDecide({ action: 'APPROVE', ...(note.trim() ? { note: note.trim() } : {}) });
+  const updateList = () => onDecide({ action: 'UPDATE_LIST', ...(note.trim() ? { note: note.trim() } : {}) });
+  const moveBack = () => {
+    if (!note.trim()) {
+      toast({ text: 'Say where it goes back to in the note first.', tone: 'warning' });
+      return;
+    }
+    onDecide({ action: 'MOVE_BACK', note: note.trim() });
+  };
 
   // Keyboard shortcuts on the web. Ignored while typing in a field.
-  const handlers = useRef({ approve, correct, reject, onMove });
-  handlers.current = { approve, correct, reject, onMove };
+  const handlers = useRef({ approve, correct, reject, onMove, updateList, moveBack, locationWaiting, movingBack });
+  handlers.current = { approve, correct, reject, onMove, updateList, moveBack, locationWaiting, movingBack };
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const onKey = (e: KeyboardEvent) => {
@@ -210,11 +243,16 @@ function Detail({
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase();
-      if (k === 'j') handlers.current.onMove(1);
-      else if (k === 'k') handlers.current.onMove(-1);
-      else if (k === 'a') handlers.current.approve();
-      else if (k === 'c') handlers.current.correct();
-      else if (k === 'r') handlers.current.reject();
+      const h = handlers.current;
+      if (k === 'j') h.onMove(1);
+      else if (k === 'k') h.onMove(-1);
+      // A decided box has nothing left to press.
+      else if (h.movingBack) return;
+      else if (h.locationWaiting && k === 'u') h.updateList();
+      else if (h.locationWaiting && k === 'm') h.moveBack();
+      else if (!h.locationWaiting && k === 'a') h.approve();
+      else if (!h.locationWaiting && k === 'c') h.correct();
+      else if (k === 'r') h.reject();
       else return;
       e.preventDefault();
     };
@@ -257,6 +295,11 @@ function Detail({
       )}
 
       <View style={{ gap: 12 }}>
+        {scan.foundLocation && (locationWaiting || scan.locationDecision) ? (
+          <Fact label="Location">
+            <Txt style={{ fontFamily: fonts.monoMedium, fontSize: 14, lineHeight: 20 }}>{locationWords(scan)}</Txt>
+          </Fact>
+        ) : null}
         <Fact label="Phone read">
           <Txt style={{ fontFamily: fonts.monoMedium, fontSize: 14 }}>{pretty(scan.containerNumber)}</Txt>
           {!scan.checkDigitValid ? <Txt variant="bodySm" tone="dangerText">Check digit fails</Txt> : null}
@@ -283,9 +326,12 @@ function Detail({
             <Txt variant="bodySm">{`Clerk picked ${scan.colourChosen ?? 'nothing'}, photo looks ${scan.colourSuggested ?? 'unclear'}`}</Txt>
           </Fact>
         ) : null}
-        <Fact label="On the list">
-          <Txt variant="bodySm">{scan.result === 'MATCHED' ? 'Yes' : scan.result === 'UNEXPECTED' ? 'No, not on the list' : 'Scanned twice'}</Txt>
-        </Fact>
+        {/* A location row is on the list by definition, and its title already says why it is here. */}
+        {onlyLocation ? null : (
+          <Fact label="On the list">
+            <Txt variant="bodySm">{scan.result === 'MATCHED' ? 'Yes' : scan.result === 'UNEXPECTED' ? 'No, not on the list' : 'Scanned twice'}</Txt>
+          </Fact>
+        )}
         <Fact label="Scanned by">
           <Txt variant="bodySm">{`${scan.auditor.fullName}, ${dayTime(scan.capturedAt)}`}</Txt>
           <Txt variant="caption" tone="muted">
@@ -293,13 +339,32 @@ function Detail({
             {scan.location?.accuracyM ? `, location within ${Math.round(scan.location.accuracyM)} m` : ''}
           </Txt>
         </Fact>
-        <Fact label="Flags">
-          <Txt variant="bodySm">{scan.flags.map((f) => flagWords[f] ?? f).join(', ')}</Txt>
-        </Fact>
+        {onlyLocation ? null : (
+          <Fact label="Flags">
+            <Txt variant="bodySm">{scan.flags.map((f) => flagWords[f] ?? f).join(', ')}</Txt>
+          </Fact>
+        )}
       </View>
 
-      <TextField label="Note" placeholder="Needed if you reject the scan" value={note} onChangeText={setNote} maxLength={500} />
+      {movingBack ? (
+        <View style={{ gap: 6 }}>
+          <Txt variant="bodySmStrong">This box stays counted as found. It still needs moving.</Txt>
+          {scan.reviewNote ? <Txt variant="bodySm">{scan.reviewNote}</Txt> : null}
+          <Txt variant="caption" tone="muted">
+            {scan.reviewedBy ? `Decided by ${scan.reviewedBy.fullName}${scan.reviewedAt ? `, ${dayTime(scan.reviewedAt)}` : ''}` : ''}
+          </Txt>
+        </View>
+      ) : (
+        <TextField label="Note" placeholder={locationWaiting ? 'Needed to move back or reject' : 'Needed if you reject the scan'} value={note} onChangeText={setNote} maxLength={500} />
+      )}
 
+      {movingBack ? null : locationWaiting ? (
+        <View style={{ gap: 10 }}>
+          <Choice label="Update the list" primary busy={busy} onPress={updateList} detail="The list was wrong. Phones get the new location, and the box counts as found." />
+          <Choice label="Box must move back" busy={busy} onPress={moveBack} detail="The list stays. The box counts as found and shows under Must move back." />
+          <Choice label="Reject" danger busy={busy} onPress={reject} detail="The scan was simply wrong. It stops counting." />
+        </View>
+      ) : (
       <View style={{ gap: 8 }}>
         {canCorrect ? (
           <Button label={`Correct to ${pretty(second!)}`} icon="check" size="lg" block loading={busy} onPress={correct} />
@@ -315,9 +380,21 @@ function Detail({
           </View>
         </View>
       </View>
+      )}
     </View>
   );
   return scroll ? <ScrollView>{body}</ScrollView> : body;
+}
+
+function Choice({ label, detail, primary, danger, busy, onPress }: { label: string; detail: string; primary?: boolean; danger?: boolean; busy: boolean; onPress: () => void }) {
+  return (
+    <View style={{ gap: 4 }}>
+      <Button label={label} variant={primary ? 'primary' : danger ? 'danger-quiet' : 'secondary'} size="lg" block disabled={busy} onPress={onPress} />
+      <Txt variant="caption" tone="muted">
+        {detail}
+      </Txt>
+    </View>
+  );
 }
 
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {

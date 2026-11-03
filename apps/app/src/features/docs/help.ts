@@ -57,6 +57,10 @@ export const helpSections: HelpSection[] = [
       },
       {
         t: 'p',
+        text: 'If the box is on the list but really somewhere else, tap **It is somewhere else** on the confirm sheet, enter where it is, then tap **Send for approval**. Your supervisor decides. If what you enter matches the list, it saves as a normal scan and tells you so. When nothing is wrong, **Scan next** is still all you need.',
+      },
+      {
+        t: 'p',
         text: 'Every scan saves a photo of the door and, if you allow it, where you were standing. See the photo guidance page for what a good photo looks like.',
       },
     ],
@@ -208,6 +212,16 @@ export const helpSections: HelpSection[] = [
           { term: 'Reject', text: 'The scan is wrong and should not count. A note is required.' },
         ],
       },
+      { t: 'h', text: 'When a location differs' },
+      { t: 'p', text: 'A clerk can also say a box is somewhere other than the list says. The row then reads "List says A01-02-3, found at A05-01-1", under **Location differs**.' },
+      {
+        t: 'defs',
+        items: [
+          { term: 'Update the list', text: 'The list was wrong. The location on the list changes, phones get it, and the box counts as found.' },
+          { term: 'Box must move back', text: 'The list stays. The box counts as found, and shows under **Must move back** so someone can see the job. A note is required.' },
+          { term: 'Reject', text: 'The scan itself was wrong and stops counting. A note is required.' },
+        ],
+      },
       { t: 'h', text: 'Keyboard shortcuts' },
       {
         t: 'table',
@@ -218,6 +232,8 @@ export const helpSections: HelpSection[] = [
           ['`A`', 'Keep as read'],
           ['`C`', 'Correct'],
           ['`R`', 'Reject'],
+          ['`U`', 'Update the list, when a location differs'],
+          ['`M`', 'Box must move back, when a location differs'],
         ],
       },
     ],

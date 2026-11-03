@@ -1,16 +1,20 @@
 import type { ColourName, GeoPoint } from '@cymis/schemas';
 import { Image } from 'expo-image';
 import { useState } from 'react';
+import { sameLocation } from '@cymis/schemas';
 import { Pressable, ScrollView, View } from 'react-native';
 import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSession } from '@/auth/session';
+import { kv } from '@/lib/kv';
 import type { NumberCheck } from '@/offline/engine';
 import { feedback } from '@/feedback';
 import { ThemeProvider, useLayout, useTheme } from '@/theme/theme';
 import { floatShadow, fonts, radius } from '@/theme/tokens';
-import { Button, ContainerNumber, Icon, StatusChip, Txt } from '@/ui';
+import { Button, ContainerNumber, Icon, Sheet, StatusChip, Txt } from '@/ui';
 import { COLOURS } from './colours';
 import { formatPoint } from './location';
+import { LocationPad } from './LocationPad';
 
 export interface Captured {
   check: NumberCheck;
@@ -20,6 +24,12 @@ export interface Captured {
   ocrRaw?: string;
   ocrConfidence?: number;
   entryMethod: 'OCR' | 'OCR_CORRECTED' | 'MANUAL';
+}
+
+export interface SaveExtra {
+  foundLocation?: string;
+  /** What the flash says, in place of "Saved." */
+  flash?: string;
 }
 
 /**
@@ -35,7 +45,7 @@ export function ConfirmPanel({
 }: {
   captured: Captured;
   saving: boolean;
-  onSave: (colour: ColourName | undefined) => void;
+  onSave: (colour: ColourName | undefined, extra?: SaveExtra) => void;
   onFix: () => void;
   onDiscard: () => void;
 }) {
@@ -52,6 +62,9 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
   const insets = useSafeAreaInsets();
   const [colour, setColour] = useState<ColourName | undefined>();
   const [more, setMore] = useState(false);
+  const [askLocation, setAskLocation] = useState(false);
+  const userId = useSession((s) => s.user?.id);
+  const lastKey = `cymis.last-location.${userId ?? 'anyone'}`;
   // A rule above the buttons, only when details scroll out of sight behind them.
   const [listH, setListH] = useState(0);
   const [contentH, setContentH] = useState(0);
@@ -94,6 +107,15 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
       </Txt>
     </View>
   );
+
+  const listSays = check.result === 'matched' ? check.expected?.location : null;
+  const locationEntered = (location: string) => {
+    kv.set(lastKey, location);
+    setAskLocation(false);
+    // Saying the same place as the list is a plain scan: nothing for anyone to decide.
+    if (listSays && sameLocation(location, listSays)) onSave(colour, { flash: 'Matches the list. Saved.' });
+    else onSave(colour, { foundLocation: location, flash: 'Sent for approval.' });
+  };
 
   const shown = more ? COLOURS : COLOURS.slice(0, 6);
   const duplicate = check.result === 'duplicate';
@@ -231,10 +253,25 @@ function Panel({ captured, saving, onSave, onFix, onDiscard }: Parameters<typeof
         ) : (
           <>
             <Button label="Scan next" accessibilityLabel="Save this box and scan next" size="xl" block loading={saving} onPress={() => onSave(colour)} silent />
-            <Button label="Fix the number" variant="quiet" size="lg" block onPress={onFix} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {listSays ? (
+                <View style={{ flexGrow: 1, flexBasis: 170 }}>
+                  <Button label="It is somewhere else" variant="quiet" size="lg" block disabled={saving} onPress={() => setAskLocation(true)} />
+                </View>
+              ) : null}
+              <View style={{ flexGrow: 1, flexBasis: 170 }}>
+                <Button label="Fix the number" variant="quiet" size="lg" block onPress={onFix} />
+              </View>
+            </View>
           </>
         )}
       </View>
+
+      {listSays && askLocation ? (
+        <Sheet open onClose={() => setAskLocation(false)} label="Where is the box?" width={560}>
+          <LocationPad initial={kv.get(lastKey) ?? ''} listSays={listSays} onDone={locationEntered} onCancel={() => setAskLocation(false)} />
+        </Sheet>
+      ) : null}
     </Animated.View>
   );
 }

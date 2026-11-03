@@ -24,6 +24,8 @@ const GROUPS: { title: string; keys: [string, string][] }[] = [
       ['A', 'Approve'],
       ['C', 'Correct to the suggested number or colour'],
       ['R', 'Reject (needs a note)'],
+      ['U', 'Update the list, when a location differs'],
+      ['M', 'Box must move back, when a location differs (needs a note)'],
     ],
   },
 ];

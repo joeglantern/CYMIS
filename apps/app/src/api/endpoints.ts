@@ -71,7 +71,7 @@ export const endpoints = {
   syncScans: (scans: SyncScanItem[]) => api<SyncScansResponse>('/sync/scans', { method: 'POST', body: { scans } }),
   scans: (
     auditId: string,
-    q: { result?: ScanResult; flagged?: boolean; reviewStatus?: string; auditorId?: string; q?: string; cursor?: string; limit?: number } = {},
+    q: { result?: ScanResult; flagged?: boolean; reviewStatus?: string; locationDecision?: 'LIST_UPDATED' | 'MOVE_BACK'; auditorId?: string; q?: string; cursor?: string; limit?: number } = {},
   ) =>
     api<Page<ScanDto>>(`/audits/${auditId}/scans`, {
       query: { ...q, flagged: q.flagged === undefined ? undefined : String(q.flagged) } as Q,

@@ -74,7 +74,13 @@ export const flagWords: Record<string, string> = {
   NUMBER_MISMATCH: 'Number differs',
   COLOUR_MISMATCH: 'Colour differs',
   CHECK_DIGIT_FAILED: 'Check digit fails',
+  LOCATION_MISMATCH: 'Location differs',
 };
+
+/** The one line a supervisor needs for a box found somewhere else. It says only what is known. */
+export function locationWords(s: { listLocation: string | null; foundLocation: string | null }) {
+  return `List says ${s.listLocation ?? 'nothing'}, found at ${s.foundLocation ?? 'nowhere given'}`;
+}
 
 /** What an area is, in the words people use. */
 export function areaWords(s: { kind: SectionKind; locationCodes: string[] }) {

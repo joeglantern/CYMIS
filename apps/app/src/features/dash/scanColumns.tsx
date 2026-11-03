@@ -4,7 +4,7 @@ import { ContainerNumber, StatusChip, Txt, type BucketKey } from '@/ui';
 import { scanBucket } from './AuditRows';
 import type { Column } from './DataTable';
 import { MonoCell, TextCell } from './DataTable';
-import { flagWords, time } from './format';
+import { flagWords, locationWords, time } from './format';
 
 const colourDot: Record<string, string> = {
   blue: '#2d4bb9',
@@ -41,7 +41,7 @@ export const scanColumns: Column<ScanDto>[] = [
     key: 'flags',
     label: 'Why',
     flex: 1,
-    render: (s) => <TextCell muted>{s.flags.map((f) => flagWords[f] ?? f).join(', ') || (s.result === 'DUPLICATE' ? 'Already scanned' : '')}</TextCell>,
+    render: (s) => s.flags.includes('LOCATION_MISMATCH') ? <MonoCell muted lines={2}>{locationWords(s)}</MonoCell> : <TextCell muted>{s.flags.map((f) => flagWords[f] ?? f).join(', ') || (s.result === 'DUPLICATE' ? 'Already scanned' : '')}</TextCell>,
   },
   { key: 'colour', label: 'Colour', width: 110, render: (s) => <ColourCell name={s.colourChosen ?? s.colourSuggested} /> },
   { key: 'by', label: 'Scanned by', flex: 1, render: (s) => <TextCell>{s.auditor.fullName}</TextCell> },
