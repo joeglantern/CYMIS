@@ -15,6 +15,7 @@ import { loggerOptions } from './lib/logger.js';
 import { appRoutes } from './modules/app/routes.js';
 import { adminRoutes } from './modules/admin/routes.js';
 import { auditRoutes } from './modules/audits/routes.js';
+import { shiftRoutes } from './modules/shifts/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
 import { containerRoutes } from './modules/containers/routes.js';
 import { facilityRoutes } from './modules/facilities/routes.js';
@@ -104,6 +105,7 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
       await api.register(userRoutes, { prefix: '/users', ctx });
       await api.register(facilityRoutes, { ctx });
       await api.register(auditRoutes, { prefix: '/audits', ctx });
+      await api.register(shiftRoutes, { prefix: '/shifts', ctx });
       await api.register(importRoutes, { ctx });
       await api.register(scanRoutes, { ctx });
       await api.register(photoRoutes, { prefix: '/photos', ctx });

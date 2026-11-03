@@ -1,5 +1,5 @@
 import { isValidContainerNumber, normalise } from '@cymis/iso6346';
-import type { ColumnMap, ImportField, RowError } from '@cymis/schemas';
+import { locationInCodes, type ColumnMap, type ImportField, type RowError } from '@cymis/schemas';
 import type { ParsedRow } from './parser.js';
 
 /** One container ready to go into the expected list. */
@@ -67,7 +67,6 @@ export function checkRows(input: CanonicalRow[], locationCodes: string[]): Check
   let invalidCount = 0;
   let duplicateCount = 0;
   let outOfSectionCount = 0;
-  const codes = locationCodes.map((c) => c.toUpperCase());
 
   const addError = (e: RowError) => {
     if (errors.length < MAX_STORED_ERRORS) errors.push(e);
@@ -95,12 +94,9 @@ export function checkRows(input: CanonicalRow[], locationCodes: string[]): Check
     }
 
     const location = clean(r.fields.location, 60);
-    if (codes.length > 0 && location) {
-      const loc = location.toUpperCase();
-      if (!codes.some((c) => loc.startsWith(c))) {
-        outOfSectionCount++;
-        continue;
-      }
+    if (location && !locationInCodes(location, locationCodes)) {
+      outOfSectionCount++;
+      continue;
     }
 
     seen.add(number);

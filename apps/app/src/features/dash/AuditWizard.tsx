@@ -1,4 +1,4 @@
-import { IMPORT_FIELDS, type ColumnMap, type ImportDto, type ImportField, type ImportMode } from '@cymis/schemas';
+import { IMPORT_FIELDS, type AuditDto, type ColumnMap, type ImportDto, type ImportField, type ImportMode } from '@cymis/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
 import { router } from 'expo-router';
@@ -13,6 +13,7 @@ import { fonts, radius } from '@/theme/tokens';
 import { Banner, Button, EmptyState, FilterPills, Icon, Skeleton, StatusChip, TextField, Txt, fmt, useConfirm, useToast } from '@/ui';
 import { areaWords } from './format';
 import { Page, PageHeader } from './Page';
+import { fromShiftWords, shiftLosses } from './shiftPlan';
 import { CheckRow, Select } from './Select';
 
 const fieldWords: Record<ImportField, { label: string; hint: string }> = {
@@ -123,11 +124,11 @@ export function AuditWizard({ auditId }: { auditId?: string }) {
       </Step>
 
       <Step n={5} title="Clerks" state={at > 4 ? 'done' : at === 4 ? 'now' : 'later'} summary={audit.data ? crewSummary(audit.data.assignees.map((a) => a.fullName)) : undefined}>
-        {auditId && step === 'crew' ? <CrewStep auditId={auditId} current={audit.data?.assignees.map((a) => a.id) ?? []} onDone={() => setCrewDone(true)} /> : null}
+        {auditId && step === 'crew' ? <CrewStep auditId={auditId} plan={audit.data} current={audit.data?.assignees.map((a) => a.id) ?? []} onDone={() => setCrewDone(true)} /> : null}
       </Step>
 
       <Step n={6} title="Start" state={at === 5 ? 'now' : 'later'}>
-        {auditId && step === 'start' && audit.data ? <StartStep auditId={auditId} expected={audit.data.counts.expected} crew={audit.data.assignees.length} onBack={() => setCrewDone(false)} /> : null}
+        {auditId && step === 'start' && audit.data ? <StartStep auditId={auditId} expected={audit.data.counts.expected} crew={audit.data.assignees.length} shifts={(audit.data.shifts ?? []).length} onBack={() => setCrewDone(false)} /> : null}
       </Step>
     </Page>
   );
@@ -589,9 +590,10 @@ function CheckStep({ imp, onDone, onRemap }: { imp: ImportDto; onDone: () => voi
 
 /* Step 5 */
 
-function CrewStep({ auditId, current, onDone }: { auditId: string; current: string[]; onDone: () => void }) {
+function CrewStep({ auditId, plan, current, onDone }: { auditId: string; plan: AuditDto | undefined; current: string[]; onDone: () => void }) {
   const qc = useQueryClient();
   const toast = useToast();
+  const confirm = useConfirm();
   const users = useUsers({ role: 'AUDITOR', active: true });
   const [picked, setPicked] = useState<string[]>(current);
   const [q, setQ] = useState('');
@@ -601,10 +603,27 @@ function CrewStep({ auditId, current, onDone }: { auditId: string; current: stri
     mutationFn: () => endpoints.setAssignees(auditId, picked),
     onSuccess: (a) => {
       qc.setQueryData(keys.audit(auditId), a);
+      void qc.invalidateQueries({ queryKey: ['shifts'] });
       onDone();
     },
     onError: (e) => toast({ text: (e as Error).message, tone: 'error' }),
   });
+
+  const submit = async () => {
+    // Off the plan means off its shifts. Say so first, with the shifts named.
+    const losses = plan ? shiftLosses(plan, picked) : [];
+    if (losses.length) {
+      const ok = await confirm({
+        title: losses.length === 1 ? `Take ${losses[0]!.name} off their shifts too?` : `Take ${losses.length} people off their shifts too?`,
+        body: `${losses.map((l) => `${l.name}: ${l.shifts}`).join('. ')}. Coming off this yard plan also takes them off these shifts. Scans they have already taken still arrive.`,
+        confirmLabel: 'Take them off',
+        cancelLabel: 'Go back',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+    save.mutate();
+  };
 
   return (
     <View style={{ gap: 14 }}>
@@ -622,21 +641,21 @@ function CrewStep({ auditId, current, onDone }: { auditId: string; current: stri
             <CheckRow
               key={u.id}
               label={u.fullName}
-              detail={u.staffId}
+              detail={plan && fromShiftWords(plan, u.id) ? `${u.staffId}, ${fromShiftWords(plan, u.id)}` : u.staffId}
               checked={picked.includes(u.id)}
               onChange={(v) => setPicked((p) => (v ? [...p, u.id] : p.filter((x) => x !== u.id)))}
             />
           ))}
         </View>
       )}
-      <Button label={picked.length ? `Give it to ${picked.length} ${picked.length === 1 ? 'person' : 'people'}` : 'Pick at least one person'} size="lg" disabled={!picked.length} loading={save.isPending} onPress={() => save.mutate()} />
+      <Button label={picked.length ? `Give it to ${picked.length} ${picked.length === 1 ? 'person' : 'people'}` : 'Pick at least one person'} size="lg" disabled={!picked.length} loading={save.isPending} onPress={submit} />
     </View>
   );
 }
 
 /* Step 6 */
 
-function StartStep({ auditId, expected, crew, onBack }: { auditId: string; expected: number; crew: number; onBack: () => void }) {
+function StartStep({ auditId, expected, crew, shifts, onBack }: { auditId: string; expected: number; crew: number; shifts: number; onBack: () => void }) {
   const toast = useToast();
   const confirm = useConfirm();
   const qc = useQueryClient();
@@ -669,6 +688,16 @@ function StartStep({ auditId, expected, crew, onBack }: { auditId: string; expec
           }}
         />
         <Button label="Change the clerks" variant="secondary" size="lg" onPress={onBack} />
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <Txt variant="bodySm" tone="muted">
+          {shifts ? `${count(shifts, 'shift')} planned.` : 'Working in shifts? Plan them now, or after you start.'}
+        </Txt>
+        <Button
+          label={shifts ? 'See the shifts' : 'Plan shifts'}
+          variant="quiet"
+          onPress={() => router.push((shifts ? `/dashboard/shifts?plan=${auditId}` : `/dashboard/shifts?shift=new&plan=${auditId}`) as never)}
+        />
       </View>
     </View>
   );

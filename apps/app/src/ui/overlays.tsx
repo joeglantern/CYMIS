@@ -128,6 +128,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 /* Sheet: bottom sheet on phones, centred card on tablets and desktop. */
 
+const openSheets: object[] = [];
+
 export function Sheet({
   open,
   onClose,
@@ -147,17 +149,35 @@ export function Sheet({
   const { tablet } = useLayout();
   const insets = useSafeAreaInsets();
 
+  // Escape closes the top sheet only, so cancelling a confirm leaves the sheet under it open.
+  const me = useRef({}).current;
+  useEffect(() => {
+    if (!open) return;
+    openSheets.push(me);
+    return () => {
+      openSheets.splice(openSheets.indexOf(me), 1);
+    };
+  }, [open, me]);
+
   useEffect(() => {
     if (!open || Platform.OS !== 'web' || !dismissable) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && openSheets[openSheets.length - 1] === me) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose, dismissable]);
+  }, [open, onClose, dismissable, me]);
 
   return (
-    <Modal visible={open} transparent animationType="none" onRequestClose={dismissable ? onClose : () => undefined} statusBarTranslucent>
+    <Modal
+      visible={open}
+      transparent
+      animationType="none"
+      // Android's back button lands here. On the web this also fires on Escape's keyup, after the key handler above
+      // has closed the top sheet, so it would close the next one down as well.
+      onRequestClose={dismissable && Platform.OS !== 'web' ? onClose : () => undefined}
+      statusBarTranslucent
+    >
       {open ? (
         <View style={{ flex: 1, justifyContent: tablet ? 'center' : 'flex-end', alignItems: 'center' }}>
           <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(140)} style={{ position: 'absolute', inset: 0, backgroundColor: c.scrim }}>
@@ -213,25 +233,42 @@ export interface ConfirmInput {
   danger?: boolean;
 }
 
+/** Two real choices. Escape, tapping away and Cancel all give null, and null means do nothing. */
+export interface ChoiceInput {
+  title: string;
+  body?: string;
+  confirmLabel: string;
+  altLabel: string;
+  cancelLabel?: string;
+}
+export type Choice = 'confirm' | 'alt' | null;
+
 const ConfirmContext = createContext<(c: ConfirmInput) => Promise<boolean>>(async () => false);
+const ChoiceContext = createContext<(c: ChoiceInput) => Promise<Choice>>(async () => null);
 
 export function useConfirm() {
   return useContext(ConfirmContext);
 }
 
+export function useChoice() {
+  return useContext(ChoiceContext);
+}
+
 export function ConfirmProvider({ children }: { children: ReactNode }) {
-  const [req, setReq] = useState<(ConfirmInput & { resolve: (v: boolean) => void }) | null>(null);
+  const [req, setReq] = useState<(ConfirmInput & { altLabel?: string; resolve: (v: Choice) => void }) | null>(null);
 
   const ask = useCallback(
     (input: ConfirmInput) =>
       new Promise<boolean>((resolve) => {
         if (input.danger) feedback.select();
-        setReq({ ...input, resolve });
+        setReq({ ...input, resolve: (v) => resolve(v === 'confirm') });
       }),
     [],
   );
 
-  const close = (v: boolean) => {
+  const choose = useCallback((input: ChoiceInput) => new Promise<Choice>((resolve) => setReq({ ...input, resolve })), []);
+
+  const close = (v: Choice) => {
     req?.resolve(v);
     setReq(null);
   };
@@ -240,10 +277,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
   return (
     <ConfirmContext.Provider value={value}>
-      {children}
+      <ChoiceContext.Provider value={choose}>{children}</ChoiceContext.Provider>
       {/* Mounted only when asked: on the web the newest layer is on top, so a confirm opens above any sheet. */}
       {req ? (
-      <Sheet open onClose={() => close(false)} label={req.title} width={440}>
+      <Sheet open onClose={() => close(null)} label={req.title} width={440}>
           <>
             <Txt variant="heading">{req.title}</Txt>
             {req.body ? (
@@ -254,13 +291,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <View style={{ gap: 8, marginTop: 6 }}>
               {req.danger ? (
                 <>
-                  <Button label={req.cancelLabel ?? 'Keep it'} size="lg" block onPress={() => close(false)} />
-                  <Button label={req.confirmLabel} variant="danger-quiet" size="lg" block onPress={() => close(true)} />
+                  <Button label={req.cancelLabel ?? 'Keep it'} size="lg" block onPress={() => close(null)} />
+                  <Button label={req.confirmLabel} variant="danger-quiet" size="lg" block onPress={() => close('confirm')} />
                 </>
               ) : (
                 <>
-                  <Button label={req.confirmLabel} size="lg" block onPress={() => close(true)} />
-                  <Button label={req.cancelLabel ?? 'Cancel'} variant="quiet" size="lg" block onPress={() => close(false)} />
+                  <Button label={req.confirmLabel} size="lg" block onPress={() => close('confirm')} />
+                  {req.altLabel ? <Button label={req.altLabel} variant="secondary" size="lg" block onPress={() => close('alt')} /> : null}
+                  <Button label={req.cancelLabel ?? 'Cancel'} variant="quiet" size="lg" block onPress={() => close(null)} />
                 </>
               )}
             </View>

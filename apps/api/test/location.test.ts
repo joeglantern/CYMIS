@@ -259,6 +259,25 @@ describe('the other actions are unchanged', () => {
     expect((await t.ctx.db.expectedContainer.findFirstOrThrow({ where: { auditId: id, containerNumber: VALID.a } })).location).toBe(LIST);
   });
 
+  it('keep expected = found + missing + (mismatched - offListReview) through every decision', async () => {
+    const holds = async (auditId: string) => {
+      const k = await counts(auditId);
+      expect(k.expected).toBe(k.found + k.missing + (k.mismatched - k.offListReview));
+    };
+    for (const decide of [
+      { action: 'UPDATE_LIST' },
+      { action: 'MOVE_BACK', note: 'Goes back to A01' },
+      { action: 'REJECT', note: 'Misread' },
+    ]) {
+      const auditId = await plan();
+      await holds(auditId);
+      const r = await sync(auditId, VALID.a, { foundLocation: FOUND });
+      await holds(auditId);
+      expect((await review(r.scan?.id ?? r.id, decide)).statusCode).toBe(200);
+      await holds(auditId);
+    }
+  });
+
   it('a clerk cannot decide', async () => {
     const id = await plan();
     const { scan } = await sync(id, VALID.a, { foundLocation: FOUND });

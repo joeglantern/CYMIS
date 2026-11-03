@@ -1,7 +1,14 @@
-import type { LatLng } from '@cymis/schemas';
+import type { LatLng, MapBlock, ScanPoint } from '@cymis/schemas';
 import type { RefObject } from 'react';
 
 export type TileState = 'loading' | 'ok' | 'failed';
+
+export interface LiveMapProps {
+  blocks: MapBlock[];
+  points: ScanPoint[];
+  decisionColour: string;
+  onTileState: (state: TileState) => void;
+}
 
 export interface BlockMapHandle {
   /** The middle of what the map shows, for adding a corner from the keyboard. */

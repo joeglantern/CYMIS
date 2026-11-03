@@ -7,6 +7,8 @@ import { useSession } from '@/auth/session';
 import { SyncButton, useSyncState } from '@/features/crew/CrewHeader';
 import { ScanRow } from '@/features/crew/ScanRow';
 import { localProgress, prepareAudit, recentScans, useQueue } from '@/offline/engine';
+import { clerkCounts } from '@/features/dash/planCounts';
+import { LiveBays } from '@/features/dash/YardMap';
 import { useAuditRoom } from '@/realtime/socket';
 import { useLayout, useTheme } from '@/theme/theme';
 import { fonts, type } from '@/theme/tokens';
@@ -32,9 +34,7 @@ export default function AuditHome() {
   const a = audit.data;
   // The server count includes everyone's scans. Fall back to this phone's count with no signal.
   const k = a?.counts;
-  const expected = k?.expected || local.data?.expected || 0;
-  const found = Math.max(k?.found ?? 0, local.data?.matched ?? 0);
-  const left = Math.max(0, expected - found);
+  const { expected, found, left } = clerkCounts(k, local.data);
   const shown = (recent.data ?? []).length;
   const closed = a?.status === 'CLOSED' || a?.status === 'CANCELLED';
   const draft = a?.status === 'DRAFT';
@@ -85,7 +85,7 @@ export default function AuditHome() {
               </Txt>
             </View>
 
-            {expected > 0 && left === 0 && !closed ? (
+            {expected > 0 && found >= expected && !closed ? (
               <Animated.View
                 entering={FadeInDown.duration(420)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16, backgroundColor: c.paper2, borderWidth: 1, borderColor: c.rule }}
@@ -143,6 +143,19 @@ export default function AuditHome() {
                   <Button label="See all on this phone" variant="quiet" onPress={() => router.push('/history')} style={{ marginTop: 6, marginLeft: -12 }} />
                 ) : null}
               </View>
+            </View>
+
+            <View style={{ gap: 10 }} accessibilityLabel="Bay grid">
+              <LiveBays
+                auditId={a.id}
+                live={a.status === 'ACTIVE'}
+                compact
+                title={
+                  <Txt variant="label" tone="muted" caps accessibilityRole="header">
+                    Bay grid
+                  </Txt>
+                }
+              />
             </View>
           </>
         )}

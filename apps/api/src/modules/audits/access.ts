@@ -49,3 +49,19 @@ export async function canSeeAudit(ctx: AppContext, auditId: string, principal: P
   });
   return assigned !== null;
 }
+
+/**
+ * Records that these people have just lost a plan. Call it in the transaction
+ * that removes their assignment rows. This grants nothing: canSeeAudit never
+ * reads it, and only the scan sync uses it, for work captured before now.
+ */
+export async function recordAccessEnded(tx: Prisma.TransactionClient, auditId: string, userIds: string[]): Promise<void> {
+  const endedAt = new Date();
+  for (const userId of userIds) {
+    await tx.auditAccessEnded.upsert({
+      where: { auditId_userId: { auditId, userId } },
+      create: { auditId, userId, endedAt },
+      update: { endedAt },
+    });
+  }
+}

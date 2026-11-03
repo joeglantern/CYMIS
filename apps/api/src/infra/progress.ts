@@ -12,6 +12,7 @@ interface CountRow {
   found: bigint;
   unexpected: bigint;
   mismatched: bigint;
+  off_list_review: bigint;
   matched_any: bigint;
   duplicates: bigint;
   scans: bigint;
@@ -25,6 +26,8 @@ interface CountRow {
  * - found:      primary scans that matched the list and are not waiting for review.
  * - unexpected: primary scans not on the list and not waiting for review.
  * - missing:    expected containers with no primary scan at all.
+ * So expected = found + missing + (mismatched - offListReview). Screens must use
+ * missing for what is left: expected minus found counts boxes in review twice.
  */
 export async function computeCounts(db: Db, auditId: string): Promise<AuditCounts> {
   const rows = await db.$queryRaw<CountRow[]>(Prisma.sql`
@@ -34,6 +37,7 @@ export async function computeCounts(db: Db, auditId: string): Promise<AuditCount
       count(*) FILTER (WHERE s.result <> 'DUPLICATE' AND s."reviewStatus" NOT IN ('REJECTED', 'PENDING') AND s.result = 'MATCHED') AS found,
       count(*) FILTER (WHERE s.result <> 'DUPLICATE' AND s."reviewStatus" NOT IN ('REJECTED', 'PENDING') AND s.result = 'UNEXPECTED') AS unexpected,
       count(*) FILTER (WHERE s.result <> 'DUPLICATE' AND s."reviewStatus" = 'PENDING') AS mismatched,
+      count(*) FILTER (WHERE s.result = 'UNEXPECTED' AND s."reviewStatus" = 'PENDING') AS off_list_review,
       count(*) FILTER (WHERE s.result = 'MATCHED' AND s."reviewStatus" <> 'REJECTED') AS matched_any,
       count(*) FILTER (WHERE s.result = 'DUPLICATE') AS duplicates,
       count(*) AS scans,
@@ -43,7 +47,7 @@ export async function computeCounts(db: Db, auditId: string): Promise<AuditCount
   `);
   const r = rows[0];
   if (!r) {
-    return { expected: 0, found: 0, missing: 0, unexpected: 0, mismatched: 0, duplicates: 0, scans: 0, pendingReview: 0 };
+    return { expected: 0, found: 0, missing: 0, unexpected: 0, mismatched: 0, offListReview: 0, duplicates: 0, scans: 0, pendingReview: 0 };
   }
   const expected = Number(r.expected);
   return {
@@ -52,6 +56,7 @@ export async function computeCounts(db: Db, auditId: string): Promise<AuditCount
     missing: Math.max(0, expected - Number(r.matched_any)),
     unexpected: Number(r.unexpected),
     mismatched: Number(r.mismatched),
+    offListReview: Number(r.off_list_review),
     duplicates: Number(r.duplicates),
     scans: Number(r.scans),
     pendingReview: Number(r.pending_review),
@@ -70,7 +75,8 @@ export class ProgressService {
 
   async get(auditId: string): Promise<AuditCounts> {
     const cached = await this.redis.get(cacheKey(auditId));
-    if (cached) return JSON.parse(cached) as AuditCounts;
+    // A count cached by the version before this field lasts seconds, but must not fail a response.
+    if (cached) return { offListReview: 0, ...(JSON.parse(cached) as Omit<AuditCounts, 'offListReview'>) };
     const counts = await computeCounts(this.db, auditId);
     await this.redis.set(cacheKey(auditId), JSON.stringify(counts), 'EX', CACHE_TTL_SECONDS);
     return counts;

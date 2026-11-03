@@ -65,9 +65,13 @@ async function locationDiffers(tx: Tx, result: ScanResult, expectedContainerId: 
   return !!row?.location && !sameLocation(row.location, foundLocation);
 }
 
+const SCANNING_NOW_MS = 2 * 60 * 1000;
+
 interface AuditCheck {
   audit: Audit | null;
   allowed: boolean;
+  /** When this person last lost the plan, if they have and have not been given it back. */
+  accessEndedAt: Date | null;
 }
 
 function statusProblem(audit: Audit, capturedAt: Date): { code: string; reason: string } | null {
@@ -101,8 +105,10 @@ async function syncOne(
     created: false,
   });
 
-  if (!check.audit || !check.allowed) return reject('audit_not_found', 'This yard plan is not available to you');
   const capturedAt = new Date(item.capturedAt);
+  // Work done before someone lost the plan still arrives, however late the phone finds signal.
+  const doneBeforeLosingIt = check.accessEndedAt !== null && capturedAt <= check.accessEndedAt;
+  if (!check.audit || (!check.allowed && !doneBeforeLosingIt)) return reject('audit_not_found', 'This yard plan is not available to you');
   if (capturedAt.getTime() - Date.now() > MAX_FUTURE_MS) {
     return reject('bad_clock', 'The phone clock is wrong. Fix the date and time, then sync again');
   }
@@ -188,19 +194,25 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
   const principal: Principal = { kind: 'user', user };
   for (const auditId of new Set(items.map((i) => i.auditId))) {
     const audit = await ctx.db.audit.findUnique({ where: { id: auditId } });
-    checks.set(auditId, { audit, allowed: audit ? await canSeeAudit(ctx, auditId, principal) : false });
+    const allowed = audit ? await canSeeAudit(ctx, auditId, principal) : false;
+    const ended =
+      audit && !allowed ? await ctx.db.auditAccessEnded.findUnique({ where: { auditId_userId: { auditId, userId: user.id } }, select: { endedAt: true } }) : null;
+    checks.set(auditId, { audit, allowed, accessEndedAt: ended?.endedAt ?? null });
   }
 
   const results: SyncResultItem[] = [];
   const touched = new Set<string>();
+  const scanningNow = new Set<string>();
   for (const item of items) {
     const { result, created } = await syncOne(ctx, user, item, checks.get(item.auditId)!);
     results.push(result);
     if (created && result.scan) {
       touched.add(item.auditId);
-      ctx.broadcaster.toAudit(item.auditId, 'scan:created', { auditId: item.auditId, scan: result.scan });
+      // A phone catching up on old scans is not someone scanning now.
+      if (Date.now() - new Date(item.capturedAt).getTime() <= SCANNING_NOW_MS) scanningNow.add(item.auditId);
+      ctx.broadcaster.toAuditStaff(item.auditId, 'scan:created', { auditId: item.auditId, scan: result.scan });
       if (result.scan.flags.length > 0) {
-        ctx.broadcaster.toAudit(item.auditId, 'flag:raised', {
+        ctx.broadcaster.toAuditStaff(item.auditId, 'flag:raised', {
           auditId: item.auditId,
           scanId: result.scan.id,
           flags: result.scan.flags,
@@ -211,7 +223,7 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
 
   for (const auditId of touched) {
     ctx.progress.schedule(auditId);
-    await ctx.presence.touch(auditId, { id: user.id, fullName: user.fullName });
+    if (scanningNow.has(auditId)) await ctx.presence.touch(auditId, { id: user.id, fullName: user.fullName });
   }
   return { results, serverTime: new Date().toISOString() };
 }
@@ -219,6 +231,8 @@ export async function syncScans(ctx: AppContext, user: SyncUser, items: SyncScan
 export async function listScans(ctx: AppContext, principal: Principal, auditId: string, q: ScanListQuery) {
   await loadAuditFor(ctx, auditId, principal, { scopes: ['results:read'] });
   const cursor = decodeCursor(q.cursor);
+  // A clerk sees their own scans. Who else scanned what, and where, stays with staff.
+  const onlyOwn = principal.kind === 'user' && principal.user.role === 'AUDITOR' ? principal.user.id : null;
   const where: Prisma.ScanWhereInput = {
     auditId,
     ...(q.result ? { result: q.result } : {}),
@@ -226,7 +240,7 @@ export async function listScans(ctx: AppContext, principal: Principal, auditId: 
     ...(q.flagged === false ? { flags: { isEmpty: true } } : {}),
     ...(q.reviewStatus ? { reviewStatus: q.reviewStatus } : {}),
     ...(q.locationDecision ? { locationDecision: q.locationDecision } : {}),
-    ...(q.auditorId ? { auditorId: q.auditorId } : {}),
+    ...(onlyOwn ? { auditorId: onlyOwn } : q.auditorId ? { auditorId: q.auditorId } : {}),
     ...(q.q ? { containerNumber: { startsWith: q.q } } : {}),
   };
   const rows = await ctx.db.scan.findMany({
@@ -244,6 +258,7 @@ export async function getScan(ctx: AppContext, principal: Principal, scanId: str
   const scan = await ctx.db.scan.findUnique({ where: { id: scanId }, include: scanInclude });
   if (!scan) throw new NotFoundError('Scan');
   await loadAuditFor(ctx, scan.auditId, principal, { scopes: ['results:read'] });
+  if (principal.kind === 'user' && principal.user.role === 'AUDITOR' && scan.auditorId !== principal.user.id) throw new NotFoundError('Scan');
   return toScanDto(scan);
 }
 
@@ -425,7 +440,7 @@ export async function reviewScan(
 
   for (const id of changed) {
     const dto = await loadScanDto(ctx, id);
-    if (dto) ctx.broadcaster.toAudit(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
+    if (dto) ctx.broadcaster.toAuditStaff(scan.auditId, 'scan:updated', { auditId: scan.auditId, scan: dto });
   }
   ctx.progress.schedule(scan.auditId);
   if (newListVersion !== null) ctx.broadcaster.toAudit(scan.auditId, 'expected:updated', { auditId: scan.auditId, listVersion: newListVersion });

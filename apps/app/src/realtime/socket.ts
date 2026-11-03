@@ -6,6 +6,9 @@ import { API_URL } from '@/api/http';
 import { hasAccessToken, useSession } from '@/auth/session';
 import { keys } from '@/api/queries';
 
+/** A burst of scans refreshes the bay grid and map at most this often, however fast the news comes. */
+const MAP_REFRESH_MS = 4_000;
+
 // Sockets only carry news. Scans travel over REST so offline sync and live
 // updates never fight. One socket per app, joined to the audits on screen.
 
@@ -67,6 +70,16 @@ export function useAuditRoom(auditId: string | null | undefined, qc: QueryClient
     if (!auditId) return;
     const s = connect();
 
+    let refreshing: ReturnType<typeof setTimeout> | null = null;
+    const refreshMaps = () => {
+      if (refreshing) return;
+      refreshing = setTimeout(() => {
+        refreshing = null;
+        void qc.invalidateQueries({ queryKey: keys.bays(auditId) });
+        void qc.invalidateQueries({ queryKey: keys.yardMap(auditId) });
+      }, MAP_REFRESH_MS);
+    };
+
     const join = () => {
       s.emit('audit:join', { auditId }, (ack: JoinAck) => {
         if (ack.ok) {
@@ -79,10 +92,17 @@ export function useAuditRoom(auditId: string | null | undefined, qc: QueryClient
     const onConnect = () => {
       setConnected(true);
       join();
+      // Anything may have happened while the socket was down.
+      refreshMaps();
     };
     const onDisconnect = () => setConnected(false);
     const onProgress = (p: { auditId: string; counts: AuditCounts }) => {
-      if (p.auditId === auditId) qc.setQueryData(keys.progress(auditId), p.counts);
+      if (p.auditId !== auditId) return;
+      qc.setQueryData(keys.progress(auditId), p.counts);
+      refreshMaps();
+    };
+    const onExpected = (p: { auditId: string }) => {
+      if (p.auditId === auditId) refreshMaps();
     };
     const onScan = (p: { auditId: string; scan: ScanDto }) => {
       if (p.auditId !== auditId) return;
@@ -101,6 +121,7 @@ export function useAuditRoom(auditId: string | null | undefined, qc: QueryClient
     s.on('connect', onConnect);
     s.on('disconnect', onDisconnect);
     s.on('audit:progress', onProgress);
+    s.on('expected:updated', onExpected);
     s.on('scan:created', onScan);
     s.on('scan:updated', onScan);
     s.on('presence:update', onPresence);
@@ -113,7 +134,9 @@ export function useAuditRoom(auditId: string | null | undefined, qc: QueryClient
       s.emit('audit:leave', { auditId });
       s.off('connect', onConnect);
       s.off('disconnect', onDisconnect);
+      if (refreshing) clearTimeout(refreshing);
       s.off('audit:progress', onProgress);
+      s.off('expected:updated', onExpected);
       s.off('scan:created', onScan);
       s.off('scan:updated', onScan);
       s.off('presence:update', onPresence);
@@ -125,13 +148,33 @@ export function useAuditRoom(auditId: string | null | undefined, qc: QueryClient
   return { present, connected };
 }
 
-/** Tells the room this person is scanning, every 30 seconds while the scanner is open. */
+/**
+ * Tells the room this person is scanning, every 30 seconds while the scanner is
+ * open, and that they stopped when it closes. Only the scanner does this, so
+ * "scanning" stays true: someone looking at a plan never shows as working on it.
+ */
 export function usePresenceHeartbeat(auditId: string | null | undefined, active: boolean) {
   useEffect(() => {
     if (!auditId || !active) return;
-    const beat = () => socket?.connected && socket.emit('presence:heartbeat', { auditId });
+    const s = socket;
+    // The server only hears someone in the room, and a reconnect or a direct link leaves them outside it.
+    const beat = () => {
+      if (s?.connected) s.emit('audit:join', { auditId }, () => s.emit('presence:heartbeat', { auditId }));
+    };
     beat();
+    s?.on('connect', beat);
     const t = setInterval(beat, 30_000);
-    return () => clearInterval(t);
+    return () => {
+      clearInterval(t);
+      s?.off('connect', beat);
+    };
   }, [auditId, active]);
+
+  // Pausing to confirm a scan is still scanning. Closing the scanner is not.
+  useEffect(() => {
+    if (!auditId) return;
+    return () => {
+      if (socket?.connected) socket.emit('presence:stopped', { auditId });
+    };
+  }, [auditId]);
 }

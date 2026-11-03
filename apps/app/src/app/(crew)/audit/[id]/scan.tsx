@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { feedback } from '@/feedback';
 import { SyncButton } from '@/features/crew/CrewHeader';
 import { cachedAudit, checkNumber, localProgress, matchByPrefix, saveScan, useQueue } from '@/offline/engine';
+import { clerkCounts } from '@/features/dash/planCounts';
 import { usePresenceHeartbeat } from '@/realtime/socket';
 import { ConfirmPanel, type Captured, type SaveExtra } from '@/scanner/ConfirmPanel';
 import { GuideBox, type GuideState } from '@/scanner/GuideBox';
@@ -83,10 +84,8 @@ function Scanner() {
   const audit = useQuery({ queryKey: ['cached-audit', auditId], queryFn: () => cachedAudit(auditId!), enabled: !!auditId });
   const progress = useQuery({ queryKey: ['local-progress', auditId, queueVersion], queryFn: () => localProgress(auditId!), enabled: !!auditId });
   const closed = audit.data?.audit.status === 'CLOSED' || audit.data?.audit.status === 'CANCELLED';
-  // Everyone's finds count, not just this phone's: take whichever is higher.
-  const serverFound = audit.data?.audit.counts.found ?? 0;
-  const expectedTotal = progress.data?.expected || audit.data?.audit.counts.expected || 0;
-  const leftNow = Math.max(0, expectedTotal - Math.max(serverFound, progress.data?.matched ?? 0));
+  // Everyone's finds count, not just this phone's.
+  const { expected: expectedTotal, left: leftNow } = clerkCounts(audit.data?.audit.counts, progress.data);
   const leftCount = useCountUp(leftNow, 500);
 
   usePresenceHeartbeat(auditId, !paused);

@@ -1,11 +1,12 @@
-import type { Bucket } from '@cymis/schemas';
+import { splitLocation, type AuditDto, type Bucket } from '@cymis/schemas';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { endpoints } from '@/api/endpoints';
 import { keys, queryClient, useAudit, useProgress, useResults, useScans } from '@/api/queries';
 import { feedback } from '@/feedback';
+import { dayKey, dayWord, eatTime } from '@/lib/eat';
 import { useSettings } from '@/state/settings';
 import { AuditStatus } from '@/features/dash/AuditRows';
 import { DataTable } from '@/features/dash/DataTable';
@@ -13,13 +14,16 @@ import { barProps, dayTime, minutesAgo, time } from '@/features/dash/format';
 import { Column, Columns, Page, PageHeader, StatGrid } from '@/features/dash/Page';
 import { ReportButton } from '@/features/dash/Reports';
 import { resultColumns, scanColumns } from '@/features/dash/scanColumns';
-import { splitLocation, useAllResults, YardMap } from '@/features/dash/YardMap';
+import { SiteMap } from '@/features/dash/SiteMap';
+import { LiveBays } from '@/features/dash/YardMap';
 import { useAuditRoom } from '@/realtime/socket';
 import { useTheme } from '@/theme/theme';
 import { Avatar, BucketBar, Button, EmptyState, FilterPills, LiveBadge, SectionTitle, Skeleton, StatTile, TextField, Txt, fmt, useConfirm, useToast } from '@/ui';
 
 export default function LiveAudit() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, place: placeParam } = useLocalSearchParams<{ id: string; place?: string }>();
+  const place = placeParam ?? null;
+  const setPlace = (p: string | null) => router.setParams({ place: p ?? undefined });
   const { c } = useTheme();
   const qc = useQueryClient();
   const toast = useToast();
@@ -29,8 +33,6 @@ export default function LiveAudit() {
   const { present, connected } = useAuditRoom(id, queryClient);
   const live = audit.data?.status === 'ACTIVE';
   const scans = useScans(id);
-  const all = useAllResults(id ?? '', live);
-  const [place, setPlace] = useState<string | null>(null);
 
   const close = useMutation({
     mutationFn: () => endpoints.closeAudit(id!),
@@ -62,9 +64,8 @@ export default function LiveAudit() {
 
   const a = audit.data;
   const k = progress.data ?? a.counts;
-  // People viewing the page also join the room. Only count the crew on this audit.
-  const crewIds = new Set(a.assignees.map((p) => p.id));
-  const scanning = present.filter((p) => crewIds.has(p.userId));
+  // Presence means the scanner is open or a scan has just come in, whoever it is. Viewing a page does not count.
+  const scanning = present;
 
   const askClose = async () => {
     const ok = await confirm({
@@ -119,15 +120,20 @@ export default function LiveAudit() {
         <StatTile compact label="Found" value={k.found} bucket="found" />
         <StatTile compact label={live ? 'Not found yet' : 'Missing'} value={k.missing} bucket={live ? undefined : 'missing'} detail={live ? 'Still to scan' : undefined} />
         <StatTile compact label="Unexpected" value={k.unexpected} bucket="unexpected" />
-        <StatTile compact label="Needs review" value={k.mismatched} bucket="review" detail={k.pendingReview ? `${k.pendingReview} waiting` : undefined} />
+        <StatTile compact label="Needs review" value={k.mismatched} bucket="review" detail={k.offListReview ? `${k.offListReview} not on the list` : k.pendingReview ? `${k.pendingReview} waiting` : undefined} />
       </StatGrid>
 
       <BucketBar {...barProps(k, live)} />
 
       <Columns>
         <Column grow={3} basis={520}>
-          <SectionTitle title="Yard map" aside="Each square is one bay. Tap one to see its boxes." />
-          <YardMap rows={all.data} loading={all.isPending} live={live} selected={place} onSelect={setPlace} />
+          <LiveBays
+            auditId={a.id}
+            live={live}
+            selected={place}
+            onSelect={setPlace}
+            title={<SectionTitle title="Bay grid" aside="Each square is one bay. Tap one to see its boxes." />}
+          />
         </Column>
         <Column grow={1} basis={260}>
           <SectionTitle title="On it now" />
@@ -155,8 +161,18 @@ export default function LiveAudit() {
           {a.assignees.length ? (
             <Txt variant="caption" tone="muted">{`${a.assignees.length} ${a.assignees.length === 1 ? 'person' : 'people'} on this yard plan`}</Txt>
           ) : null}
+          <View style={{ height: 10 }} />
+          <SectionTitle title="Shifts" />
+          <PlanShifts plan={a} open={live} />
         </Column>
       </Columns>
+
+      {Platform.OS === 'web' ? (
+        <View style={{ gap: 14 }}>
+          <SectionTitle title="Yard map" aside={live ? 'Updates live' : undefined} />
+          <SiteMap auditId={a.id} live={live} />
+        </View>
+      ) : null}
 
       <View style={{ gap: 14 }}>
         <SectionTitle title="Latest scans" aside={live ? 'Updates live' : undefined} />
@@ -175,6 +191,59 @@ export default function LiveAudit() {
 
       <ResultLists auditId={a.id} counts={k} place={place} onClearPlace={() => setPlace(null)} />
     </Page>
+  );
+}
+
+/** The plan's shifts, soonest first, each opening on the shift page. */
+function PlanShifts({ plan, open }: { plan: AuditDto; open: boolean }) {
+  const { c } = useTheme();
+  const shifts = plan.shifts ?? [];
+  const today = dayKey(Date.now());
+  const add = () => router.push(`/dashboard/shifts?shift=new&plan=${plan.id}` as never);
+  if (!shifts.length) {
+    return open ? (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4 }}>
+        <Txt variant="bodySm" tone="muted">
+          No shifts yet.
+        </Txt>
+        <Button label="Plan one" variant="quiet" onPress={add} />
+      </View>
+    ) : (
+      <Txt variant="bodySm" tone="muted">
+        No shifts were planned.
+      </Txt>
+    );
+  }
+  return (
+    <View>
+      {shifts.map((s, i) => {
+        const past = dayKey(s.endsAt) < today;
+        return (
+          <Pressable
+            key={s.id}
+            accessibilityRole="link"
+            accessibilityLabel={`${s.name}, ${dayWord(dayKey(s.startsAt))}, ${eatTime(s.startsAt)} to ${eatTime(s.endsAt)}`}
+            onPress={() => router.push(`/dashboard/shifts?shift=${s.id}&plan=${plan.id}${past ? '&view=past' : ''}` as never)}
+            style={(st) => ({
+              gap: 2,
+              paddingVertical: 10,
+              borderTopWidth: i === 0 ? 0 : 1,
+              borderTopColor: c.rule,
+              backgroundColor: (st as { hovered?: boolean }).hovered ? c.hover : 'transparent',
+              opacity: st.pressed ? 0.7 : 1,
+            })}
+          >
+            <Txt variant="bodySmStrong">{s.name}</Txt>
+            <Txt variant="caption" tone="muted">
+              {`${dayWord(dayKey(s.startsAt))}, `}
+              <Txt variant="monoSm" tone="muted">{`${eatTime(s.startsAt)} to ${eatTime(s.endsAt)}`}</Txt>
+              {`, ${s.clerkIds.length} ${s.clerkIds.length === 1 ? 'clerk' : 'clerks'}`}
+            </Txt>
+          </Pressable>
+        );
+      })}
+      {open ? <Button label="Add a shift" variant="quiet" onPress={add} style={{ marginTop: 4, marginLeft: -12 }} /> : null}
+    </View>
   );
 }
 

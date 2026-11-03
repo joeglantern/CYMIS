@@ -81,6 +81,7 @@ export const auditInclude = {
   createdBy: { select: userSummarySelect },
   closedBy: { select: userSummarySelect },
   assignments: { include: { user: { select: userSummarySelect } }, orderBy: { createdAt: 'asc' } },
+  shifts: { include: { assignments: { select: { userId: true } } }, orderBy: { startsAt: 'asc' } },
 } as const satisfies Prisma.AuditInclude;
 
 export type AuditWithRelations = Prisma.AuditGetPayload<{ include: typeof auditInclude }>;
@@ -97,6 +98,7 @@ export function toAuditDto(a: AuditWithRelations, counts: AuditCounts): AuditDto
       code: a.section.code,
       name: a.section.name,
       kind: a.section.kind,
+      locationCodes: a.section.locationCodes,
       facility: {
         id: a.section.facility.id,
         code: a.section.facility.code,
@@ -107,6 +109,14 @@ export function toAuditDto(a: AuditWithRelations, counts: AuditCounts): AuditDto
     createdBy: toUserSummary(a.createdBy),
     closedBy: a.closedBy ? toUserSummary(a.closedBy) : null,
     assignees: a.assignments.map((x) => toUserSummary(x.user)),
+    viaShiftIds: a.assignments.filter((x) => x.viaShiftAt !== null).map((x) => x.userId),
+    shifts: a.shifts.map((s) => ({
+      id: s.id,
+      name: s.name,
+      startsAt: iso(s.startsAt),
+      endsAt: iso(s.endsAt),
+      clerkIds: s.assignments.map((x) => x.userId),
+    })),
     counts,
     startedAt: iso(a.startedAt),
     closedAt: iso(a.closedAt),

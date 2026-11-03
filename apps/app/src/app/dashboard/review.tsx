@@ -1,5 +1,5 @@
 import { isValidContainerNumber, formatContainerNumber } from '@cymis/iso6346';
-import type { ReviewScanBody, ScanDto } from '@cymis/schemas';
+import { locationInCodes, type ReviewScanBody, type ScanDto } from '@cymis/schemas';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
@@ -13,7 +13,7 @@ import { dayTime, flagWords, locationWords } from '@/features/dash/format';
 import { scanColumns } from '@/features/dash/scanColumns';
 import { useLayout, useTheme } from '@/theme/theme';
 import { floatShadow, fonts, radius } from '@/theme/tokens';
-import { Button, ContainerNumber, FilterPills, IconButton, Skeleton, TextField, Txt, useToast } from '@/ui';
+import { Button, ContainerNumber, FilterPills, Icon, IconButton, Skeleton, TextField, Txt, useToast } from '@/ui';
 
 type Flagged = 'number' | 'colour' | 'check' | 'location';
 /** "moveback" is not waiting for a decision: it lists boxes someone has been told to move. */
@@ -147,6 +147,7 @@ export default function Review() {
             key={selected.id}
             scan={selected}
             auditName={auditName(selected.auditId)}
+            codes={audits.find((a) => a.id === selected.auditId)?.section.locationCodes ?? []}
             busy={decide.isPending}
             onDecide={(body) => decide.mutate({ scan: selected, body })}
             onClose={() => setSelectedId('')}
@@ -184,6 +185,7 @@ function Detail({
   scroll,
   scan,
   auditName,
+  codes,
   busy,
   onDecide,
   onClose,
@@ -192,6 +194,8 @@ function Detail({
   scroll: boolean;
   scan: ScanDto;
   auditName: string;
+  /** The block's location codes, for the warning before a list update. */
+  codes: readonly string[];
   busy: boolean;
   onDecide: (b: ReviewScanBody) => void;
   onClose: () => void;
@@ -209,6 +213,7 @@ function Detail({
   // The three plain choices apply while a location waits. A decided one is only there to read.
   const locationWaiting = scan.flags.includes('LOCATION_MISMATCH') && scan.reviewStatus === 'PENDING' && !scan.locationDecision;
   const movingBack = scan.locationDecision === 'MOVE_BACK';
+  const leftOutNextUpload = locationWaiting && !!scan.foundLocation && !locationInCodes(scan.foundLocation, codes);
   const onlyLocation = scan.flags.length === 1 && scan.flags[0] === 'LOCATION_MISMATCH';
   const title = movingBack ? 'Box must move back' : locationWaiting ? 'Location differs' : scan.flags.includes('NUMBER_MISMATCH') ? 'Number differs' : scan.flags.includes('CHECK_DIGIT_FAILED') ? 'Check digit fails' : scan.flags.includes('COLOUR_MISMATCH') ? 'Colour differs' : 'Needs a look';
 
@@ -361,6 +366,14 @@ function Detail({
       {movingBack ? null : locationWaiting ? (
         <View style={{ gap: 10 }}>
           <Choice label="Update the list" primary busy={busy} onPress={updateList} detail="The list was wrong. Phones get the new location, and the box counts as found." />
+          {leftOutNextUpload ? (
+            <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 8 }}>
+              <Icon name="warning" size={18} color={c.dangerText} />
+              <Txt variant="bodySm" style={{ flex: 1 }}>
+                {`${scan.foundLocation} is outside this block's codes (${codes.join(', ')}). You can still update it, but the next upload for this block would leave this row out.`}
+              </Txt>
+            </View>
+          ) : null}
           <Choice label="Box must move back" busy={busy} onPress={moveBack} detail="The list stays. The box counts as found and shows under Must move back." />
           <Choice label="Reject" danger busy={busy} onPress={reject} detail="The scan was simply wrong. It stops counting." />
         </View>

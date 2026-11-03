@@ -84,6 +84,14 @@ model ShiftAssignment {
 ```
 
 - Access to a plan still comes only from `AuditAssignment`. Adding a clerk to a shift also adds them to the plan. Removing them drops the plan assignment only if no other shift holds them and they were not assigned directly: record that choice in a test.
+- `AuditAssignment` gains `viaShiftAt DateTime?`, approved by the lead on 2 November 2026. Null means assigned directly, which covers every row made before shifts and every row made by the Clerks step. Set means the row exists only because a shift added the person. Nothing that checks access reads it.
+- The rules: adding to a shift creates the plan row with `viaShiftAt` set, or leaves an existing row as it is. Removing from a shift, or deleting a shift, deletes the plan row only if `viaShiftAt` is set and no other shift on the plan holds the person. The Clerks step creates new rows with it null and leaves existing rows alone, so saving that step does not turn shift clerks into direct ones. Unticking someone in the Clerks step also takes them off that plan's shifts, in the same transaction.
+- The Clerks step shows "From Day shift" beside a person who came from a shift, and names the shifts in a confirm before an untick takes someone off them.
+- Work done before someone lost a plan is never refused. `audit_access_ended` (auditId, userId, endedAt) is upserted in the same transaction wherever an assignment row is removed: the shift rules and the Clerks step. Only `syncOne` reads it: a scan from someone with no assignment row is accepted when its `capturedAt` is at or before `endedAt`. Later scans are refused as before, and the status, clock and duplicate checks still run. `canSeeAudit` and every other access check do not read it, so a removed clerk cannot see the plan or its list. Photo uploads check who made the scan rather than plan access, so a photo for an accepted scan still arrives.
+- Moving a clerk is add before remove, so the plan row is never missing. The page does this order when the supervisor chooses **Move**, and a test covers the sequence.
+- `AuditDto` gains `shifts` (each with `clerkIds`) and `viaShiftIds`, loaded in the same list query. A clerk gets only their own shifts, with only their own id, and an empty `viaShiftIds`.
+- A shift cannot move to another plan. Writes on a closed or cancelled plan get a conflict with the code `audit_finished`.
+- A clerk with several shifts sees the one running now, else the next, else the most recent.
 - Shift times do not block scans. A clerk with a late scan or an offline phone must still save. Times are for planning and display.
 - Admin and supervisor create, change and delete. End must be after start. Show East Africa Time; store UTC.
 - `/dashboard/shifts` replaces the holding page: shifts by day, new shift with plan, name, times and clerks. Keep the Clerks step in the wizard working.

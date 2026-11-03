@@ -209,6 +209,7 @@ describe('audit from start to report', () => {
       missing: 2, // c and the bad check digit row
       unexpected: 1,
       mismatched: 1, // the flagged manual entry
+      offListReview: 1, // which is not on the list, so 2 + 2 + (1 - 1) = 4 expected
       duplicates: 1,
       scans: 5,
       pendingReview: 1,

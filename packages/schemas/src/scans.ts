@@ -27,6 +27,16 @@ export function sameLocation(a: string, b: string): boolean {
   return normaliseLocation(a) === normaliseLocation(b);
 }
 
+/**
+ * The import rule: with codes set, a location must start with one of them or its
+ * row is left out. Lives here so the warning before a list update cannot drift from it.
+ */
+export function locationInCodes(location: string, codes: readonly string[]): boolean {
+  if (codes.length === 0) return true;
+  const loc = location.toUpperCase();
+  return codes.some((c) => loc.startsWith(c.toUpperCase()));
+}
+
 export const SyncScanItem = z.object({
   id: ClientId,
   auditId: Id,

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CursorQuery, Id, IsoDateTime } from './common.js';
 import { AuditStatus, Bucket, FacilityType, SectionKind } from './enums.js';
+import { ShiftBrief } from './shifts.js';
 import { UserSummary } from './users.js';
 
 export const AuditCounts = z.object({
@@ -9,6 +10,8 @@ export const AuditCounts = z.object({
   missing: z.number().int(),
   unexpected: z.number().int(),
   mismatched: z.number().int(),
+  /** The part of mismatched that is not on the list. So expected = found + missing + (mismatched - offListReview). */
+  offListReview: z.number().int(),
   duplicates: z.number().int(),
   scans: z.number().int(),
   pendingReview: z.number().int(),
@@ -26,11 +29,17 @@ export const AuditDto = z.object({
     code: z.string(),
     name: z.string(),
     kind: SectionKind,
+    /** Empty means every row belongs, the way a whole yard works. */
+    locationCodes: z.array(z.string()),
     facility: z.object({ id: Id, code: z.string(), name: z.string(), type: FacilityType }),
   }),
   createdBy: UserSummary,
   closedBy: UserSummary.nullable(),
   assignees: z.array(UserSummary),
+  /** Assignees who are on the plan only through a shift. Empty for clerks. */
+  viaShiftIds: z.array(Id),
+  /** Soonest first. A clerk gets only their own. */
+  shifts: z.array(ShiftBrief),
   counts: AuditCounts,
   startedAt: IsoDateTime.nullable(),
   closedAt: IsoDateTime.nullable(),

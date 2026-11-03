@@ -7,9 +7,11 @@ import { useSession } from '@/auth/session';
 import { SyncButton } from '@/features/crew/CrewHeader';
 import { GlassBar, LargeTitle, useHeaderScroll, useTabReselect, useTabSpace } from '@/features/crew/GlassHeader';
 import { queryClient } from '@/api/queries';
+import { dayKey, dayWord, eatTime, pickShift } from '@/lib/eat';
 import { loadMyAudits, prepareAudit } from '@/offline/engine';
 import { useLayout, useTheme } from '@/theme/theme';
-import { AnimatedNumber, Avatar, Banner, emptyImages, BucketBar, Card, EmptyState, Eyebrow, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
+import { fonts } from '@/theme/tokens';
+import { AnimatedNumber, Avatar, Banner, emptyImages, BucketBar, Card, EmptyState, Eyebrow, Icon, LiveBadge, Pill, Skeleton, StatusChip, Txt, fmt } from '@/ui';
 
 function greeting(name: string) {
   const h = new Date().getHours();
@@ -102,10 +104,31 @@ function Grid({ tablet, children }: { tablet: boolean; children: React.ReactNode
   return <View style={tablet ? { flexDirection: 'row', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' } : { gap: 12 }}>{children}</View>;
 }
 
+/** "Your shift: Today, 06:00 to 14:00". Read from the plan the phone already holds, so it shows offline. */
+function YourShift({ audit, userId }: { audit: AuditDto; userId: string | undefined }) {
+  const { c } = useTheme();
+  // A plan saved on the phone before shifts existed has no list at all.
+  const mine = (audit.shifts ?? []).filter((s) => !!userId && s.clerkIds.includes(userId));
+  const shift = pickShift(mine);
+  if (!shift) return null;
+  const hours = `${eatTime(shift.startsAt)} to ${eatTime(shift.endsAt)}`;
+  const day = dayWord(dayKey(shift.startsAt));
+  return (
+    <View accessible accessibilityLabel={`Your shift: ${day}, ${hours}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Icon name="clock" size={18} color={c.ink2} />
+      <Txt variant="bodySm" tone="ink2" style={{ flexShrink: 1 }}>
+        {`Your shift: ${day}, `}
+        <Txt variant="monoSm" style={{ fontFamily: fonts.monoMedium }}>{hours}</Txt>
+      </Txt>
+    </View>
+  );
+}
+
 function AuditCard({ audit }: { audit: AuditDto }) {
   const user = useSession((s) => s.user);
   const k = audit.counts;
-  const left = Math.max(0, k.expected - k.found);
+  // What is left to scan. Boxes waiting for review are not, so this is not expected minus found.
+  const left = k.missing;
   const assigned = audit.assignees.some((p) => p.id === user?.id);
   const others = audit.assignees.filter((p) => p.id !== user?.id);
   const sub = `${audit.section.name}, ${audit.section.facility.name}`;
@@ -122,6 +145,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
           </View>
           <LiveBadge />
         </View>
+        <YourShift audit={audit} userId={user?.id} />
         <BucketBar counts={{ found: k.found, review: k.mismatched, unexpected: k.unexpected, missing: 0 }} left={left} legend={false} />
         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
           <Txt variant="bodySm" tone="muted">
@@ -147,6 +171,7 @@ function AuditCard({ audit }: { audit: AuditDto }) {
           </View>
           <Pill label="Not started" />
         </View>
+        <YourShift audit={audit} userId={user?.id} />
         <Txt variant="bodySm" tone="ink2">
           The list downloads when your supervisor starts it.
         </Txt>

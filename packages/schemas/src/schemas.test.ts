@@ -9,7 +9,7 @@ import {
   ReviewScanBody,
   StaffId,
   SyncScanItem,
-  sameLocation,
+  locationInCodes, sameLocation,
   SyncScansBody,
 } from './index.js';
 
@@ -82,6 +82,15 @@ describe('ReviewScanBody', () => {
   it('needs a note when rejecting', () => {
     expect(ReviewScanBody.safeParse({ action: 'REJECT' }).success).toBe(false);
     expect(ReviewScanBody.safeParse({ action: 'REJECT', note: 'Photo is of the wrong box' }).success).toBe(true);
+  });
+});
+
+describe('locationInCodes', () => {
+  it('follows the import rule', () => {
+    expect(locationInCodes('A05-01-1', [])).toBe(true);
+    expect(locationInCodes('a01-02-3', ['A01'])).toBe(true);
+    expect(locationInCodes('A01-02-3', ['a01'])).toBe(true);
+    expect(locationInCodes('A05-01-1', ['A01', 'A02'])).toBe(false);
   });
 });
 

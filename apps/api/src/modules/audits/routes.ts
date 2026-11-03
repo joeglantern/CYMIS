@@ -2,6 +2,7 @@ import {
   AuditCounts,
   AuditDto,
   AuditListQuery,
+  BaysResponse,
   CreateAuditBody,
   ExpectedQuery,
   ExpectedResponse,
@@ -10,6 +11,7 @@ import {
   ResultsQuery,
   SetAssigneesBody,
   UpdateAuditBody,
+  YardMapResponse,
   paged,
 } from '@cymis/schemas';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -28,6 +30,7 @@ import {
   startAudit,
   updateAudit,
 } from './service.js';
+import { getBays, getYardMap } from './yardmap.js';
 
 export const auditRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (app, { ctx }) => {
   const staff = app.guard({ roles: STAFF_ROLES });
@@ -104,6 +107,19 @@ export const auditRoutes: FastifyPluginAsyncZod<{ ctx: AppContext }> = async (ap
       await loadAuditFor(ctx, request.params.id, request.principal, { scopes: ['audits:read', 'results:read'] });
       return ctx.progress.get(request.params.id);
     },
+  );
+
+  app.get(
+    '/:id/bays',
+    { schema: { tags: ['audits'], params: IdParams, response: { 200: BaysResponse } }, preHandler: readers },
+    async (request) => getBays(ctx, request.principal!, request.params.id),
+  );
+
+  // Names clerks and where they were, so people only: no clerks and no keys.
+  app.get(
+    '/:id/map',
+    { schema: { tags: ['audits'], params: IdParams, response: { 200: YardMapResponse } }, preHandler: staff },
+    async (request) => getYardMap(ctx, request.principal!, request.params.id),
   );
 
   app.get(

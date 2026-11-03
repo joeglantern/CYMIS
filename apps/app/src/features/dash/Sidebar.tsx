@@ -18,6 +18,8 @@ import { Mark } from './Page';
 
 // Tells screen readers which link is this page.
 const CURRENT_PAGE = { 'aria-current': 'page' } as object;
+// The list scrolls and clips, so the focus ring is drawn inside the row.
+const FOCUS_INSET = { dataSet: { focusInset: 'true' } } as object;
 
 function useNav(): NavGroups {
   const { view } = useView();
@@ -37,6 +39,7 @@ function NavLink({ item, compact, onActiveLayout }: { item: NavItem; compact?: b
       <Pressable
         onLayout={on && onActiveLayout ? (e) => onActiveLayout(e.nativeEvent.layout.x) : undefined}
         accessibilityRole="link"
+        {...FOCUS_INSET}
         accessibilityState={{ selected: on }}
         accessibilityLabel={item.badge ? `${item.label}, ${item.badge} waiting` : item.label}
         {...(on ? CURRENT_PAGE : null)}
@@ -158,6 +161,7 @@ function RailRow({ item, p, on, onHover }: { item: NavItem; p: Progress; on: boo
       <Pressable
         ref={row}
         accessibilityRole="link"
+        {...FOCUS_INSET}
         accessibilityState={{ selected: on }}
         accessibilityLabel={badge ? `${label}, ${badge} waiting` : label}
         {...(on ? CURRENT_PAGE : null)}

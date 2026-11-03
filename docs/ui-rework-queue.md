@@ -12,7 +12,7 @@ The goal in Kiptoo's words (16:19 to 16:33): the crew app is already simple, wit
 
 ## The standard every stage is held to
 
-From `~/.claude/skills/app-playbook/flagship-console-design.md` and `tricks/avoid.md`, the way Linear, Stripe, Vercel and GitHub build consoles:
+The way Linear, Stripe, Vercel and GitHub build consoles:
 
 - Navigation recedes and the task is loud. Grey does the work, colour only carries meaning.
 - One term per concept, everywhere. Sentence case. A verb and a noun on buttons.
@@ -45,7 +45,7 @@ Also fixes a live bug seen at 18:50: the admin rows overlap each other and the f
 
 Covers the screens, in-app help, `docs/manuals/*`, the README, reports, API messages and the legal pages. Database, API and code names stay as they are. Dashboard addresses moved to `/dashboard/yard-plans` and the old links redirect. Clerk routes stay, because moving them risks the offline flow.
 
-Open: the first paragraph of CLAUDE.md still says audit and crew, waiting on Joe. Joe should read the legal changes himself.
+Joe should read the legal changes himself.
 
 ### 3. Clerk scan flow (UI)
 
@@ -107,6 +107,13 @@ Joe said to go ahead on 2 November 2026, so these use the recommendations. Any o
 Still open:
 
 4. **Misplaced colour.** Kiptoo said he would confirm it (18:10). Cymis's existing status colours are used until then.
+
+## Known gaps
+
+- A turned-off account cannot sync. Confirmed by reading: `plugins/auth.ts` refuses any token for an inactive user, and refresh and sign in refuse them too. So scans still queued on that phone stay there and never arrive, unless the account is turned back on. The audit_access_ended rule does not help, because it applies after sign in.
+- A removed clerk's phone keeps the cached plan and its list until sign out. The server refuses reads, but the copy stays and shows when offline. Left on purpose, since clearing it needs a rule about unsent work.
+- `capturedAt` comes from the phone clock. A phone running behind, or a clock changed by hand, can land a scan inside the window after someone was removed.
+- `expo-env.d.ts` is generated and ignored, so `pnpm check` may fail typecheck on a fresh clone until Expo has run once.
 
 ## Not in the queue
 

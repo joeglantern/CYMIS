@@ -45,7 +45,7 @@ export const helpSections: HelpSection[] = [
         t: 'list',
         ordered: true,
         items: [
-          'Open your yard plan and tap **Scan containers**.',
+          'Open your yard plan and tap **Scan containers**. If you have a shift, its day and times show on the plan card. Shift times never stop a scan. The bay grid on the plan page shows how far each bay has got. It needs signal, but scanning does not.',
           'Point the camera at the door so the painted number is inside the yellow corners. Hold steady.',
           'When the yellow corners close in and the phone buzzes, the number is locked. There is nothing to press.',
           'Check the number on the sheet, pick the box colour if it is not already picked, then tap **Scan next**. That saves the box and goes back to the camera.',
@@ -181,13 +181,72 @@ export const helpSections: HelpSection[] = [
     ],
   },
   {
+    id: 'shifts',
+    title: 'Planning shifts',
+    audience: 'supervisors',
+    blocks: [
+      {
+        t: 'p',
+        text: 'A shift says which clerks work a yard plan and when. Open **Shift planning** to see every shift by day, with today first. All times are East Africa Time.',
+      },
+      {
+        t: 'list',
+        ordered: true,
+        items: [
+          'Click **New shift** and pick the yard plan. Plans that are not started yet can have shifts too.',
+          'Give it a name, the day and the times. An end time earlier than the start means the next morning, so 22:00 to 06:00 is a night shift.',
+          'Tick the clerks, then click **Add shift**. Each clerk sees the plan and their shift times on their phone.',
+        ],
+      },
+      { t: 'h', text: 'Who gets the yard plan' },
+      {
+        t: 'list',
+        items: [
+          'Adding a clerk to a shift also gives them the yard plan.',
+          'Taking a clerk off their last shift also takes the plan away, unless you gave it to them directly in the **Clerks** step. Scans they already took still arrive, even from a phone that was offline. Scans taken after that are turned down.',
+          'To move a clerk, tick them on the new shift, save and choose **Move**. They keep the plan the whole way through.',
+          'Unticking someone in the **Clerks** step also takes them off that plan\'s shifts. Cymis names the shifts and asks first.',
+          'In the **Clerks** step, "From Day shift" beside a name means they are on the plan because of that shift.',
+        ],
+      },
+      {
+        t: 'note',
+        text: 'Shift times are for planning. They never stop a scan: a clerk working late or early still saves, and so does a phone with no signal.',
+      },
+    ],
+  },
+  {
+    id: 'yard-map',
+    title: 'The bay grid and yard map',
+    audience: 'supervisors',
+    blocks: [
+      {
+        t: 'p',
+        text: 'A yard plan page shows where the work is and where the problems are, and updates as clerks scan. **Yard at a glance** on Overview gives the short version.',
+      },
+      {
+        t: 'list',
+        items: [
+          'In the **bay grid** each square is one bay. A found box stays grey. A square with a number and a strong colour has that many boxes waiting for a decision.',
+          'Use the filters to see one block, or **Needs review only**. A block filter needs the block to have location codes in Yard management.',
+          'The **yard map** shows the blocks an admin has drawn, each with its counts, and a block with many boxes waiting is marked. Dots with initials show where recent scans were made.',
+          'A scan with no location is counted in words, such as "12 scans have no location". It is never placed on the map by guesswork. Clerks choose whether the phone shares location.',
+        ],
+      },
+      {
+        t: 'note',
+        text: 'The map says where a scan was made, not where a box should be. Cymis does not know a box is in the right place.',
+      },
+    ],
+  },
+  {
     id: 'live',
     title: 'Watching a yard plan live',
     audience: 'supervisors',
     blocks: [
       {
         t: 'p',
-        text: 'The live page updates as clerks scan, with no refresh. You see the totals, the yard map bay by bay, who is scanning and where, and the latest scans.',
+        text: 'The live page updates as clerks scan, with no refresh. You see the totals, the bay grid, who is scanning and where, and the latest scans.',
       },
       {
         t: 'p',
