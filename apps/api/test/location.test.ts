@@ -291,7 +291,7 @@ describe('reports', () => {
     const { scan } = await sync(id, VALID.a, { foundLocation: FOUND });
     await review(scan.id, { action: 'MOVE_BACK', note: 'Back' });
     const csv = buildCsv(await gatherReportData(t.ctx, id)).toString('utf8');
-    const [head, ...rows] = csv.replace(/^﻿/, '').trim().split('\n');
+    const [head, ...rows] = csv.replace(/^\uFEFF/, '').trim().split('\n');
     expect(head).toBe('"Result","Container","Location","Colour","Scanned at (UTC)","Scanned by","Flags","Found location"');
     const row = rows.find((r) => r.includes(VALID.a))!;
     expect(row.startsWith(`"Found","${VALID.a}","${LIST}"`)).toBe(true);

@@ -62,4 +62,6 @@ Additive. Old phones send no `foundLocation` and behave exactly as before.
 - `ScanListQuery.locationDecision`: filter scans by the decision.
 - `ResultRow.foundLocation`: nullable. Excel and CSV reports gain a `Found location` column at the end, so existing columns do not move.
 - `FoundLocation`, `normaliseLocation` and `sameLocation`: shared helpers.
+- `AuditDto.section.locationCodes`: the block's codes, so the review queue can warn before a list update falls outside them.
+- `locationInCodes`: the import rule for location codes, shared by the importer and that warning.
 - Migration `20261103090000_found_location`.
