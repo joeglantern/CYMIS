@@ -7,7 +7,7 @@ The goal in Kiptoo's words (16:19 to 16:33): the crew app is already simple, wit
 ## How the work runs
 
 - One stage at a time, in this order. A stage is done when `pnpm check` passes and it has been seen working in the browser.
-- All of it stays on the branch `ui/yard-plan-rework`. Nothing goes to the test server until Joe merges and deploys it. That is the switch: the live link does not change until Joe decides.
+- The work is on the branch `ui/misplaced-boxes`. `main` stays untouched until Joe merges it. The test server can run a work branch, so testing there does not change `main`.
 - Stages marked UI change no data. Stages marked DATA need a migration and API work, so they are not UI only.
 
 ## The standard every stage is held to
@@ -25,7 +25,7 @@ The way Linear, Stripe, Vercel and GitHub build consoles:
 
 ## Queue
 
-### 1. Sidebar (UI), built and reviewed, not committed
+### 1. Sidebar (UI), done
 
 Kiptoo dictates the order at 00:02 to 01:03 and types it into Figma:
 
@@ -39,7 +39,7 @@ Kiptoo dictates the order at 00:02 to 01:03 and types it into Figma:
 
 Also fixes a live bug seen at 18:50: the admin rows overlap each other and the footer on a laptop height screen.
 
-### 2. Wording: Audit becomes Yard plan, crew becomes clerks (UI), built and reviewed, not committed
+### 2. Wording: Audit becomes Yard plan, crew becomes clerks (UI), done
 
 13:50 to 14:13: "yard planning is what we want to call what we called audit". 18:48: the name will change. Every Excel upload creates one yard plan.
 
@@ -47,7 +47,7 @@ Covers the screens, in-app help, `docs/manuals/*`, the README, reports, API mess
 
 Joe should read the legal changes himself.
 
-### 3. Clerk scan flow (UI)
+### 3. Clerk scan flow (UI), done
 
 - 15:28 to 15:57: the guide rectangle is too small and numbers get cut off. Make it cover most of the screen, like a QR scanner. Clerks have tablets. The reader already reads the whole photo, so only the on screen guide changes.
 - 16:53 to 17:10: after a scan, say the result, offer "Scan next", and do not hold the person on that screen. The existing confirm panel already does most of this.
@@ -55,18 +55,18 @@ Joe should read the legal changes himself.
 
 Moved out: the sign in, pick your shift, start flow (18:25 to 18:38) goes with stage 6. The misplaced message (17:36 to 17:51) goes with stage 4.
 
-### 4. Misplaced boxes and the review queue (DATA, runs after stage 5)
+### 4. Misplaced boxes and the review queue (DATA), built
 
 17:36 to 17:51: for a misplaced box, show "the list says here, you are at block C", with a button to send it for approval. 09:03 to 09:37: this is Kiptoo's "Rectification". Each row reads: the list says here, we found it there, keep it or move it.
 
 This is not UI only. Today a scan is only matched, unexpected or duplicate. Nothing records a found position or compares it with the list. It needs:
 
-- A way to know where the clerk is: GPS against the block shapes from stage 5, or the clerk choosing the block. Joe to decide. GPS may struggle between tall stacks and cannot tell a tier.
+- Decided: the clerk says where the box is, since they are standing at it. No GPS. See `ui-rework-data-design.md`, which has the three decisions: update the list, box must move back, reject.
 - A new misplaced result or flag, and approving a move.
 
 Order of work: 3, then 5, then 4, then 6, 7, 8.
 
-### 5. Yard management: yards, blocks and mapping (DATA)
+### 5. Yard management: yards, blocks and mapping (DATA), done
 
 02:37 to 05:37:
 
@@ -76,7 +76,7 @@ Order of work: 3, then 5, then 4, then 6, 7, 8.
 
 Needs: a yard level above blocks and a saved shape on each block, a map layer with a free tile source, and API routes with roles and zod. Today's `Section` becomes the block.
 
-### 6. Shift planning (DATA)
+### 6. Shift planning (DATA), done
 
 10:19 to 11:02 and 13:26 to 14:34:
 
@@ -85,7 +85,7 @@ Needs: a yard level above blocks and a saved shape on each block, a map layer wi
 
 Needs: a shift model linked to the plan and crew (`AuditAssignment` is the start of this), API routes, and the page that replaces the stage 1 holding screen.
 
-### 7. Live yard map (DATA for the positions, UI for the rest)
+### 7. Live yard map (DATA for the positions, UI for the rest), done
 
 - 07:19 to 08:54: a map view of activity per block and where crew are. Kiptoo thinks it may belong on Overview.
 - 17:15 to 17:34: boxes stack up on the map as they are scanned. Correct position stays grey, misplaced stands out (17:55 to 18:10; he will confirm the colour). A block with many mismatches shows orange.
